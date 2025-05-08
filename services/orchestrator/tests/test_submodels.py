@@ -1,0 +1,46 @@
+""" Tests for the submodel-test function and its sub-functions
+"""
+
+import json
+from orchestrator.utils import fetch_submodel_info, submodel_schema_finder
+
+def test_fetch_submodel_info():
+    """ Testing if this function can retrieve the correct submodel information given a
+    pre-specified set of inputs
+    """
+
+    example_output = {
+        'href': 'https://dataplane-trace-prpd.edc.aws.bmw.cloud/public/' + \
+                'urn:uuid:20f19751-56c7-48e6-aa9a-08565484bac2/submodel',
+        'subm_counterparty': 'https://connector-trace-prpd.edc.aws.bmw.cloud/api/v1/dsp',
+        'subm_operandleft': 'https://w3id.org/edc/v0.0.1/ns/id',
+        'subm_operandright': 'battery_bundle_slbb'
+        }
+
+    correct_element_path = './tests/test_files/correct_element.json'
+
+    with open(correct_element_path, 'r', encoding='utf-8') as file:
+        correct_element = json.load(file)
+    semantic_id = 'urn:samm:io.catenax.single_level_bom_as_built:3.0.0#SingleLevelBomAsBuilt'
+
+    obtained_output = fetch_submodel_info(correct_element, semantic_id)
+
+    assert obtained_output == example_output
+
+
+def test_submodel_schema_finder():
+    """ Testing if this function files the correct schema in the schema repo 
+    based on a set of pre-specified inputs
+    """
+
+    semantic_id = 'urn:samm:io.catenax.single_level_bom_as_built:3.0.0#SingleLevelBomAsBuilt'
+
+    subm_schema_example_path = './tests/test_files/subm_schema_example.json'
+
+    with open(subm_schema_example_path, 'r', encoding='utf-8') as file:
+        subm_schema_example = json.load(file)
+
+    subm_schema_dict = submodel_schema_finder(semantic_id)
+    subm_schema = subm_schema_dict['schema']
+
+    assert subm_schema == subm_schema_example
