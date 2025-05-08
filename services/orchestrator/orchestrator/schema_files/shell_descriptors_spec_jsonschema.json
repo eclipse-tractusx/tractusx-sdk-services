@@ -1,0 +1,237 @@
+{
+  "$schema": "http://json-schema.org/schema#",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "array"
+    },
+    "displayName": {
+      "type": "array"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^urn:uuid.*",
+      "description": "Must be a URL starting with 'https://' and ending with '/submodel'"
+    },
+    "specificAssetIds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "supplementalSemanticIds": {
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "externalSubjectId": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["ExternalReference"]
+              },
+              "keys": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": ["GlobalReference"]
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "value"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keys",
+              "type"
+            ]
+          }
+        },
+        "required": [
+          "externalSubjectId",
+          "name",
+          "supplementalSemanticIds",
+          "value"
+        ]
+      }
+    },
+    "submodelDescriptors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "interface": {
+                  "type": "string",
+                  "enum": ["SUBMODEL-3.0"]
+                },
+                "protocolInformation": {
+                  "type": "object",
+                  "properties": {
+                    "href": {
+                      "type": "string",
+                      "format": "uri",
+                      "pattern": "^https://.*?/submodel$",
+                      "description": "Must be a URL starting with 'https://' and ending with '/submodel'"
+                    },
+                    "endpointProtocol": {
+                      "type": "string",
+                      "enum": ["HTTP", "HTTPS"]
+                    },
+                    "endpointProtocolVersion": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "subprotocol": {
+                      "type": "string",
+                      "enum": ["DSP"]
+                    },
+                    "subprotocolBody": {
+                      "type": "string",
+                      "pattern": "^(?=.*dspEndpoint)(?=.*id=)[^;]+;[^;]+$",
+                      "description": "Must be two elements separated by ';', one containing 'id=', the other containing 'dspEndpoint'."
+                    },
+                    "subprotocolBodyEncoding": {
+                      "type": "string",
+                      "enum": ["plain"]
+                    },
+                    "securityAttributes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "type",
+                          "value"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "endpointProtocol",
+                    "endpointProtocolVersion",
+                    "href",
+                    "securityAttributes",
+                    "subprotocol",
+                    "subprotocolBody",
+                    "subprotocolBodyEncoding"
+                  ]
+                }
+              },
+              "required": [
+                "interface",
+                "protocolInformation"
+              ]
+            }
+          },
+          "idShort": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "semanticId": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "keys": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "value"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "keys",
+              "type"
+            ]
+          },
+          "supplementalSemanticId": {
+            "type": "array"
+          },
+          "description": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "language": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "language",
+                "text"
+              ]
+            }
+          },
+          "displayName": {
+            "type": "array"
+          }
+        },
+        "required": [
+          "description",
+          "displayName",
+          "endpoints",
+          "id",
+          "idShort",
+          "semanticId",
+          "supplementalSemanticId"
+        ]
+      }
+    }
+  },
+  "required": [
+    "description",
+    "displayName",
+    "id",
+    "specificAssetIds",
+    "submodelDescriptors"
+  ]
+}
