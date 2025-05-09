@@ -71,23 +71,12 @@ To run the application with Docker use this command:
 sudo docker run --network my-network --name orchestrator -p 8000:8000 orchestrator
 ```
 
-### Local Kubernetes deployment
+## NOTICE
 
-Helm is used in this project to ease Kubernetes deployment.
-I use Minikube, but use whatever you have on your machine.
+This work is licensed under the [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/legalcode).
 
-Make sure, that the images are built in the Minikube env:
-```sh
-eval $(minikube docker-env)
-```
+- SPDX-License-Identifier: CC-BY-4.0
+- SPDX-FileCopyrightText: 2025 BMW AG
+- SPDX-FileCopyrightText: 2025 Contributors to the Eclipse Foundation
+- Source URL: https://github.com/eclipse-tractusx/tractusx-sdk-services
 
-Build the Docker image and deploy it to Kubernetes with Helm
-```sh
-docker build -t orchestrator:latest .
-helm upgrade --install orchestrator ./helm --namespace=default
-```
-
-To use it from your local machine, dont forget to port forward:
-```sh
-kubectl --namespace default port-forward $POD_NAME 8000:8000
-```

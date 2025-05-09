@@ -3,10 +3,15 @@
 ## 1. Overview
 The Test Orchestrator Application is a FastAPI-based service designed to validate and test data returned by the DT Pull Service. It incorporates features for JSON validation, error handling, and health monitoring, making it an essential component for Catena-X access testing.
 
+### Visual Overview
+The below diagram shows how different components interact with each other, as well as with the underlying data storage.
+
+![Testbed Components](./Testbed_Components.png)
+
 ## 2. Key Features
 Testing Endpoints: Runs validation tests on data retrieved from the DT Pull Service.
 
-Health Monitoring: A /health endpoint to check application availability (Useful in later Kubernetes deployment).
+Health Monitoring: A /health endpoint to check application availability (Useful in Kubernetes deployment).
 
 Error Handling: Custom error classes and exception handlers.
 
@@ -147,3 +152,14 @@ To run the application with Docker use this command:
 ```sh
 sudo docker run --network my-network --name orchestrator -p 8000:8000 orchestrator
 ```
+
+
+## NOTICE
+
+This work is licensed under the [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/legalcode).
+
+- SPDX-License-Identifier: CC-BY-4.0
+- SPDX-FileCopyrightText: 2025 BMW AG
+- SPDX-FileCopyrightText: 2025 Contributors to the Eclipse Foundation
+- Source URL: https://github.com/eclipse-tractusx/tractusx-sdk-services
+
