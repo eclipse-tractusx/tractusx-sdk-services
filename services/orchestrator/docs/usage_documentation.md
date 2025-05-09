@@ -11,7 +11,7 @@ These two tests show an example of when the test fails (test 1) and succeeds (te
 
 ```http
 
-GET test-cases/industry-core/v1/shell-descriptors-test/?&counter_party_id=BPNL000000000IS&counter_party_address=https://connector-release.edc.aws.bmw.cloud/api/v1/dsp
+GET test-cases/industry-core/v1/shell-descriptors-test/?counter_party_id=BPNL000000000IS&counter_party_address=https://connector-release.edc.aws.bmw.cloud/api/v1/dsp
 Host: localhost:8000/
 ```
 
@@ -42,12 +42,18 @@ This test should successfully retrieve all data and validate the shell_descripto
 {
     "status": "ok",
     "message": "Shell descriptors validation completed successfully",
-    "validation_message": {
+    "subm_validation_message": {
         "status": "ok",
         "message": "Congratulations, your JSON file passed the validation test"
+    },
+    "policy_validation_message": {
+        "status": "Warning",
+        "message": "The usage policy that is used within the asset is not accurate. ",
+        "details": "Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/software-development-view/policies-development-view for troubleshooting."
     }
 }
 ```
+Even though the shell_descriptors output was successfully validated as a whole, missing components and / or mistakes in the policy part of the catalog request triggered the returned warning as the default parameter for policy_validation is False. 
 
 ## 3. Submodel Tests
 These two tests show an example of when the test fails (test 1) and succeeds (test 2).
@@ -57,8 +63,8 @@ These two tests show an example of when the test fails (test 1) and succeeds (te
 This test is an example of what should happen when all previous steps (DTR access, shell_descriptors retrieval, submodel access, submodel retrieval, schema retrieval) run successfully, but the retrieved submodel fails validation against the correctly identified jsonschema. 
 
 ```http
-GET /test-cases/industry-core/v1/submodel-test/?counter_party_id=BPNL000000000ISY&counter_party_address=https://connector-opco-prpd.edc.aws.bmw.cloud/api/v1/dsp&semantic_id=urn:samm:io.catenax.serial_part:3.0.0%23SerialPart&global_asset_id=urn:uuid:da071e28-8cf2-46a1-b5af-65231887c7c5
-Host: localhost:8000
+GET test-cases/industry-core/v1/submodel-test/?counter_party_id=BPNL000000000ISY&counter_party_address=https://connector-opco-prpd.edc.aws.bmw.cloud/api/v1/dsp&semantic_id=urn:samm:io.catenax.serial_part:3.0.0%23SerialPart&aas_id=urn:uuid:da071e28-8cf2-46a1-b5af-65231887c7c5
+Host: localhost:8000/
 ```
 
 This test should run successfully and produce the following output:
@@ -125,8 +131,8 @@ This test should run successfully and produce the following output:
 This test is an example of what should happen when all steps run successfully and the retrieved submodel json is validated against the corresponding jsonschema. 
 
 ```http
-GET /test-cases/industry-core/v1/submodel-test/?counter_party_id=BPNL000000000ISY&counter_party_address=https://connector-opco-prpd.edc.aws.bmw.cloud/api/v1/dsp&semantic_id=urn:samm:io.catenax.serial_part:3.0.0%23SerialPart&global_asset_id=urn:uuid:da071e28-8cf2-46a1-b5af-65231887c7c5
-Host: localhost:8000
+GET test-cases/industry-core/v1/submodel-test/?counter_party_id=BPNL000000000ISY&counter_party_address=https://connector-opco-prpd.edc.aws.bmw.cloud/api/v1/dsp&semantic_id=urn:samm:io.catenax.single_level_bom_as_built:3.0.0%23SingleLevelBomAsBuilt&aas_id=urn:uuid:5bbb6d32-439e-461a-afff-ce6fbadaf29a
+Host: localhost:8000/
 ```
 
 This test should run successfully and produce the following output:
@@ -139,7 +145,23 @@ This test should run successfully and produce the following output:
     "subm_validation_message": {
         "status": "ok",
         "message": "Congratulations, your JSON file passed the validation test"
+    },
+    "policy_validation_message": {
+        "status": "Warning",
+        "message": "The usage policy that is used within the asset is not accurate. ",
+        "details": "Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/software-development-view/policies-development-view for troubleshooting."
     }
 }
 
 ```
+Even though the submodel output was successfully validated as a whole, missing components and / or mistakes in the policy part of the catalog request triggered the returned warning as the default parameter for policy_validation is False. 
+
+## NOTICE
+
+This work is licensed under the [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/legalcode).
+
+- SPDX-License-Identifier: CC-BY-4.0
+- SPDX-FileCopyrightText: 2025 BMW AG
+- SPDX-FileCopyrightText: 2025 Contributors to the Eclipse Foundation
+- Source URL: https://github.com/eclipse-tractusx/tractusx-sdk-services
+

@@ -73,24 +73,13 @@ docker run --network my-network --name dt-pull -p 8001:8000 dt-pull
 
 The value of --name is used in the Test Orchestrator's docker.env, if you change it, please keep in mind to change there, too.
 
-### Local Kubernetes deployment
 
-Helm is used in this project to ease Kubernetes deployment.
-I use Minikube, but use whatever you have on your machine.
+## NOTICE
 
-Make sure, that the images are built in the Minikube env:
-```sh
-eval $(minikube docker-env)
-```
+This work is licensed under the [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/legalcode).
 
-Build the Docker image and deploy it to Kubernetes with Helm
-```sh
-export SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa)"
-docker build --build-arg SSH_PRIVATE_KEY="$SSH_PRIVATE_KEY" -t dt-pull:latest .
-helm upgrade --install dt-pull ./helm  --namespace=default
-```
+- SPDX-License-Identifier: CC-BY-4.0
+- SPDX-FileCopyrightText: 2025 BMW AG
+- SPDX-FileCopyrightText: 2025 Contributors to the Eclipse Foundation
+- Source URL: https://github.com/eclipse-tractusx/tractusx-sdk-services
 
-To use it from your local machine, dont forget to port forward:
-```sh
-kubectl --namespace default port-forward $POD_NAME 8001:8001
-```
