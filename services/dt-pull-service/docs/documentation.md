@@ -175,3 +175,13 @@ sudo docker run --network my-network --name dt-pull -p 8001:8000 dt-pull
 ```
 
 The value of --name is used in the Test Orchestrator's docker.env, if you change it, please keep in mind to change there, too.
+
+## NOTICE
+
+This work is licensed under the [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/legalcode).
+
+- SPDX-License-Identifier: CC-BY-4.0
+- SPDX-FileCopyrightText: 2025 BMW AG
+- SPDX-FileCopyrightText: 2025 Contributors to the Eclipse Foundation
+- Source URL: https://github.com/eclipse-tractusx/tractusx-sdk-services
+
