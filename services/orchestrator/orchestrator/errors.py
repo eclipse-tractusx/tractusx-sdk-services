@@ -38,6 +38,7 @@ class Error(Enum):
     POLICY_VALIDATION_FAILED = auto()
     DATA_TRANSFER_FAILED = auto()
     SUBMODEL_VALIDATION_FAILED = auto()
+    NO_SHELLS_FOUND = auto()
 
 
 #: A dictionary of non-default error codes.
@@ -51,6 +52,7 @@ non_default_http_codes = {
     Error.SUBMODEL_DESCRIPTOR_MALFORMED: 422,
     Error.SUBMODEL_VALIDATION_FAILED: 422,
     Error.UNPROCESSABLE_ENTITY: 422,
+    Error.NO_SHELLS_FOUND: 422,
     Error.INTERNAL_SERVER_ERROR: 500,
     Error.ASSET_ACCESS_FAILED: 502,
     Error.BAD_GATEWAY: 502,

@@ -64,13 +64,30 @@ async def shell_descriptors_test(
         operand_left=operand_left,
         operator=operator,
         operand_right=operand_right,
-        policy_validation=policy_validation)
+        policy_validation=policy_validation
+        )
 
     shell_descriptors = await make_request(
         'GET',
         f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
         params={'dataplane_url': dtr_url},
         headers={'Authorization': dtr_key})
+
+    #Checking if shell_descriptors is not empty
+    if 'result' not in shell_descriptors:
+        raise HTTPError(
+            Error.NO_SHELLS_FOUND,
+            message="The DTR did not return at least one digital twin.",
+            details="Please check https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/" +\
+                " software-development-view/#registering-a-new-twin for troubleshooting")
+
+    if len(shell_descriptors['result']) == 0:
+        raise HTTPError(
+            Error.NO_SHELLS_FOUND,
+            message="The DTR did not return at least one digital twin.",
+            details="Please check https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/" +\
+                " software-development-view/#registering-a-new-twin for troubleshooting")
+
 
     schema = schema_finder('shell_descriptors')
     validation_error = json_validator(schema, shell_descriptors)
@@ -139,6 +156,7 @@ async def submodel_test(counter_party_address: str,
             f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
             params={'dataplane_url': dtr_url_shell, 'agreement_id': aas_id},
             headers={'Authorization': dtr_key_shell})
+
     except HTTPError:
         raise HTTPError(
             Error.ASSET_ACCESS_FAILED,
@@ -156,6 +174,21 @@ async def submodel_test(counter_party_address: str,
             details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' +\
                     'software-development-view/digital-twins-development-view' +\
                     '#conventions-for-creating-digital-twins for troubleshooting.')
+
+    #Checking if shell_descriptors is not empty
+    if 'submodelDescriptors' not in shell_descriptors_spec:
+        raise HTTPError(
+            Error.NO_SHELLS_FOUND,
+            message="The DTR did not return at least one digital twin.",
+            details="Please check https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/" +\
+                " software-development-view/#registering-a-new-twin for troubleshooting")
+
+    if len(shell_descriptors_spec['submodelDescriptors']) == 0:
+        raise HTTPError(
+            Error.NO_SHELLS_FOUND,
+            message="The DTR did not return at least one digital twin.",
+            details="Please check https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/" +\
+                " software-development-view/#registering-a-new-twin for troubleshooting")
 
     # Validating the smaller shell_descriptors output against a specific schema
     # to ensure the data we are using is accurate

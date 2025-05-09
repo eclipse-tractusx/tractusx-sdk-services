@@ -15,7 +15,7 @@ async def test_shell_descriptors_request(mock_get_dtr_access, mock_make_request,
     """Tests if the shell descriptors endpoint returns OK for a valid json
     """
 
-    mock_get_dtr_access.return_value = ('localhost', 'Example_key')
+    mock_get_dtr_access.return_value = ('localhost', 'Example_key', {})
     test_file_path = './tests/test_files/test_shell_descriptors_1_full_correct.json'
 
     with open(test_file_path, 'r', encoding='utf-8') as file:
@@ -42,4 +42,5 @@ async def test_shell_descriptors_request(mock_get_dtr_access, mock_make_request,
            'message': 'Congratulations, your JSON file passed the validation test',
            'status': 'ok',
        },
+       "policy_validation_message": {}
     }

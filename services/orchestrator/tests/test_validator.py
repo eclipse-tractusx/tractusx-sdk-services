@@ -8,6 +8,7 @@ from orchestrator.errors import HTTPError
 from orchestrator.validator import json_validator
 
 # Part 1 - testing the functionality with schemas and input written by hand
+# pylint: disable=R0801
 
 basic_schema = {
     '$schema': 'http://json-schema.org/draft-07/schema#',

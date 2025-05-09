@@ -30,7 +30,8 @@ async def ping_test(counter_party_address: str,
     to check if the connector is reachable. The test is successful if the test-agent receives a status code 200
     and an (empty) result set from the specified connector.
 
-     - :param counter_party_address: Address of the dsp endpoint of a connector (ends on api/v1/dsp for DSP version 2024-01).
+     - :param counter_party_address: Address of the dsp endpoint of a connector
+                                     (ends on api/v1/dsp for DSP version 2024-01).
      - :param counter_party_id: The identifier of the test subject that operates the connector.
                                 Unitil at least Catena-X Release 25.09 that is the BPNL of the test subject.
      - :return: A dictionary with the status and a message indicating success.
@@ -43,6 +44,7 @@ async def ping_test(counter_party_address: str,
                                    'operand_right': '%https://w3id.org/catenax/taxonomy%23DigitalTwinRegistry%',
                                    'counter_party_address': counter_party_address,
                                    'counter_party_id': counter_party_id})
+
     except HTTPError:
         raise HTTPError(Error.CONNECTION_FAILED,
                         message='Connection to the connector was not successful',
@@ -77,11 +79,12 @@ async def dtr_ping_test(counter_party_address: str,
     """
 
     try:
-        dataplane_url, dtr_key = await get_dtr_access('http://purl.org/dc/terms/type',
-                                                      '%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%',
-                                                      counter_party_address,
-                                                      counter_party_id,
-                                                      limit=1)
+        dataplane_url, dtr_key, _ = await get_dtr_access(
+                counter_party_address,
+                counter_party_id,
+                operand_left='http://purl.org/dc/terms/type',
+                operand_right='%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%',
+                limit=1)
 
         shell_descriptors = await make_request('GET',
                                                f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
