@@ -10,7 +10,7 @@ from orchestrator import config
 from orchestrator.errors import Error, HTTPError
 from orchestrator.request_handler import make_request
 
-
+# pylint: disable=R1702, R0912
 async def fetch_transfer_process(retries=5, delay=2, **request_params):
     """
     Retry mechanism for fetching the transfer process with exponential backoff.
@@ -29,9 +29,9 @@ async def fetch_transfer_process(retries=5, delay=2, **request_params):
     for attempt in range(retries):
         response = await make_request('POST',
                                       f'{config.DT_PULL_SERVICE_ADDRESS}/edr/transfer-process/',
-                                      params={'counter_party_address': request_params["counter_party_address"],
-                                              'counter_party_id': request_params["counter_party_id"]},
-                                      json=request_params["data"])
+                                      params={'counter_party_address': request_params['counter_party_address'],
+                                              'counter_party_id': request_params['counter_party_id']},
+                                      json=request_params['data'])
 
         if response and isinstance(response, list) and len(response) > 0:
             return response
@@ -91,10 +91,10 @@ async def get_dtr_access(counter_party_address: str,
         if policy_validation_outcome['status'] != 'ok':
             raise HTTPError(
                 Error.POLICY_VALIDATION_FAILED,
-                message="The usage policy that is used within the asset is not accurate. ",
-                details="Please check https://eclipse-tractusx.github.io/docs-kits/kits/" +\
-                    "industry-core-kit/software-development-view/policies-development-view " +\
-                        "for troubleshooting.")
+                message='The usage policy that is used within the asset is not accurate. ',
+                details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/' +\
+                    'industry-core-kit/software-development-view/policies-development-view ' +\
+                        'for troubleshooting.')
 
     try:
         init_negotiation = await make_request('POST',
@@ -120,12 +120,12 @@ async def get_dtr_access(counter_party_address: str,
                                'state_id': edr_state_id})
 
     data = {
-        "@context": {"@vocab": "https://w3id.org/edc/v0.0.1/ns/"},
-        "@type": "QuerySpec",
-        "filterExpression": [{
-            "operandLeft": "contractNegotiationId",
-            "operator": "=",
-            "operandRight": edr_state_id
+        '@context': {'@vocab': 'https://w3id.org/edc/v0.0.1/ns/'},
+        '@type': 'QuerySpec',
+        'filterExpression': [{
+            'operandLeft': 'contractNegotiationId',
+            'operator': '=',
+            'operandRight': edr_state_id
         }]
     }
 
@@ -145,14 +145,15 @@ async def get_dtr_access(counter_party_address: str,
     return edr_data_address.get('endpoint'), edr_data_address.get('authorization'), policy_validation_outcome
 
 
-def submodel_schema_finder(semantic_id):
+def submodel_schema_finder(
+        semantic_id,
+        link_core: Optional[str] = 'https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/main/'):
     """
     Function to facilitate the validation of the submodel output by retrieving the correct schema
     based on the semantic_id provided by the user
     """
 
-    front_end = "https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/main/"
-    split_string = semantic_id.split(":")
+    split_string = semantic_id.split(':')
 
     if len(split_string) < 4:
         raise HTTPError(
@@ -161,8 +162,8 @@ def submodel_schema_finder(semantic_id):
             details={'subprotocolBody': semantic_id}
             )
 
-    loc_elements = split_string[3].split("#")
-    schema_link = front_end + split_string[2] + '/' + loc_elements[0] + '/gen/' + loc_elements[1] + '-schema.json'
+    loc_elements = split_string[3].split('#')
+    schema_link = link_core + split_string[2] + '/' + loc_elements[0] + '/gen/' + loc_elements[1] + '-schema.json'
 
     # Now we can use the link to pull in the correct schema.
     response = httpx.get(schema_link)
@@ -205,7 +206,7 @@ def fetch_submodel_info(correct_element, semantic_id):
                     '#conventions-for-creating-digital-twins for troubleshooting.')
 
     # Splitting subprotocolBody to obtain the correct parameters
-    subprot_split = subprot_bod.split("=")
+    subprot_split = subprot_bod.split('=')
 
     if len(subprot_split) < 3:
         raise HTTPError(
@@ -221,10 +222,10 @@ def fetch_submodel_info(correct_element, semantic_id):
 
     return (
         {'href': href,
-        'subm_counterparty': subm_counterparty,
-        'subm_operandleft': subm_operandleft,
-        'subm_operandright': subm_operandright
-        })
+         'subm_counterparty': subm_counterparty,
+         'subm_operandleft': subm_operandleft,
+         'subm_operandright': subm_operandright
+         })
 
 def validate_policy(catalog_json):
     """Validates the usage policy"""
@@ -244,21 +245,22 @@ def validate_policy(catalog_json):
     if 'dcat:dataset' in catalog_json:
         if isinstance(catalog_json['dcat:dataset'], list):
             for element in catalog_json['dcat:dataset']:
-                if "dct:type" in element:
+                if 'dct:type' in element:
                     if isinstance(element['dct:type'], dict):
                         id_in_dct_type = element['dct:type'].get('@id')
 
                         if id_in_dct_type:
                             if element['dct:type']['@id'] == 'https://w3id.org/catenax/taxonomy#DigitalTwinRegistry':
-                                if "odrl:hasPolicy" in element:
-                                    if "odrl:permission" in element["odrl:hasPolicy"]:
-                                        if "odrl:constraint" in element["odrl:hasPolicy"]["odrl:permission"]:
-                                            spec_part = element["odrl:hasPolicy"]["odrl:permission"]["odrl:constraint"]
+                                if 'odrl:hasPolicy' in element:
+                                    if 'odrl:permission' in element['odrl:hasPolicy']:
+                                        if 'odrl:constraint' in element['odrl:hasPolicy']['odrl:permission']:
+                                            spec_part = element['odrl:hasPolicy']['odrl:permission']['odrl:constraint']
 
                                             if isinstance(spec_part, dict):
                                                 if 'and' in spec_part:
                                                     if isinstance(spec_part['and'], list):
-                                                        if data_exchange_policy in spec_part['and'] and dtr_policy in spec_part['and']:
+                                                        if data_exchange_policy in spec_part['and'] and \
+                                                          dtr_policy in spec_part['and']:
                                                             policy_validation_outcome = True
 
     if policy_validation_outcome:
@@ -266,9 +268,8 @@ def validate_policy(catalog_json):
                 'message': 'The usage policy that is used within the asset was successfully validated. ',
                 'details': 'No further policy checks necessary'}
 
-    else:
-        return {'status': 'Warning',
-                'message': "The usage policy that is used within the asset is not accurate. ",
-                'details': "Please check https://eclipse-tractusx.github.io/docs-kits/kits/" +\
-                    "industry-core-kit/software-development-view/policies-development-view " +\
-                        "for troubleshooting."}
+    return {'status': 'Warning',
+            'message': 'The usage policy that is used within the asset is not accurate. ',
+            'details': 'Please check https://eclipse-tractusx.github.io/docs-kits/kits/' +\
+                'industry-core-kit/software-development-view/policies-development-view ' +\
+                    'for troubleshooting.'}

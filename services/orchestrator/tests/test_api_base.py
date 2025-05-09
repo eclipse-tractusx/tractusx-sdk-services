@@ -6,6 +6,8 @@ from unittest.mock import AsyncMock, Mock, patch
 from httpx import ASGITransport, AsyncClient, Response, Request
 import pytest
 
+# pylint: disable=R0801
+
 
 @pytest.fixture
 def mock_make_request():
