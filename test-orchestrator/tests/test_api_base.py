@@ -35,7 +35,7 @@ import pytest
 def mock_make_request():
     """Mocks the make request inside he base_test_cases
     """
-    with patch('orchestrator.api.base_test_cases.make_request', new_callable=AsyncMock) as mock:
+    with patch('test_orchestrator.api.base_test_cases.make_request', new_callable=AsyncMock) as mock:
         yield mock
 
 

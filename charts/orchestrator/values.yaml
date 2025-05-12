@@ -21,7 +21,7 @@
 # *************************************************************
 
 image:
-  repository: orchestrator
+  repository: test_orchestrator
   tag: latest
   pullPolicy: IfNotPresent
 
@@ -37,7 +37,7 @@ ingress:
   annotations: 
     nginx.ingress.kubernetes.io/rewrite-target: /
   hosts:
-    - host: orchestrator.local
+    - host: test_orchestrator.local
       paths:
         - path: /
           pathType: Prefix

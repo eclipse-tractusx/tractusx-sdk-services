@@ -34,10 +34,10 @@ from typing import Dict
 
 from fastapi import APIRouter
 
-from orchestrator import config
-from orchestrator.errors import Error, HTTPError
-from orchestrator.request_handler import make_request
-from orchestrator.utils import get_dtr_access
+from test_orchestrator import config
+from test_orchestrator.errors import Error, HTTPError
+from test_orchestrator.request_handler import make_request
+from test_orchestrator.utils import get_dtr_access
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

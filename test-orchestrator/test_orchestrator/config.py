@@ -45,4 +45,4 @@ def find_env_file() -> str:
 load_dotenv(find_env_file())
 
 DT_PULL_SERVICE_ADDRESS = os.getenv('DT_PULL_SERVICE_ADDRESS')
-SCHEMA_PATH = 'orchestrator/schema_files'
+SCHEMA_PATH = 'test_orchestrator/schema_files'

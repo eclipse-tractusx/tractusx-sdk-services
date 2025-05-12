@@ -26,8 +26,8 @@
 import json
 import pytest
 
-from orchestrator.errors import HTTPError
-from orchestrator.validator import json_validator
+from test_orchestrator.errors import HTTPError
+from test_orchestrator.validator import json_validator
 
 # Part 1 - testing the functionality with schemas and input written by hand
 # pylint: disable=R0801
@@ -149,7 +149,7 @@ def test_validate_user_schema_integer_too_small():
 
 # Part 2 - Testing the functionality with real json input files against the current schema
 # Loading the schema, which will be the same across all subsequent tests
-SCHEMA_PATH = './orchestrator/schema_files/shell_descriptors_jsonschema.json'
+SCHEMA_PATH = './test_orchestrator/schema_files/shell_descriptors_jsonschema.json'
 
 
 with open(SCHEMA_PATH, 'r', encoding='utf-8') as file:

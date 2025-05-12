@@ -31,8 +31,8 @@ import pytest
 
 
 @pytest.mark.asyncio
-@patch('orchestrator.api.industry_test_cases.make_request', new_callable=AsyncMock)
-@patch('orchestrator.api.industry_test_cases.get_dtr_access', new_callable=AsyncMock)
+@patch('test_orchestrator.api.industry_test_cases.make_request', new_callable=AsyncMock)
+@patch('test_orchestrator.api.industry_test_cases.get_dtr_access', new_callable=AsyncMock)
 async def test_shell_descriptors_request(mock_get_dtr_access, mock_make_request, test_app, constants):
     """Tests if the shell descriptors endpoint returns OK for a valid json
     """
