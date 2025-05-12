@@ -1,0 +1,58 @@
+# *************************************************************
+# Eclipse Tractus-X - Test Orchestrator Service
+#
+# Copyright (c) 2025 BMW AG
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License, Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and limitations
+# under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+# *************************************************************
+
+[project]
+name = "test_orchestrator"
+version = "0.1.0"
+description = "Testbed for Catena-X boarding"
+authors = [
+    {name = "Dénes Surman (dddenes)", email = "surmandenes@yahoo.com"},
+]
+maintainers = [
+  {name = "Mathias Moser (matbmoser)", email = "mathias.moser@catena-x.net"}
+]
+license = { text = "Apache-2.0" }
+
+[tool.poetry.dependencies]
+python-dotenv = "^1.0.1"
+fastapi = "0.115.7"
+httpx = "^0.28.1"
+jsonschema = "^4.23.0"
+python = "^3.12.2"
+uvicorn = "0.30.3"
+
+[tool.poetry.dev-dependencies]
+pylint = "^3.3.4"
+pytest = "^8.1.1"
+pytest-asyncio = "^0.26.0"
+pytest-cov = "^6.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pylint]
+max-args = 8
+max-line-length = 120
+max-locals=26
+max-positional-arguments=8
+disable = ["E1101", "W0613", "W0612", "W0621", "W0707", "W1203"]
