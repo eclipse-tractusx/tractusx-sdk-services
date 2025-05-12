@@ -20,18 +20,24 @@
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
 
-[tool.poetry]
-name = "orchestrator"
+[project]
+name = "test_orchestrator"
 version = "0.1.0"
 description = "Testbed for Catena-X boarding"
-authors = ["Dénes Surman (dddenes) <surmandenes@yahoo.com>"]
+authors = [
+    {name = "Dénes Surman (dddenes)", email = "surmandenes@yahoo.com"},
+]
+maintainers = [
+  {name = "Mathias Moser (matbmoser)", email = "mathias.moser@catena-x.net"}
+]
+license = { text = "Apache-2.0" }
 
 [tool.poetry.dependencies]
 python-dotenv = "^1.0.1"
 fastapi = "0.115.7"
 httpx = "^0.28.1"
 jsonschema = "^4.23.0"
-python = "^3.12.3"
+python = "^3.12.2"
 uvicorn = "0.30.3"
 
 [tool.poetry.dev-dependencies]

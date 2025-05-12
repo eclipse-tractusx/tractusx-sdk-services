@@ -20,18 +20,24 @@
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
 
-[tool.poetry]
+[project]
 name = "dt_pull_service"
 version = "0.1.0"
 description = "DT pull service for Catena-X"
-authors = ["Dénes Surman (dddenes) <surmandenes@yahoo.com>"]
+authors = [
+    {name = "Dénes Surman (dddenes)", email = "surmandenes@yahoo.com"},
+]
+maintainers = [
+  {name = "Mathias Moser (matbmoser)", email = "mathias.moser@catena-x.net"}
+]
+license = { text = "Apache-2.0" }
 
 [tool.poetry.dependencies]
 python-dotenv = "^1.0.1"
-tractusx-sdk = "^0.0.4"
+tractusx-sdk = "^0.0.5"
 fastapi = "0.115.7"
 httpx = "^0.28.1"
-python = "3.12.3"
+python = "3.12.2"
 requests = "^2.32.3"
 uvicorn = "0.30.3"
 
