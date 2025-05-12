@@ -28,9 +28,9 @@ from typing import Optional
 
 import httpx
 
-from orchestrator import config
-from orchestrator.errors import Error, HTTPError
-from orchestrator.request_handler import make_request
+from test_orchestrator import config
+from test_orchestrator.errors import Error, HTTPError
+from test_orchestrator.request_handler import make_request
 
 # pylint: disable=R1702, R0912
 async def fetch_transfer_process(retries=5, delay=2, **request_params):

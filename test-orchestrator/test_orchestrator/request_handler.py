@@ -29,7 +29,7 @@ import logging
 from fastapi import APIRouter
 import httpx
 
-from orchestrator.errors import Error, HTTPError
+from test_orchestrator.errors import Error, HTTPError
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
