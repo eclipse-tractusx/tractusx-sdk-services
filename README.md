@@ -13,6 +13,10 @@ Deploy the microservices to Kubernetes with Helm
 helm upgrade --install orchestrator ./charts/orchestrator --namespace default
 helm upgrade --install dt-pull ./charts/dt-pull --namespace default --create-namespace
 ```
+## Licenses
+
+- [Apache-2.0](https://raw.githubusercontent.com/eclipse-tractusx/tractusx-sdk-services/main/LICENSE) for code
+- [CC-BY-4.0](https://spdx.org/licenses/CC-BY-4.0.html) for non-code
 
 ## NOTICE
 
@@ -20,5 +24,7 @@ This work is licensed under the [CC-BY-4.0](https://creativecommons.org/licenses
 
 - SPDX-License-Identifier: CC-BY-4.0
 - SPDX-FileCopyrightText: 2025 BMW AG
+- SPDX-FileCopyrightText: 2025 Contributors to the Eclipse Foundation
+- Source URL: https://github.com/eclipse-tractusx/tractusx-sdk-services
 - SPDX-FileCopyrightText: 2025 Contributors to the Eclipse Foundation
 - Source URL: https://github.com/eclipse-tractusx/tractusx-sdk-services
