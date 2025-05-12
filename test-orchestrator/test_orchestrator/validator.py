@@ -37,8 +37,8 @@ import json
 
 import jsonschema
 
-from orchestrator import config
-from orchestrator.errors import Error, HTTPError
+from test_orchestrator import config
+from test_orchestrator.errors import Error, HTTPError
 
 
 # Schema map

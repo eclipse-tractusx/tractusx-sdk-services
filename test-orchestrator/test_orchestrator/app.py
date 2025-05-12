@@ -27,8 +27,8 @@ import logging
 
 from fastapi import FastAPI
 
-from orchestrator.api import base_test_cases, industry_test_cases
-from orchestrator.errors import HTTPError, http_error_handler
+from test_orchestrator.api import base_test_cases, industry_test_cases
+from test_orchestrator.errors import HTTPError, http_error_handler
 
 logger = logging.getLogger(__name__)
 

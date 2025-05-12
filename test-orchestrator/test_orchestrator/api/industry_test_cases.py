@@ -35,12 +35,12 @@ from typing import Dict, Optional
 from fastapi import APIRouter
 import httpx
 
-from orchestrator import config
-from orchestrator.request_handler import make_request
+from test_orchestrator import config
+from test_orchestrator.request_handler import make_request
 
-from orchestrator.errors import Error, HTTPError
-from orchestrator.utils import get_dtr_access, fetch_submodel_info, submodel_schema_finder
-from orchestrator.validator import json_validator, schema_finder
+from test_orchestrator.errors import Error, HTTPError
+from test_orchestrator.utils import get_dtr_access, fetch_submodel_info, submodel_schema_finder
+from test_orchestrator.validator import json_validator, schema_finder
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

@@ -27,7 +27,7 @@ Create your .env, check for testing.env or config.py to check, which env vars yo
 
 Run the application
 ```sh
-poetry run dotenv -f .env run uvicorn orchestrator.app:create_app --reload --proxy-headers --factory --port 8000
+poetry run dotenv -f .env run uvicorn test_orchestrator.app:create_app --reload --proxy-headers --factory --port 8000
 ```
 Now you can reach the documents on (change the port, if necessary):
 ```sh
@@ -58,7 +58,7 @@ poetry run pylint $(git ls-files '*.py')
 ### Docker
 To build the application with Docker:
 ```sh
-sudo docker build -t orchestrator .
+sudo docker build -t test_orchestrator .
 ```
 
 For the next command to work, you might need to create a network in Docker:
@@ -68,7 +68,7 @@ sudo docker network create my-network
 
 To run the application with Docker use this command:
 ```sh
-sudo docker run --network my-network --name orchestrator -p 8000:8000 orchestrator
+sudo docker run --network my-network --name test_orchestrator -p 8000:8000 test_orchestrator
 ```
 
 ## NOTICE

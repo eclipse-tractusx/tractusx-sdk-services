@@ -26,7 +26,7 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from orchestrator.app import create_app
+from test_orchestrator.app import create_app
 
 
 @pytest.fixture(scope='session')
