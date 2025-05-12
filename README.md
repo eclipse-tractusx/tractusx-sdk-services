@@ -1,6 +1,4 @@
 # tractusx-sdk-services
-Test orchestrator &amp; DT Pull Service - Helps new partners in onboarding
-
 These two services are both needed for the Testbed to work: both microservices needs to be up and running.
 For more detailed documentation please visit each microservice's readme and docs.
 
@@ -13,6 +11,10 @@ Deploy the microservices to Kubernetes with Helm
 helm upgrade --install orchestrator ./charts/orchestrator --namespace default
 helm upgrade --install dt-pull ./charts/dt-pull --namespace default --create-namespace
 ```
+## Licenses
+
+- [Apache-2.0](https://raw.githubusercontent.com/eclipse-tractusx/tractusx-sdk-services/main/LICENSE) for code
+- [CC-BY-4.0](https://spdx.org/licenses/CC-BY-4.0.html) for non-code
 
 ## NOTICE
 
