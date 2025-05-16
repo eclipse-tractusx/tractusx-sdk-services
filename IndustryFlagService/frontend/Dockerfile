@@ -1,0 +1,74 @@
+#################################################################################
+# Tractus-X - Industry Flag Service
+#
+# Copyright (c) 2025 CGI Deutschland B.V. & Co. KG
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache License, Version 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the
+# License for the specific language govern in permissions and limitations
+# under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+#################################################################################
+
+# stage1 as builder
+FROM node:lts-alpine as builder
+
+WORKDIR /app
+
+# Copy the package.json and install dependencies
+COPY package*.json ./
+
+RUN npm install -g npm
+
+#RUN npm install
+RUN npm install
+
+# Copy rest of the files
+COPY . .
+
+# Build the project
+RUN npm run build
+
+
+
+FROM nginxinc/nginx-unprivileged:alpine
+
+USER root
+
+RUN addgroup -g 10001 appgroup \
+	&& adduser -u 10000 -g 10001 -h /home/nonroot -D nonroot
+
+COPY ./entrypoint.sh /entrypoint.sh
+
+WORKDIR /app
+
+COPY ./.nginx/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/build /usr/share/nginx/html
+
+# add permissions for a user
+RUN chown -R 10000:10001 /app && chmod -R 775 /app/
+RUN chown 10000:10001 /entrypoint.sh && chmod -R 775 /entrypoint.sh
+
+# Install bash for env variables inject script
+RUN apk update && apk add --no-cache bash
+# Make nginx owner of /usr/share/nginx/html/ and change to nginx user
+RUN chown -R 10000:10001 /usr/share/nginx/html/ && chmod -R 775 /usr/share/nginx/html/
+
+USER 10000:10001
+
+EXPOSE 8080
+
+ENTRYPOINT ["sh","/entrypoint.sh"]
+
+CMD ["nginx", "-g", "daemon off;"]
