@@ -1,0 +1,17 @@
+{
+    "BPNL00000001VDGS": {
+         "https://cgi-prov-edc.dataspaceos.preprod.cofinity-x.com": {
+              "https://w3id.org/catenax/taxonomy#DigitalTwinRegistry": {
+                   "7a85828bc29f9a92140c2eb521d2ddb5c13eb0c24f0b0eab81fd48c28d10cc4f": {
+                        "@id": "89d17810-5bde-4ed9-abfe-043610c8b7b3",
+                        "assetId": "registry-asset",
+                        "agreementId": "8ca09aac-3c3b-423b-b1a6-59ff5c7f42dc",
+                        "transferProcessId": "89d17810-5bde-4ed9-abfe-043610c8b7b3",
+                        "createdAt": 1731005072125,
+                        "contractNegotiationId": "9e0d124e-3459-48ae-8644-fc2e549aaf63"
+                   }
+              }
+         }
+    },
+    "edrs": 1
+}
