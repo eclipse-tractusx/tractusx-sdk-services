@@ -1,0 +1,8 @@
+fastapi==0.111.1
+uvicorn==0.30.3
+Requests==2.32.3
+fastapi_keycloak_middleware==1.1.0
+pydantic==2.6.3
+pydantic-core==2.16.3
+numpy
+sqlalchemy
