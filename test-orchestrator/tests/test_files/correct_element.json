@@ -1,0 +1,49 @@
+[
+    {
+        "endpoints": [
+            {
+                "interface": "SUBMODEL-3.0",
+                "protocolInformation": {
+                    "href": "https://dataplane-trace-prpd.edc.aws.bmw.cloud/public/urn:uuid:20f19751-56c7-48e6-aa9a-08565484bac2/submodel",
+                    "endpointProtocol": "HTTP",
+                    "endpointProtocolVersion": [
+                        "1.1"
+                    ],
+                    "subprotocol": "DSP",
+                    "subprotocolBody": "id=battery_bundle_slbb;dspEndpoint=https://connector-trace-prpd.edc.aws.bmw.cloud/api/v1/dsp",
+                    "subprotocolBodyEncoding": "plain",
+                    "securityAttributes": [
+                        {
+                            "type": "NONE",
+                            "key": "NONE",
+                            "value": "NONE"
+                        }
+                    ]
+                }
+            }
+        ],
+        "idShort": "singleLevelBoMAsBuilt",
+        "id": "urn:uuid:20f19751-56c7-48e6-aa9a-08565484bac2",
+        "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+                {
+                    "type": "GlobalReference",
+                    "value": "urn:samm:io.catenax.single_level_bom_as_built:3.0.0#SingleLevelBomAsBuilt"
+                }
+            ]
+        },
+        "supplementalSemanticId": [],
+        "description": [
+            {
+                "language": "en",
+                "text": "hello"
+            },
+            {
+                "language": "de",
+                "text": "hallo"
+            }
+        ],
+        "displayName": []
+    }
+]
