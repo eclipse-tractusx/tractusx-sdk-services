@@ -84,7 +84,6 @@ with open('./config/configuration.yml', 'rt') as f:
     app_configuration = yaml.safe_load(f.read())
 
 # Add the previous folder structure to the system path to import the utilities
-sys.path.append("../")
 
 app = FastAPI(title="main")
 
@@ -291,7 +290,7 @@ def init_app(host: str, port: int, log_level: str = "info"):
             "[INIT] It was not possible to connect to the EDC Connector because there was no configuration available")
 
     authManager = AuthManager()
-    auth_instance =SovityAuth()
+
 
     auth_config: dict = app_configuration.get("authorization", {"enabled": False})
     auth_enabled: bool = auth_config.get("enabled", False)
@@ -314,7 +313,7 @@ def init_app(host: str, port: int, log_level: str = "info"):
     while not connected:
         try:
             logger.info("[INIT] Attempting connection to the EDC Connector...")
-            edcService = EdcService(config=edc_config, auth_instance=auth_instance)
+            edcService = EdcService(config=edc_config)
             connected = True
         except Exception as e:
             logger.critical(str(e))
@@ -342,25 +341,20 @@ def init_app(host: str, port: int, log_level: str = "info"):
     if auth_url is None:
         raise Exception("[INIT] No centralidp realm config was specified!")
 
-    clientid: str = centralidp_config.get("clientid", None)
+    clientid: str = centralidp_config.get("client_id", None)
     if auth_url is None:
         raise Exception("[INIT] No centralidp clientid config was specified!")
 
-    clientsecret: str = centralidp_config.get("clientsecret", None)
+    clientsecret: str = centralidp_config.get("client_secret", None)
     if auth_url is None:
         raise Exception("[INIT] No centralidp clientsecret config was specified!")
 
     #### [KEYCLOAK AUTH CHECK] [START] ------
-
     try:
         idpManager = IdpManager(auth_url=auth_url, clientid=clientid, clientsecret=clientsecret, realm=realm)
         logger.info("[INIT] Sucessfully connected to the centralidp server!")
     except Exception as e:
         logger.critical("[INIT] The authentication service has failed! Reason: %s", str(e))
-
-    if idpManager is None:
-        raise Exception(
-            "[INIT] The application was not able to connect to the central idp server, with the provided credentials!")
 
     discovery_config: dict = app_configuration.get("discovery", None)
     if discovery_config is None:

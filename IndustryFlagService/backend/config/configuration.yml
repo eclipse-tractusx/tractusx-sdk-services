@@ -74,18 +74,16 @@ edc:
   url: "https://TODO___XXX__YOUR_URL___XXX"
   apis:
     readiness: "/api/check/readiness"
-    catalog: "/control/data/v3/catalog/request"
-    edr_prefix: "/control/data/v2/edrs"
+    catalog: "/management/v3/catalog/request"
+    edr_prefix: "/management/v2/edrs"
     view_edr: "/request"
     transfer_edr: "/dataaddress?auto_refresh=true"
-    dsp: "/control/api/v1/dsp"
+    dsp: "/api/v1/dsp"
 
   oauth:
-    token_url: "https://TODO___XXX__YOUR_URL___XXX"
-    client_id: "TODO___XXX___YOUR_ID___XXX"
-    client_secret: "TODO___XXX___YOUR_SECRET___XXX"
+    apiKey: "TODO___XXX___YOUR_API_KEY___XXX"
 
-  participantId: "BPNL00000009VAL7"
+  participantId: "TODO___XXX___YOUR_BPN___XXX"
   
   dct_type_key: "'http://purl.org/dc/terms/type'.'@id'"
 
@@ -93,13 +91,13 @@ edc:
     expiration_time: 60
 
 discovery:
-  url: "https://discoveryfinder.beta.cofinity-x.com/api/v1.0/administration/connectors/discovery/search"
+  url: "https://TODO___XXX__YOUR_URL___XXX/discoveryfinder/api/v1.0/administration/connectors/discovery/search"
   keys:
-    edc_discovery: "bpnl"
+    edc_discovery: "bpn"
 
 catenax:
   centralidp:
-    url: "https://centralidp.beta.cofinity-x.com/auth/"
+    url: "https://TODO___XXX__YOUR_URL___XXX/auth/"
     realm: CX-Central
-    clientid: "TODO___XXX__YOUR_CLIENTID___XXX"
-    clientsecret: "TODO___XXX___YOUR_CLIENT_SECRET___XXX"
+    client_id: "TODO___XXX__YOUR_CLIENTID___XXX"
+    client_secret: "TODO___XXX___YOUR_CLIENT_SECRET___XXX"
