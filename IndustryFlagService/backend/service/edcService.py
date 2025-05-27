@@ -65,7 +65,7 @@ class EdcService:
     TRANSFER_ID_KEY = "transferProcessId"
     NEGOTATION_ID_KEY = "contractNegotiationId"
 
-    def __init__(self, config: dict, auth_instance: SovityAuth):
+    def __init__(self, config: dict):
         """
         Initializes the EDC (Eclipse Datapace Connector) Service with the provided configuration.
 
@@ -83,12 +83,8 @@ class EdcService:
             raise Exception("[EDC Service] The BPN or participantId is required in the configuration!")
 
         ## Get all the variables
-        self.auth_instance = auth_instance
         oauth_config = config.get('oauth', {})
-        token_url = oauth_config.get('token_url')
-        client_id = oauth_config.get('client_id')
-        client_secret = oauth_config.get('client_secret')
-        self.bearer_token = self.auth_instance.get_edc_token(token_url, client_id, client_secret)
+        self.apiKey = oauth_config.get("apiKey")
         self.consumer_endpoint = config.get('url')
         self.participant_id = config.get("participantId")
 
@@ -180,7 +176,7 @@ class EdcService:
         ## Build the headers needed for the edc the app to communicate with the edc control plane
         return {
             # self.auth_key: self.api_key,
-            "Authorization": f"Bearer {self.bearer_token}",
+            "X-Api-Key": f"{self.apiKey}",
             "Content-Type": "application/json"
         }
 
