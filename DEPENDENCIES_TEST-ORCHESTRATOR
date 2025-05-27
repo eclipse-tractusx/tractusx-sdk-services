@@ -1,29 +1,29 @@
 pypi/pypi/-/annotated-types/0.7.0, MIT, approved, clearlydefined
 pypi/pypi/-/anyio/4.9.0, MIT, approved, #20553
-pypi/pypi/-/astroid/3.3.9, LGPL-2.1-only AND LGPL-2.1-or-later, restricted, clearlydefined
+pypi/pypi/-/astroid/3.3.9, LGPL-2.1-only AND (LGPL-2.0-only AND LGPL-2.1-or-later) AND LGPL-2.0-only, approved, #21049
 pypi/pypi/-/attrs/25.3.0, MIT, approved, clearlydefined
-pypi/pypi/-/certifi/2025.4.26, MPL-2.0, restricted, clearlydefined
+pypi/pypi/-/certifi/2025.4.26, MPL-2.0, approved, #21053
 pypi/pypi/-/click/8.1.8, BSD-2-Clause AND BSD-3-Clause, approved, clearlydefined
 pypi/pypi/-/coverage/7.8.0, Apache-2.0 AND LicenseRef-Permission-Notice-iso-8879 AND (GPL-2.0-only OR MIT), approved, #20554
-pypi/pypi/-/dill/0.4.0, BSD-3-Clause, restricted, clearlydefined
+pypi/pypi/-/dill/0.4.0, BSD-3-Clause AND (Apache-2.0 AND BSD-3-Clause) AND (BSD-3-Clause AND MIT), approved, #21046
 pypi/pypi/-/fastapi/0.115.7, MIT, approved, #19828
 pypi/pypi/-/h11/0.16.0, MIT AND BSD-3-Clause, approved, #20895
 pypi/pypi/-/httpcore/1.0.9, BSD-3-Clause, approved, #20894
 pypi/pypi/-/httpx/0.28.1, BSD-3-Clause, approved, clearlydefined
 pypi/pypi/-/idna/3.10, BSD-3-Clause AND LicenseRef-scancode-unicode, approved, #19865
 pypi/pypi/-/iniconfig/2.1.0, MIT, approved, clearlydefined
-pypi/pypi/-/isort/6.0.1, MIT, restricted, clearlydefined
+pypi/pypi/-/isort/6.0.1, MIT AND CC0-1.0 AND Apache-2.0, approved, #21047
 pypi/pypi/-/jsonschema-specifications/2025.4.1, MIT, approved, clearlydefined
 pypi/pypi/-/jsonschema/4.23.0, MIT, approved, #19881
-pypi/pypi/-/mccabe/0.7.0, MIT, restricted, clearlydefined
-pypi/pypi/-/packaging/25.0, Apache-2.0 AND BSD-2-Clause, restricted, clearlydefined
+pypi/pypi/-/mccabe/0.7.0, MIT, approved, #21044
+pypi/pypi/-/packaging/25.0, (Apache-2.0 OR BSD-2-Clause) AND MIT, approved, #21051
 pypi/pypi/-/pip/25.0.1, MIT AND ISC AND Apache-2.0 AND (BSD-2-Clause OR Apache-2.0) AND BSD-2-Clause AND BSD-3-Clause AND Python-2.0 AND MPL-2.0, approved, #20397
 pypi/pypi/-/platformdirs/4.3.7, MIT, approved, clearlydefined
 pypi/pypi/-/pluggy/1.5.0, MIT, approved, clearlydefined
 pypi/pypi/-/pydantic/2.11.4, MIT, approved, clearlydefined
 pypi/pypi/-/pydantic_core/2.33.2, MIT, approved, clearlydefined
-pypi/pypi/-/pylint/3.3.7, CC-BY-4.0 AND CC-BY-SA-4.0 AND GPL-2.0-only, restricted, clearlydefined
-pypi/pypi/-/pytest-asyncio/0.26.0, Apache-2.0, restricted, clearlydefined
+pypi/pypi/-/pylint/3.3.7, GPL-2.0-only AND GPL-2.0-or-later AND CC-BY-SA-4.0, approved, #21045
+pypi/pypi/-/pytest-asyncio/0.26.0, Apache-2.0, approved, #21052
 pypi/pypi/-/pytest-cov/6.1.1, MIT, approved, #20555
 pypi/pypi/-/pytest/8.3.5, MIT, approved, #20053
 pypi/pypi/-/python-dotenv/1.1.0, BSD-3-Clause, approved, #20550
