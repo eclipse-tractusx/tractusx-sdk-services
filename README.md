@@ -26,5 +26,3 @@ This work is licensed under the [CC-BY-4.0](https://creativecommons.org/licenses
 - SPDX-FileCopyrightText: 2025 BMW AG
 - SPDX-FileCopyrightText: 2025 Contributors to the Eclipse Foundation
 - Source URL: https://github.com/eclipse-tractusx/tractusx-sdk-services
-- SPDX-FileCopyrightText: 2025 Contributors to the Eclipse Foundation
-- Source URL: https://github.com/eclipse-tractusx/tractusx-sdk-services
