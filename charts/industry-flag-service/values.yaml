@@ -35,7 +35,7 @@ backend:
   replicaCount: 1
 
   image:
-    repository: cxmihgs2e4956.azurecr.io/industry-flag-service-backend
+    repository: 
     pullPolicy: Always
     tag: latest
 
@@ -130,21 +130,19 @@ backend:
       ]
 
   edc:
-    url: "https://TODO__XXX__YOUR_VALUE___XXX"
+    url: "https://control.plane.url"
     apis:
       readiness: "/api/check/readiness"
-      catalog: "/control/data/v3/catalog/request"
-      edr_prefix: "/control/data/v2/edrs"
+      catalog: "/management/v3/catalog/request"
+      edr_prefix: "/management/v2/edrs"
       view_edr: "/request"
       transfer_edr: "/dataaddress?auto_refresh=true"
-      dsp: "/control/api/v1/dsp"
+      dsp: "/api/v1/dsp"
 
     oauth:
-      token_url: "https://keycloak.prod-sovity.azure.sovity.io/realms/Portal/protocol/openid-connect/token"
-      client_id: "TODO__XXX__YOUR_VALUE___XXX"
-      client_secret: "TODO__XXX__YOUR_VALUE___XXX"
+      apiKey: ""
 
-    participantId: "BPNL00000009VAL7"
+    participantId: ""
 
     dct_type_key: "'http://purl.org/dc/terms/type'.'@id'"
 
