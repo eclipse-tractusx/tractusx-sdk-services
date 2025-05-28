@@ -71,7 +71,7 @@ ifs:
 
 
 edc:
-  url: "https://TODO___XXX__YOUR_URL___XXX"
+  url: "https://control.plane.url"
   apis:
     readiness: "/api/check/readiness"
     catalog: "/management/v3/catalog/request"
@@ -81,9 +81,9 @@ edc:
     dsp: "/api/v1/dsp"
 
   oauth:
-    apiKey: "TODO___XXX___YOUR_API_KEY___XXX"
+    apiKey: ""
 
-  participantId: "TODO___XXX___YOUR_BPN___XXX"
+  participantId: ""
   
   dct_type_key: "'http://purl.org/dc/terms/type'.'@id'"
 
@@ -91,13 +91,13 @@ edc:
     expiration_time: 60
 
 discovery:
-  url: "https://TODO___XXX__YOUR_URL___XXX/discoveryfinder/api/v1.0/administration/connectors/discovery/search"
+  url: "https://discovery.service.url/discoveryfinder/api/v1.0/administration/connectors/discovery/search"
   keys:
     edc_discovery: "bpn"
 
 catenax:
   centralidp:
-    url: "https://TODO___XXX__YOUR_URL___XXX/auth/"
+    url: "https://central.idp.url/auth/"
     realm: CX-Central
-    client_id: "TODO___XXX__YOUR_CLIENTID___XXX"
-    client_secret: "TODO___XXX___YOUR_CLIENT_SECRET___XXX"
+    client_id: ""
+    client_secret: ""

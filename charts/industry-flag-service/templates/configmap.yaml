@@ -103,9 +103,7 @@ data:
         dsp: {{ .Values.backend.edc.apis.dsp }}
 
       oauth:
-        token_url: "{{ .Values.backend.edc.oauth.token_url }}"
-        client_id: "{{ .Values.backend.edc.oauth.client_id }}"
-        client_secret: "{{ .Values.backend.edc.oauth.client_secret }}"
+        apiKey: {{ .Values.backend.edc.oauth.apiKey}}
 
       participantId: {{ .Values.backend.edc.participantId }}
       
