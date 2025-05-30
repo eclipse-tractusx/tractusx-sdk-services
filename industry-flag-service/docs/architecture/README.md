@@ -153,7 +153,7 @@ Changing just the url. The api key can also be changed.
         "proxyQueryParams": "true",
         "proxyBody": "true",
         "header:X-Api-Key": "ifs-api-key",
-        "baseUrl": "https://ifs.d37c3234d8454420babf.westeurope.aksapp.io"
+        "baseUrl": "https://ifs.app.url"
     },
     "@context": {
         "@vocab": "https://w3id.org/edc/v0.0.1/ns/",
