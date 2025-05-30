@@ -1,6 +1,6 @@
 {
-    "BPNL00000001VDGS": {
-         "https://cgi-prov-edc.dataspaceos.preprod.cofinity-x.com": {
+    "BPNL00000003CRHK": {
+         "https://edc.controlplane.url": {
               "https://w3id.org/catenax/taxonomy#DigitalTwinRegistry": {
                    "7a85828bc29f9a92140c2eb521d2ddb5c13eb0c24f0b0eab81fd48c28d10cc4f": {
                         "@id": "89d17810-5bde-4ed9-abfe-043610c8b7b3",
