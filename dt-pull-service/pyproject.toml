@@ -22,6 +22,9 @@
 
 [tool.poetry]
 name = "dt_pull_service"
+version = "0.1.0"
+description = "Testbed for Catena-X boarding"
+authors = ["Dénes Surman (dddenes) <surmandenes@yahoo.com>"]
 
 [project]
 name = "dt_pull_service"
