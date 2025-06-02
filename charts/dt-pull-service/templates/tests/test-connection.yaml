@@ -1,5 +1,5 @@
 # *************************************************************
-# Eclipse Tractus-X - Test Orchestrator Service
+# Eclipse Tractus-X - Digital Twin Pull Service
 #
 # Copyright (c) 2025 BMW AG
 # Copyright (c) 2025 Contributors to the Eclipse Foundation
@@ -21,14 +21,17 @@
 # *************************************************************
 
 apiVersion: v1
-kind: Service
+kind: Pod
 metadata:
-  name: {{ .Release.Name }}
+  name: "{{ include "dt-pull-service.fullname" . }}-test-connection"
+  labels:
+    {{- include "dt-pull-service.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
 spec:
-  type: {{ .Values.service.type }}
-  selector:
-    app: {{ .Release.Name }}
-  ports:
-    - protocol: TCP
-      port: {{ .Values.service.port }}
-      targetPort: 8000
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "dt-pull-service.fullname" . }}:{{ .Values.service.portService }}']
+  restartPolicy: Never
