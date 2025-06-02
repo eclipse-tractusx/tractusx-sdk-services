@@ -1,5 +1,5 @@
 # *************************************************************
-# Eclipse Tractus-X - Digital Twin Pull Service
+# Eclipse Tractus-X - Test Orchestrator
 #
 # Copyright (c) 2025 BMW AG
 # Copyright (c) 2025 Contributors to the Eclipse Foundation
@@ -20,6 +20,20 @@
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
 
-BASE_URL=https://connector-psim-prpd.edc.aws.bmw.cloud
-API_KEY=
-API_CONTEXT_EDR=/api/data
+ingress:
+    enabled: true
+    ingressClassName: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - host: cx-ready.int.catena-x.net
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+       - secretName: "cx-ready.int.catena-x.net-tls"
+         hosts:
+           - "cx-ready.int.catena-x.net" 
+
+dt_pull_service:
+  url: "https://dt-pull-service.int.catena-x.net"

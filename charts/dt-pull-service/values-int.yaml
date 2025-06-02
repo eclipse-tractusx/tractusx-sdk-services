@@ -26,11 +26,16 @@ ingress:
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-prod
     hosts:
-      - host: pgadmin-ichub.int.catena-x.net
+      - host: dt-pull-service.int.catena-x.net
         paths:
           - path: /
             pathType: Prefix
     tls:
-       - secretName: "pgadmin-ichub.int.catena-x.net-tls"
+       - secretName: "dt-pull-service.int.catena-x.net-tls"
          hosts:
-           - "pgadmin-ichub.int.catena-x.net" 
+           - "dt-pull-service.int.catena-x.net" 
+
+connector:
+  url: "https://edc-provider-ichub-control.int.catena-x.net"
+  apiKey: "<path:industry-core-hub/data/edc-provider#authKey>"
+  edrContext: "management"

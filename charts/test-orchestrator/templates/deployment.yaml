@@ -60,8 +60,11 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
-              containerPort: {{ .Values.service.port }}
+              containerPort: {{ .Values.service.portContainer }}
               protocol: TCP
+          env:
+            - name: DT_PULL_SERVICE_ADDRESS
+              value: {{ .Values.dt_pull_service.url }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
