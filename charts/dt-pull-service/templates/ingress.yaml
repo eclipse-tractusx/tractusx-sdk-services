@@ -59,7 +59,7 @@ spec:
               service:
                 name: {{ include "dt-pull-service.fullname" $ }}
                 port:
-                  number: {{ $.Values.service.port }}
+                  number: {{ $.Values.service.portService }}
           {{- end }}
     {{- end }}
 {{- end }}
