@@ -62,4 +62,4 @@ COPY . .
 # Expose the port for uvicorn
 EXPOSE 8000
 
-CMD ["poetry", "run", "dotenv", "run", "uvicorn", "--host", "0.0.0.0", "--port", "8000", "--factory", "test_orchestrator.app:create_app", "--proxy-headers"]
+CMD ["poetry", "run", "uvicorn", "--host", "0.0.0.0", "--port", "8000", "--factory", "test_orchestrator.app:create_app", "--proxy-headers"]
