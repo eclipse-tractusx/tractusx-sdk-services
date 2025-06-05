@@ -60,11 +60,11 @@ class EdrHandler:
         proxies (dict): Proxy settings for HTTP requests.
     """
 
-    def __init__(self, partner_id, partner_edc, base_url, api_key, policies='', proxy=''):
+    def __init__(self, partner_id, partner_edc, base_url, api_key, api_context, policies='', proxy=''):
         """Initialize the EdrHanler class"""
 
         headers = {'x-api-key': api_key}
-        self.edc_client = BaseEdcService('v0_9_0', base_url, '/api/data', headers)
+        self.edc_client = BaseEdcService('v0_9_0', base_url, api_context, headers)
         self.partner_edc = partner_edc
         self.partner_id = partner_id
         self.policies = policies
