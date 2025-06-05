@@ -20,6 +20,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
 
+[tool.poetry]
+name = "dt_pull_service"
+version = "0.1.0"
+description = "Testbed for Catena-X boarding"
+authors = ["Dénes Surman (dddenes) <surmandenes@yahoo.com>"]
+
 [project]
 name = "dt_pull_service"
 version = "0.1.0"
@@ -41,7 +47,7 @@ python = "3.12.2"
 requests = "^2.32.3"
 uvicorn = "0.30.3"
 
-[tool.poetry.dev-dependencies]
+[poetry.group.dev.dependencies]
 pylint = "^3.3.6"
 pytest = "^8.1.1"
 pytest-cov = "^6.1.1"

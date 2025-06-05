@@ -20,25 +20,18 @@
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
 
-image:
-  repository: dt-pull
-  tag: latest
-  pullPolicy: IfNotPresent
-
-service:
-  type: ClusterIP
-  port: 8001
-
-resources: {}
-
-ingress:
-  enabled: true
-  className: "nginx"
-  annotations: 
-    nginx.ingress.kubernetes.io/rewrite-target: /
-  hosts:
-    - host: dt-pull.local
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "dt-pull-service.fullname" . }}
+  labels:
+    {{- include "dt-pull-service.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.portService }}
+      targetPort: {{ .Values.service.portContainer }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "dt-pull-service.selectorLabels" . | nindent 4 }}

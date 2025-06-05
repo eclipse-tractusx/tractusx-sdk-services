@@ -1,5 +1,5 @@
 # *************************************************************
-# Eclipse Tractus-X - Test Orchestrator Service
+# Eclipse Tractus-X - Digital Twin Pull Service
 #
 # Copyright (c) 2025 BMW AG
 # Copyright (c) 2025 Contributors to the Eclipse Foundation
@@ -20,4 +20,22 @@
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
 
-DT_PULL_SERVICE_ADDRESS=http://dt-pull:8001
+ingress:
+    enabled: true
+    ingressClassName: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - host: dt-pull-service.int.catena-x.net
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+       - secretName: "dt-pull-service.int.catena-x.net-tls"
+         hosts:
+           - "dt-pull-service.int.catena-x.net" 
+
+connector:
+  url: "https://edc-provider-ichub-control.int.catena-x.net"
+  apiKey: "<path:industry-core-hub/data/edc-provider#authKey>"
+  edrContext: "management"
