@@ -27,7 +27,6 @@ import os
 
 from dotenv import find_dotenv, load_dotenv
 
-
 BASE_URL = os.getenv('BASE_URL')
 API_KEY = os.getenv('API_KEY')
 API_CONTEXT_EDR = os.getenv('API_CONTEXT_EDR')
