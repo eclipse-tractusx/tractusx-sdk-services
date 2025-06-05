@@ -21,7 +21,7 @@
 # *************************************************************
 
 # BUILD IMAGE
-FROM python:3.12.3-slim AS builder
+FROM python:3.12.2-slim AS builder
 
 # Set environment variables
 ENV POETRY_VERSION=1.6.1 \
@@ -43,7 +43,7 @@ RUN poetry install --no-dev --no-interaction --no-ansi
 COPY . .
 
 # RUNTIME IMAGE
-FROM python:3.12.3-slim AS runtime
+FROM python:3.12.2-slim AS runtime
 
 RUN apt-get update && apt-get install -y curl && \
     curl -sSL https://install.python-poetry.org | python3 - && \
