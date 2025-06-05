@@ -60,4 +60,4 @@ COPY . .
 # Expose the port for uvicorn
 EXPOSE 8001
 
-CMD ["poetry", "run", "dotenv", "run", "uvicorn", "--host", "0.0.0.0", "--port", "8001", "--factory", "dt_pull_service.app:create_app", "--proxy-headers"]
+CMD ["poetry", "run", "uvicorn", "--host", "0.0.0.0", "--port", "8001", "--factory", "dt_pull_service.app:create_app", "--proxy-headers"]
