@@ -1208,14 +1208,14 @@ files = [
 
 [[package]]
 name = "tractusx-sdk"
-version = "0.0.5"
+version = "0.0.7"
 description = "Eclipse Tractus-X Software Development KIT - The Dataspace & Industry Foundation Middleware"
 optional = false
 python-versions = "<4.0,>=3.12"
 groups = ["main"]
 files = [
-    {file = "tractusx_sdk-0.0.5-py3-none-any.whl", hash = "sha256:efc6ea365cb586e6ecaeb721d83c9f9f1195d85bc51a906791215a254f57ca56"},
-    {file = "tractusx_sdk-0.0.5.tar.gz", hash = "sha256:1ee14912b475de2ef4ba652bb4a41fbd5cff00e493702c98cf7cf1f3fae35bcb"},
+    {file = "tractusx_sdk-0.0.7-py3-none-any.whl", hash = "sha256:86ee20478e7341a5fa2d51b4c21863d19fcc47662f0bc5f722cc6588177d7cb8"},
+    {file = "tractusx_sdk-0.0.7.tar.gz", hash = "sha256:0724e1ab55bc35ddccc90a138c16e9d0475329436d4d1defb6953dff99f27f63"},
 ]
 
 [package.dependencies]
@@ -1388,4 +1388,4 @@ test = ["aiohttp (>=3.10.5)", "flake8 (>=5.0,<6.0)", "mypy (>=0.800)", "psutil",
 [metadata]
 lock-version = "2.1"
 python-versions = "3.12.2"
-content-hash = "a0ed39c1e9aaaa45931c94eea3fbe3627286420f0e0471bbdc27c61d938393ed"
+content-hash = "e3f929d1863539904715326cf8ba0ee7f13ca011da33bde5628617fc4a453a06"
