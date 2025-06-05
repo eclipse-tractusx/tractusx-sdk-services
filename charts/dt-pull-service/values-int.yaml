@@ -36,6 +36,6 @@ ingress:
            - "dt-pull-service.int.catena-x.net" 
 
 connector:
-  url: "https://edc-provider-ichub-control.int.catena-x.net"
+  url: "https://edc-consumer-ichub-control.int.catena-x.net"
   apiKey: "<path:industry-core-hub/data/edc-provider#authKey>"
-  edrContext: "management"
+  edrContext: "/management"
