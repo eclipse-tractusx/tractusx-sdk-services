@@ -64,6 +64,13 @@ class EdrHandler:
         """Initialize the EdrHanler class"""
 
         headers = {'x-api-key': api_key}
+        print("Base URL")
+        print(base_url)
+        print("api_context")
+        print(api_context)
+        print("headers")
+        print(headers)
+        
         self.edc_client = BaseEdcService('v0_9_0', base_url, api_context, headers)
         self.partner_edc = partner_edc
         self.partner_id = partner_id
@@ -129,6 +136,8 @@ class EdrHandler:
                                                          counter_party_address=self.partner_edc,
                                                          counter_party_id=self.partner_id,
                                                          queryspec=query_spec)
+        print(catalog_request)
+        
         result = self.edc_client.catalogs.get_catalog(catalog_request, proxies=self.proxies)
 
         if result.status_code == 200:
