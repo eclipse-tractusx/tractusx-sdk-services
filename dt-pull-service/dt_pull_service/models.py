@@ -63,13 +63,7 @@ class EdrHandler:
     def __init__(self, partner_id, partner_edc, base_url, api_key, api_context, policies='', proxy=''):
         """Initialize the EdrHanler class"""
 
-        headers = {'x-api-key': api_key}
-        print("Base URL")
-        print(base_url)
-        print("api_context")
-        print(api_context)
-        print("headers")
-        print(headers)
+        headers = {'x-api-key': api_key, "Content-Type": "application/json"}
         
         self.edc_client = BaseEdcService('v0_9_0', base_url, api_context, headers)
         self.partner_edc = partner_edc
@@ -136,13 +130,11 @@ class EdrHandler:
                                                          counter_party_address=self.partner_edc,
                                                          counter_party_id=self.partner_id,
                                                          queryspec=query_spec)
-        print(catalog_request)
         
         result:requests.Response = self.edc_client.catalogs.get_catalog(catalog_request, proxies=self.proxies)
-        print(result.content)
 
         if result.status_code == 200:
-            return json.loads(result.body.decode())
+            return result.json()
 
         if result.status_code == 403:
             raise HTTPError(Error.FORBIDDEN,
@@ -261,9 +253,9 @@ class EdrHandler:
                                                           provider_id=self.partner_id,
                                                           offer_policy=offer)
 
-        edr_response = self.edc_client.edrs.create(edr, proxies=self.proxies)
+        edr_response:requests.Response = self.edc_client.edrs.create(edr, proxies=self.proxies)
 
-        return edr_response
+        return edr_response.json()
 
 
     def check_edr_negotiate_state(self, edr_id_response: str):
@@ -279,9 +271,10 @@ class EdrHandler:
         retries = 0
 
         while retries < 10:
-            state_json = json.loads(self.edc_client.contract_negotiations.get_state_by_id(
+            state_json:requests.Response = self.edc_client.contract_negotiations.get_state_by_id(
                                     edr_id_response,
-                                    proxies=self.proxies).body.decode())
+                                    proxies=self.proxies)
+            state_json = state_json.json()
             state = state_json['state']
 
             if state == 'FINALIZED':
@@ -330,7 +323,9 @@ class EdrHandler:
             ]
         }
         time.sleep(4)
-        transfer_process = json.loads(self.edc_client.edrs.get_all(json=data, proxies=self.proxies).body.decode())
+        transfer_process:requests.Response = self.edc_client.edrs.get_all(json=data, proxies=self.proxies)
+        
+        transfer_process= transfer_process.json()
         transfer_process_id = transfer_process[0]['transferProcessId']
 
         return transfer_process_id
@@ -351,10 +346,10 @@ class EdrHandler:
         transfer_process_id = self.negotiate_ddtr_transfer_process_id()
 
         if transfer_process_id:
-            result = json.loads(self.edc_client.edrs.get_data_address(transfer_process_id,
+            result:requests.Response = self.edc_client.edrs.get_data_address(transfer_process_id,
                                                            params={'auto_refresh': 'true'},
-                                                           proxies=self.proxies).body.decode())
-            data_address = result
+                                                           proxies=self.proxies)
+            data_address = result.json()
 
             return data_address
 
