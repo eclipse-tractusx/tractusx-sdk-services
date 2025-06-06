@@ -66,7 +66,7 @@ spec:
             - name: DT_PULL_SERVICE_ADDRESS
               value: {{ .Values.dt_pull_service.url }}
             - name: DT_PULL_SERVICE_API_KEY
-              value: {{ .Values..dt_pull_service.auth.apiKey.value }}
+              value: {{ .Values.dt_pull_service.auth.apiKey.value }}
             - name: DT_PULL_SERVICE_API_KEY_HEADER
               value: {{ .Values.dt_pull_service.auth.apiKey.key }}
             - name: API_KEY_BACKEND
