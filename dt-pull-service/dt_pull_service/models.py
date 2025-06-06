@@ -139,6 +139,7 @@ class EdrHandler:
         print(catalog_request)
         
         result = self.edc_client.catalogs.get_catalog(catalog_request, proxies=self.proxies)
+        print(result.body.decode())
 
         if result.status_code == 200:
             return json.loads(result.body.decode())
