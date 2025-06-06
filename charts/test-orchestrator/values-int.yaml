@@ -35,5 +35,14 @@ ingress:
          hosts:
            - "cx-ready.int.catena-x.net" 
 
+auth:
+  apiKey: 
+    key: "X-Api-Key"
+    value: "<path:test/data/cx-ready-tester#apiKey>"
+
 dt_pull_service:
   url: "https://dt-pull-service.int.catena-x.net"
+  auth:
+    apiKey: 
+      key: "X-Api-Key"
+      value: "<path:test/data/dt-pull-service#apiKey>"

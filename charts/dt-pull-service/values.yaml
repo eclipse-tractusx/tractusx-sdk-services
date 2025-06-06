@@ -38,6 +38,11 @@ image:
   pullSecrets: []
 
 
+auth:
+  apiKey: 
+    key: "X-Api-Key"
+    value: ""
+
 connector:
   url: "https://connector.url"
   apiKey: ""

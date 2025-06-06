@@ -37,7 +37,7 @@ import httpx
 
 from test_orchestrator import config
 from test_orchestrator.request_handler import make_request
-
+from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.utils import get_dtr_access, fetch_submodel_info, submodel_schema_finder
 from test_orchestrator.validator import json_validator, schema_finder
@@ -91,9 +91,9 @@ async def shell_descriptors_test(
 
     shell_descriptors = await make_request(
         'GET',
-        f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
+        f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors',
         params={'dataplane_url': dtr_url},
-        headers={'Authorization': dtr_key})
+        headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key}))
 
     #Checking if shell_descriptors is not empty
     if 'result' not in shell_descriptors:
@@ -177,7 +177,7 @@ async def submodel_test(counter_party_address: str,
             'GET',
             f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
             params={'dataplane_url': dtr_url_shell, 'agreement_id': aas_id},
-            headers={'Authorization': dtr_key_shell})
+            headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key}))
 
     except HTTPError:
         raise HTTPError(
