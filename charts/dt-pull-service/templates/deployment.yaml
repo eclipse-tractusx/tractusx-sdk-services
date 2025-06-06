@@ -69,6 +69,10 @@ spec:
               value: {{ .Values.connector.edrContext }}
             - name: BASE_URL
               value: {{ .Values.connector.url }}
+            - name: API_KEY_BACKEND
+              value: {{ .Values.auth.apiKey.value }}
+            - name: API_KEY_BACKEND_HEADER
+              value: {{ .Values.auth.apiKey.key }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:

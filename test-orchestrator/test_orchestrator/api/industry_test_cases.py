@@ -32,12 +32,13 @@ This module includes:
 import logging
 from typing import Dict, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from test_orchestrator.auth import verify_auth
 import httpx
 
 from test_orchestrator import config
 from test_orchestrator.request_handler import make_request
-
+from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.utils import get_dtr_access, fetch_submodel_info, submodel_schema_finder
 from test_orchestrator.validator import json_validator, schema_finder
@@ -47,7 +48,8 @@ logger = logging.getLogger(__name__)
 
 
 @router.get('/shell-descriptors-test/',
-            response_model=Dict)
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
 async def shell_descriptors_test(
     counter_party_address: str,
     counter_party_id: str,
@@ -91,9 +93,9 @@ async def shell_descriptors_test(
 
     shell_descriptors = await make_request(
         'GET',
-        f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
+        f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors',
         params={'dataplane_url': dtr_url},
-        headers={'Authorization': dtr_key})
+        headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key}))
 
     #Checking if shell_descriptors is not empty
     if 'result' not in shell_descriptors:
@@ -120,7 +122,8 @@ async def shell_descriptors_test(
             'policy_validation_message': policy_validation_outcome}
 
 
-@router.get('/submodel-test/')
+@router.get('/submodel-test/',
+            dependencies=[Depends(verify_auth)])
 async def submodel_test(counter_party_address: str,
                         counter_party_id: str,
                         semantic_id: str,
@@ -177,7 +180,7 @@ async def submodel_test(counter_party_address: str,
             'GET',
             f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
             params={'dataplane_url': dtr_url_shell, 'agreement_id': aas_id},
-            headers={'Authorization': dtr_key_shell})
+            headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key}))
 
     except HTTPError:
         raise HTTPError(

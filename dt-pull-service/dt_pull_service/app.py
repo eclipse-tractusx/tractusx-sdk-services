@@ -25,13 +25,13 @@
 
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 
 from dt_pull_service.api import dtr, edr
 from dt_pull_service.errors import HTTPError, http_error_handler
+from dt_pull_service import config
 
 logger = logging.getLogger(__name__)
-
 
 async def health():
     """

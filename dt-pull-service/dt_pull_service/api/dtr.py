@@ -25,7 +25,8 @@
 
 from typing import Dict, Optional
 
-from fastapi import APIRouter, Header
+from fastapi import APIRouter, Header, Request, Depends, HTTPException
+from dt_pull_service.auth import verify_auth
 
 from dt_pull_service.dtr_helper import get_dtr_handler
 
@@ -33,7 +34,8 @@ router = APIRouter()
 
 
 @router.get('/shell-descriptors/',
-            response_model=Dict)
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
 async def shell_descriptors(dataplane_url: str,
                             agreement_id: Optional[str] = '',
                             authorization: str = Header(None)):

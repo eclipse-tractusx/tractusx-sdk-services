@@ -27,6 +27,8 @@ import logging
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter
+from fastapi import Request, Depends, HTTPException
+from dt_pull_service.auth import verify_auth
 
 from dt_pull_service.edr_helper import get_edr_handler
 
@@ -37,7 +39,8 @@ import requests
 
 
 @router.get('/get-catalog/',
-            response_model=Dict)
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
 async def get_catalog(counter_party_address: str,
                       counter_party_id: str,
                       operand_left: Optional[str] = None,
@@ -73,7 +76,8 @@ async def get_catalog(counter_party_address: str,
 
 
 @router.post('/init-negotiation/',
-             response_model=Dict)
+             response_model=Dict,
+             dependencies=[Depends(verify_auth)])
 async def init_negotiation(catalog_json: Dict,
                            counter_party_address: str,
                            counter_party_id: str):
@@ -104,7 +108,8 @@ async def init_negotiation(catalog_json: Dict,
 
 
 @router.get('/negotiation-state/',
-            response_model=Dict)
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
 async def negotiation_state(state_id: str,
                             counter_party_address: str,
                             counter_party_id: str):
@@ -124,7 +129,8 @@ async def negotiation_state(state_id: str,
 
 
 @router.post('/transfer-process/',
-             response_model=List[Dict])
+             response_model=List[Dict],
+             dependencies=[Depends(verify_auth)])
 async def transfer_process(data: Dict,
                            counter_party_address: str,
                            counter_party_id: str):
@@ -146,7 +152,8 @@ async def transfer_process(data: Dict,
 
 
 @router.get('/data-address/',
-            response_model=Dict)
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
 async def edr_data_address(transfer_process_id: str,
                            counter_party_address: str,
                            counter_party_id: str):

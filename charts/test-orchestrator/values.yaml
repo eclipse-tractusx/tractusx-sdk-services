@@ -42,8 +42,17 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+auth:
+  apiKey: 
+    key: "X-Api-Key"
+    value: ""
+
 dt_pull_service:
   url: ""
+  auth:
+    apiKey: 
+      key: "X-Api-Key"
+      value: ""
 
 # This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
 serviceAccount:

@@ -40,6 +40,7 @@ license = { text = "Apache-2.0" }
 
 [tool.poetry.dependencies]
 python-dotenv = "^1.0.1"
+tractusx-sdk = "^0.0.7"
 fastapi = "0.115.7"
 httpx = "^0.28.1"
 jsonschema = "^4.23.0"
