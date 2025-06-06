@@ -32,7 +32,8 @@ This module includes:
 import logging
 from typing import Dict, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from test_orchestrator.auth import verify_auth
 import httpx
 
 from test_orchestrator import config
@@ -47,7 +48,8 @@ logger = logging.getLogger(__name__)
 
 
 @router.get('/shell-descriptors-test/',
-            response_model=Dict)
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
 async def shell_descriptors_test(
     counter_party_address: str,
     counter_party_id: str,
@@ -120,7 +122,8 @@ async def shell_descriptors_test(
             'policy_validation_message': policy_validation_outcome}
 
 
-@router.get('/submodel-test/')
+@router.get('/submodel-test/',
+            dependencies=[Depends(verify_auth)])
 async def submodel_test(counter_party_address: str,
                         counter_party_id: str,
                         semantic_id: str,
