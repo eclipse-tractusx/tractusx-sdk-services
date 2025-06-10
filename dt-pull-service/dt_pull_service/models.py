@@ -406,7 +406,7 @@ class DtrHandler:
         self.partner_dtr_secret = partner_dtr_secret
         self.proxies = {'http': proxy, 'https': proxy} if proxy != '' else {}
 
-    def dtr_find_shell_descriptor(self, asset_id: str):
+    def get_all_shells(self) -> list | None:
         """
         Retrieves the shell descriptor for a given asset from the partner's DTR.
 
@@ -424,7 +424,30 @@ class DtrHandler:
 
         result = requests.request(
             'GET',
-            f'{self.partner_dtr_addr}/shell-descriptors/{base64.b64encode(asset_id.encode("utf-8")).decode("utf-8")}',
+            f'{self.partner_dtr_addr}/shell-descriptors',
+            headers=headers, proxies=self.proxies, timeout=15).json()
+        
+        return result.get("result", None)
+
+    def dtr_find_shell_descriptor(self, aas_id: str):
+        """
+        Retrieves the shell descriptor for a given asset from the partner's DTR.
+
+        This method sends a GET request to the `shell-descriptors` endpoint of the partner DTR
+        and retrieves the shell descriptor as a JSON object.
+
+        :param asset_id: The asset ID for which the shell descriptor is being requested.
+        :return: A JSON object containing the shell descriptor details.
+        :raises requests.exceptions.RequestException: Raised if the request fails due to network or server issues.
+        """
+
+        headers = {
+            'Authorization': self.partner_dtr_secret
+        }
+
+        result = requests.request(
+            'GET',
+            f'{self.partner_dtr_addr}/shell-descriptors/{base64.b64encode(aas_id.encode("utf-8")).decode("utf-8")}',
             headers=headers, proxies=self.proxies, timeout=15).json()
 
         return result
