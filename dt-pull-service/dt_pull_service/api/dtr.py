@@ -23,7 +23,7 @@
 """API endpoints for DTR
 """
 
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 from fastapi import APIRouter, Header, Request, Depends, HTTPException
 from dt_pull_service.auth import verify_auth
@@ -34,7 +34,7 @@ router = APIRouter()
 
 
 @router.get('/shell-descriptors/',
-            response_model=Dict,
+            response_model= List| Dict,
             dependencies=[Depends(verify_auth)])
 async def shell_descriptors(dataplane_url: str,
                             aas_id: Optional[str] = '',
@@ -53,6 +53,8 @@ async def shell_descriptors(dataplane_url: str,
         return dtr_handler.dtr_find_shell_descriptor(aas_id)
     
     response = dtr_handler.get_all_shells()
-    if response is None:
+    if response is None or len(response) == 0:
         raise HTTPException(status_code=404, detail="No shell descriptors found.")
+    
     return response
+    
