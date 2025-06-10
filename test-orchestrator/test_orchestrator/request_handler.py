@@ -13,7 +13,7 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# WITHOUT WARRANTIES OR SERVICES OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations
 # under the License.
 #
@@ -49,12 +49,21 @@ async def make_request(method: str, url: str, **kwargs):
     async with httpx.AsyncClient() as client:
         try:
             response = await client.request(method, url, timeout=15, **kwargs)
-            response_json = response.json()
+            try:
+                response_json = response.json()
+            except ValueError as e:
+                logger.error(f'Invalid JSON response from {url}: {e} - {response.content}')
+                raise HTTPError(Error.BAD_GATEWAY,
+                                message='Received invalid JSON from server',
+                                details=str(e)) from e
 
             if response.status_code != 200:
-                raise HTTPError(Error[response_json.get('error')],
-                                message=response_json.get('message'),
-                                details=response_json.get('details'))
+                error_code = response_json.get('error', 'BAD_GATEWAY')
+                message = response_json.get('message', 'Unknown error')
+                details = response_json.get('details', 'No additional details provided')
+                raise HTTPError(Error.get(error_code, Error.BAD_GATEWAY),
+                                message=message,
+                                details=details)
 
             return response_json
 
