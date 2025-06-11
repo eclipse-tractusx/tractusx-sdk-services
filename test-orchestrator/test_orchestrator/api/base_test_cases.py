@@ -113,7 +113,7 @@ async def dtr_ping_test(counter_party_address: str,
                 limit=1)
 
         shell_descriptors = await make_request('GET',
-                                               f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors',
+                                               f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
                                                params={'dataplane_url': dataplane_url},
                                                headers = get_dt_pull_service_headers(headers={'Authorization': dtr_key})
                                                )
