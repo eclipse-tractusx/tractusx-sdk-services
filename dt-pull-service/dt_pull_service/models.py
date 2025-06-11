@@ -427,7 +427,7 @@ class DtrHandler:
             f'{self.partner_dtr_addr}/shell-descriptors',
             headers=headers, proxies=self.proxies, timeout=15).json()
         
-        return result.get("result", None)
+        return result
 
     def dtr_find_shell_descriptor(self, aas_id: str):
         """
