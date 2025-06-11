@@ -43,7 +43,7 @@ async def shell_descriptors(dataplane_url: str,
     Retrieves the shell descriptors from the partner's DTR.
 
      - :param dataplane_url: The URL for getting the DTR handler.
-     - :param agreement_id: The aggrement_id (asset) to get the shell descriptor for.
+     - :param aas_id: The aas_id (asset) to get the shell descriptor for.
      - :return: A JSON object containing the shell descriptor details.
     """
 

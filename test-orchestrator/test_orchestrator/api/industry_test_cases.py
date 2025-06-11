@@ -179,7 +179,7 @@ async def submodel_test(counter_party_address: str,
         shell_descriptors_spec = await make_request(
             'GET',
             f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
-            params={'dataplane_url': dtr_url_shell, 'agreement_id': aas_id},
+            params={'dataplane_url': dtr_url_shell, 'aas_id': aas_id},
             headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key_shell}))
 
     except HTTPError:
