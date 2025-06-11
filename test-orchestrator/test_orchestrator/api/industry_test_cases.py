@@ -93,7 +93,7 @@ async def shell_descriptors_test(
 
     shell_descriptors = await make_request(
         'GET',
-        f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors',
+        f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
         params={'dataplane_url': dtr_url},
         headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key}))
 
