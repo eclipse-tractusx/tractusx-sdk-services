@@ -31,6 +31,7 @@ import httpx
 from test_orchestrator import config
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.request_handler import make_request
+from test_orchestrator.auth import get_dt_pull_service_headers
 
 # pylint: disable=R1702, R0912
 async def fetch_transfer_process(retries=5, delay=2, **request_params):
@@ -53,7 +54,8 @@ async def fetch_transfer_process(retries=5, delay=2, **request_params):
                                       f'{config.DT_PULL_SERVICE_ADDRESS}/edr/transfer-process/',
                                       params={'counter_party_address': request_params['counter_party_address'],
                                               'counter_party_id': request_params['counter_party_id']},
-                                      json=request_params['data'])
+                                      json=request_params['data'],
+                                      headers=get_dt_pull_service_headers())
 
         if response and isinstance(response, list) and len(response) > 0:
             return response
@@ -104,7 +106,8 @@ async def get_dtr_access(counter_party_address: str,
                                               'counter_party_address': counter_party_address,
                                               'counter_party_id': counter_party_id,
                                               'offset': offset,
-                                              'limit': limit})
+                                              'limit': limit},
+                                      headers=get_dt_pull_service_headers())
 
     # Validate result of the policy from the catalog if required
     policy_validation_outcome = validate_policy(catalog_json)
@@ -123,7 +126,8 @@ async def get_dtr_access(counter_party_address: str,
                                               f'{config.DT_PULL_SERVICE_ADDRESS}/edr/init-negotiation/',
                                               params={'counter_party_address': counter_party_address,
                                                       'counter_party_id': counter_party_id},
-                                              json=catalog_json)
+                                              json=catalog_json,
+                                              headers=get_dt_pull_service_headers())
     except HTTPError:
         raise HTTPError(
             Error.CONTRACT_NEGOTIATION_FAILED,
@@ -139,7 +143,8 @@ async def get_dtr_access(counter_party_address: str,
                        f'{config.DT_PULL_SERVICE_ADDRESS}/edr/negotiation-state/',
                        params={'counter_party_address': counter_party_address,
                                'counter_party_id': counter_party_id,
-                               'state_id': edr_state_id})
+                               'state_id': edr_state_id},
+                       headers=get_dt_pull_service_headers())
 
     data = {
         '@context': {'@vocab': 'https://w3id.org/edc/v0.0.1/ns/'},
@@ -162,7 +167,8 @@ async def get_dtr_access(counter_party_address: str,
                                           f'{config.DT_PULL_SERVICE_ADDRESS}/edr/data-address/',
                                           params={'counter_party_address': counter_party_address,
                                                   'counter_party_id': counter_party_id,
-                                                  'transfer_process_id': transfer_process_id})
+                                                  'transfer_process_id': transfer_process_id},
+                                          headers=get_dt_pull_service_headers())
 
     return edr_data_address.get('endpoint'), edr_data_address.get('authorization'), policy_validation_outcome
 

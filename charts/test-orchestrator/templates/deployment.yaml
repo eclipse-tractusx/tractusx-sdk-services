@@ -65,6 +65,14 @@ spec:
           env:
             - name: DT_PULL_SERVICE_ADDRESS
               value: {{ .Values.dt_pull_service.url }}
+            - name: DT_PULL_SERVICE_API_KEY
+              value: {{ .Values.dt_pull_service.auth.apiKey.value }}
+            - name: DT_PULL_SERVICE_API_KEY_HEADER
+              value: {{ .Values.dt_pull_service.auth.apiKey.key }}
+            - name: API_KEY_BACKEND
+              value: {{ .Values.auth.apiKey.value }}
+            - name: API_KEY_BACKEND_HEADER
+              value: {{ .Values.auth.apiKey.key }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:

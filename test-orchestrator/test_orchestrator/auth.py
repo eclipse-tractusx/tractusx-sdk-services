@@ -1,7 +1,7 @@
 # *************************************************************
 # Eclipse Tractus-X - Digital Twin Pull Service
 #
-# Copyright (c) 2025 BMW AG
+# Copyright (c) 2025 Catena-X Automotive Network e.V.
 # Copyright (c) 2025 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
@@ -20,26 +20,26 @@
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
 
-ingress:
-    enabled: true
-    ingressClassName: "nginx"
-    annotations:
-      cert-manager.io/cluster-issuer: letsencrypt-prod
-    hosts:
-      - host: dt-pull-service.int.catena-x.net
-        paths:
-          - path: /
-            pathType: Prefix
-    tls:
-       - secretName: "dt-pull-service.int.catena-x.net-tls"
-         hosts:
-           - "dt-pull-service.int.catena-x.net" 
-auth:
-  apiKey: 
-    key: "X-Api-Key"
-    value: "<path:test/data/dt-pull-service#apiKey>"
+from tractusx_sdk.dataspace.managers import AuthManager
+from test_orchestrator import config
+from fastapi import  HTTPException, Request
 
-connector:
-  url: "https://edc-consumer-ichub-control.int.catena-x.net"
-  apiKey: "<path:industry-core-hub/data/edc-provider#authKey>"
-  edrContext: "/management"
+auth_manager = AuthManager(
+    configured_api_key=config.API_KEY_BACKEND,
+    api_key_header=config.API_KEY_BACKEND_HEADER,
+    auth_enabled=True
+)
+
+def verify_auth(
+    request: Request
+):
+    if(config.API_KEY_BACKEND is None or
+       config.API_KEY_BACKEND_HEADER is None):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    if not auth_manager.is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+def get_dt_pull_service_headers(headers: dict = {}) -> dict:
+    headers[config.DT_PULL_SERVICE_API_KEY_HEADER] = config.DT_PULL_SERVICE_API_KEY
+    headers["Content-Type"] = "application/json"
+    return headers

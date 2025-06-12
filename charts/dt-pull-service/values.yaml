@@ -38,6 +38,11 @@ image:
   pullSecrets: []
 
 
+auth:
+  apiKey: 
+    key: "X-Api-Key"
+    value: ""
+
 connector:
   url: "https://connector.url"
   apiKey: ""
@@ -120,7 +125,7 @@ livenessProbe:
   httpGet:
     path: /_/health
     port: http
-  initialDelaySeconds: 30   # Delay before the first check (optional)
+  initialDelaySeconds: 15   # Delay before the first check (optional)
   periodSeconds: 300        # Check every 5 minutes
   timeoutSeconds: 5         # Wait up to 5 seconds for a response
   failureThreshold: 1       # Restart after 1 failed probe (adjust as needed)
@@ -128,7 +133,7 @@ readinessProbe:
   httpGet:
     path: /_/health
     port: http
-  initialDelaySeconds: 30   # Delay before the first check (optional)
+  initialDelaySeconds: 15   # Delay before the first check (optional)
   periodSeconds: 300        # Check every 5 minutes
   timeoutSeconds: 5         # Wait up to 5 seconds for a response
   failureThreshold: 1       # Restart after 1 failed probe (adjust as needed)

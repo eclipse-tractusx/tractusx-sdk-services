@@ -32,19 +32,21 @@ This module includes:
 import logging
 from typing import Dict
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from test_orchestrator import config
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.request_handler import make_request
 from test_orchestrator.utils import get_dtr_access
+from test_orchestrator.auth import get_dt_pull_service_headers, verify_auth
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
 @router.get('/ping-test/',
-            response_model=Dict)
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
 async def ping_test(counter_party_address: str,
                     counter_party_id: str):
     """
@@ -65,7 +67,8 @@ async def ping_test(counter_party_address: str,
                            params={'operand_left': 'http://purl.org/dc/terms/type',
                                    'operand_right': '%https://w3id.org/catenax/taxonomy%23DigitalTwinRegistry%',
                                    'counter_party_address': counter_party_address,
-                                   'counter_party_id': counter_party_id})
+                                   'counter_party_id': counter_party_id},
+                           headers=get_dt_pull_service_headers())
 
     except HTTPError:
         raise HTTPError(Error.CONNECTION_FAILED,
@@ -79,7 +82,8 @@ async def ping_test(counter_party_address: str,
 
 
 @router.get('/dtr-ping-test/',
-            response_model=Dict)
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
 async def dtr_ping_test(counter_party_address: str,
                         counter_party_id: str):
     """
@@ -111,7 +115,8 @@ async def dtr_ping_test(counter_party_address: str,
         shell_descriptors = await make_request('GET',
                                                f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
                                                params={'dataplane_url': dataplane_url},
-                                               headers = {'Authorization': dtr_key})
+                                               headers = get_dt_pull_service_headers(headers={'Authorization': dtr_key})
+                                               )
     except HTTPError:
         raise HTTPError(
             Error.CONNECTION_FAILED,

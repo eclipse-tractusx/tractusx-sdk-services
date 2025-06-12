@@ -30,3 +30,5 @@ from dotenv import find_dotenv, load_dotenv
 BASE_URL = os.getenv('BASE_URL')
 API_KEY = os.getenv('API_KEY')
 API_CONTEXT_EDR = os.getenv('API_CONTEXT_EDR')
+API_KEY_BACKEND = os.getenv('API_KEY_BACKEND')
+API_KEY_BACKEND_HEADER = os.getenv('API_KEY_BACKEND_HEADER')
