@@ -130,9 +130,8 @@ class EdrHandler:
                                                          counter_party_address=self.partner_edc,
                                                          counter_party_id=self.partner_id,
                                                          queryspec=query_spec)
-        
         result:requests.Response = self.edc_client.catalogs.get_catalog(catalog_request, proxies=self.proxies)
-
+        
         if result.status_code == 200:
             return result.json()
 
@@ -430,7 +429,7 @@ class DtrHandler:
         result = requests.request(
             'GET',
             base_url,
-            headers=headers, proxies=self.proxies, timeout=30).json()
+            headers=headers, proxies=self.proxies, timeout=60).json()
         
         return result
 
@@ -453,7 +452,7 @@ class DtrHandler:
         result = requests.request(
             'GET',
             f'{self.partner_dtr_addr}/shell-descriptors/{base64.b64encode(aas_id.encode("utf-8")).decode("utf-8")}',
-            headers=headers, proxies=self.proxies, timeout=30).json()
+            headers=headers, proxies=self.proxies, timeout=60).json()
 
         return result
 
@@ -476,6 +475,6 @@ class DtrHandler:
         result = requests.request(
             'GET',
             f'{self.partner_dtr_addr}/{base64.b64encode(asset_id.encode("utf-8")).decode("utf-8")}',
-            headers=headers, proxies=self.proxies, timeout=30).json()
+            headers=headers, proxies=self.proxies, timeout=60).json()
 
         return result

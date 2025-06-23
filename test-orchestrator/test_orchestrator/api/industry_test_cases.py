@@ -94,8 +94,9 @@ async def shell_descriptors_test(
     shell_descriptors = await make_request(
         'GET',
         f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
-        params={'dataplane_url': dtr_url, 'limit': 5},
-        headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key}))
+        params={'dataplane_url': dtr_url, 'limit': 1},
+        headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key}),
+        timeout=60)
 
     #Checking if shell_descriptors is not empty
     if 'result' not in shell_descriptors:
@@ -179,8 +180,9 @@ async def submodel_test(counter_party_address: str,
         shell_descriptors_spec = await make_request(
             'GET',
             f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
-            params={'dataplane_url': dtr_url_shell, 'aas_id': aas_id, 'limit': 5},
-            headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key_shell}))
+            params={'dataplane_url': dtr_url_shell, 'aas_id': aas_id, 'limit': 1},
+            headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key_shell}),
+            timeout=60)
 
     except HTTPError:
         raise HTTPError(
