@@ -33,6 +33,7 @@ import pytest
     [
         ({
             'dataplane_url': 'localhost',
+            'limit': 5
          },
          {'test': 'example'})
     ]

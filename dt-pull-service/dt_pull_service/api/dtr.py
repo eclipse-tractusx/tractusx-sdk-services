@@ -37,12 +37,14 @@ router = APIRouter()
             response_model= List| Dict,
             dependencies=[Depends(verify_auth)])
 async def shell_descriptors(dataplane_url: str,
-                            aas_id: Optional[str] = '',
+                            aas_id: Optional[str] = '',                            
+                            limit: Optional[int] = None,
                             authorization: str = Header(None)):
     """
     Retrieves the shell descriptors from the partner's DTR.
 
      - :param dataplane_url: The URL for getting the DTR handler.
+     - :param limit: Optional limit on the number of shell descriptors returned.
      - :param aas_id: The aas_id (asset) to get the shell descriptor for.
      - :return: A JSON object containing the shell descriptor details.
     """
@@ -52,7 +54,7 @@ async def shell_descriptors(dataplane_url: str,
     if aas_id:
         return dtr_handler.dtr_find_shell_descriptor(aas_id)
     
-    response = dtr_handler.get_all_shells()
+    response = dtr_handler.get_all_shells(limit=limit)
     if response is None or len(response) == 0:
         raise HTTPException(status_code=404, detail="No shell descriptors found.")
     

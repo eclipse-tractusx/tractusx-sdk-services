@@ -406,7 +406,7 @@ class DtrHandler:
         self.partner_dtr_secret = partner_dtr_secret
         self.proxies = {'http': proxy, 'https': proxy} if proxy != '' else {}
 
-    def get_all_shells(self) -> list | None:
+    def get_all_shells(self, limit:int=None) -> list | None:
         """
         Retrieves the shell descriptor for a given asset from the partner's DTR.
 
@@ -421,11 +421,16 @@ class DtrHandler:
         headers = {
             'Authorization': self.partner_dtr_secret
         }
-
+        
+        base_url=f'{self.partner_dtr_addr}/shell-descriptors'
+        
+        if(limit is not None):
+            base_url += f'?limit={limit}'
+        
         result = requests.request(
             'GET',
-            f'{self.partner_dtr_addr}/shell-descriptors',
-            headers=headers, proxies=self.proxies, timeout=15).json()
+            base_url,
+            headers=headers, proxies=self.proxies, timeout=30).json()
         
         return result
 
@@ -448,7 +453,7 @@ class DtrHandler:
         result = requests.request(
             'GET',
             f'{self.partner_dtr_addr}/shell-descriptors/{base64.b64encode(aas_id.encode("utf-8")).decode("utf-8")}',
-            headers=headers, proxies=self.proxies, timeout=15).json()
+            headers=headers, proxies=self.proxies, timeout=30).json()
 
         return result
 
@@ -471,6 +476,6 @@ class DtrHandler:
         result = requests.request(
             'GET',
             f'{self.partner_dtr_addr}/{base64.b64encode(asset_id.encode("utf-8")).decode("utf-8")}',
-            headers=headers, proxies=self.proxies, timeout=15).json()
+            headers=headers, proxies=self.proxies, timeout=30).json()
 
         return result
