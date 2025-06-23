@@ -35,7 +35,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-async def make_request(method: str, url: str, **kwargs):
+async def make_request(method: str, url: str, timeout:int=15, **kwargs):
     """
     Makes an HTTP request and handles errors consistently.
 
@@ -48,7 +48,8 @@ async def make_request(method: str, url: str, **kwargs):
 
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.request(method, url, timeout=15, **kwargs)
+            
+            response = await client.request(method, url, timeout=timeout, **kwargs)
             try:
                 response_json = response.json()
             except ValueError as e:
