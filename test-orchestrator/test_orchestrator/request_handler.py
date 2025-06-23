@@ -62,7 +62,8 @@ async def make_request(method: str, url: str, timeout:int=15, **kwargs):
                 error_code = response_json.get('error', 'BAD_GATEWAY')
                 message = response_json.get('message', 'Unknown error')
                 details = response_json.get('details', 'No additional details provided')
-                raise HTTPError(Error.get(error_code, Error.BAD_GATEWAY),
+                error_code_enum = Error.__members__.get(error_code, Error.BAD_GATEWAY)
+                raise HTTPError(error_code_enum,
                                 message=message,
                                 details=details)
 
