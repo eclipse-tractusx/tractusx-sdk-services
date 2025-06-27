@@ -62,7 +62,6 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}
           tags: |
-            type=raw,value=main
             type=raw,value=${{ github.sha }}
 
       - name: Build and push Docker image
@@ -96,7 +95,6 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}
           tags: |
-            type=raw,value=main
             type=raw,value=${{ github.sha }}
 
       - name: Build and push Docker image
