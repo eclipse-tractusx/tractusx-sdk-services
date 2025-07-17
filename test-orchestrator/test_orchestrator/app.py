@@ -27,8 +27,13 @@ import logging
 
 from fastapi import FastAPI
 
-from test_orchestrator.api import base_test_cases, industry_test_cases
-from test_orchestrator.errors import HTTPError, http_error_handler
+from test_orchestrator.api import base_test_cases, cert_validation, industry_test_cases
+from test_orchestrator.errors import (
+    HTTPError,
+    http_error_handler,
+    ValidationException,
+    validation_exception_handler
+)
 
 logger = logging.getLogger(__name__)
 
@@ -64,14 +69,19 @@ def create_app():
                            'email': 'surmandenes@yahoo.com'})
 
     app.add_exception_handler(HTTPError, http_error_handler)
+    app.add_exception_handler(ValidationException, validation_exception_handler)
 
     app.include_router(base_test_cases.router,
                        prefix='/test-cases/base/v1',
-                       tags=['Tests'])
+                       tags=['Base Tests'])
+
+    app.include_router(cert_validation.router,
+                       prefix='/test-cases/businesspartnerdatamanagement/v1',
+                       tags=['Certification Tests'])
 
     app.include_router(industry_test_cases.router,
                        prefix='/test-cases/industry-core/v1',
-                       tags=['Tests'])
+                       tags=['Industry Core Tests'])
 
     app.get('/_/health', status_code=200)(health)
 
