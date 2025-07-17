@@ -67,7 +67,7 @@ async def fetch_transfer_process(retries=5, delay=2, **request_params):
                 message='The submodel for the semanticID provided not be transferred. ' +\
                         'Make sure the href in the submodel descriptor point to the correct endpoint.',
                 details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' +\
-                        'software-development-view/digital-twins-development-view#submodel-descriptors ' +\
+                        'software-development-view/digital-twins#submodel-descriptors ' +\
                         'for troubleshooting.')
 
 
@@ -117,9 +117,8 @@ async def get_dtr_access(counter_party_address: str,
             raise HTTPError(
                 Error.POLICY_VALIDATION_FAILED,
                 message='The usage policy that is used within the asset is not accurate. ',
-                details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/' +\
-                    'industry-core-kit/software-development-view/policies-development-view ' +\
-                        'for troubleshooting.')
+                details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                        'software-development-view/policies for troubleshooting.')
 
     try:
         init_negotiation = await make_request('POST',
@@ -229,9 +228,8 @@ def fetch_submodel_info(correct_element, semantic_id):
         raise HTTPError(
             Error.SUBMODEL_DESCRIPTOR_MALFORMED,
             message=f'The submodel descriptor for semanticID {semantic_id} is malformed.',
-            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/' +\
-                    'industry-core-kit/software-development-view/digital-twins-development-view' +\
-                    '#conventions-for-creating-digital-twins for troubleshooting.')
+            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                    'software-development-view/digital-twins#edc-policies for troubleshooting.')
 
     # Splitting subprotocolBody to obtain the correct parameters
     subprot_split = subprot_bod.split('=')
@@ -240,9 +238,8 @@ def fetch_submodel_info(correct_element, semantic_id):
         raise HTTPError(
             Error.SUBMODEL_DESCRIPTOR_MALFORMED,
             message=f'The submodel descriptor for semanticID {semantic_id} is malformed.',
-            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/' +\
-                    'industry-core-kit/software-development-view/digital-twins-development-view' +\
-                    '#conventions-for-creating-digital-twins for troubleshooting.')
+            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                    'software-development-view/digital-twins#edc-policies for troubleshooting.')
 
     subm_operandleft = 'https://w3id.org/edc/v0.0.1/ns/id'
     subm_operandright = subprot_split[1].split(';')[0]
@@ -298,6 +295,5 @@ def validate_policy(catalog_json):
 
     return {'status': 'Warning',
             'message': 'The usage policy that is used within the asset is not accurate. ',
-            'details': 'Please check https://eclipse-tractusx.github.io/docs-kits/kits/' +\
-                'industry-core-kit/software-development-view/policies-development-view ' +\
-                    'for troubleshooting.'}
+            'details': 'Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                       'software-development-view/policies for troubleshooting.'}

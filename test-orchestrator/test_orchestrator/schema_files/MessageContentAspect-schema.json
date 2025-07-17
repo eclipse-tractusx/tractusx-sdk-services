@@ -1,0 +1,149 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "x-samm-aspect-model-urn": "urn:samm:io.catenax.message:1.0.0#MessageContentAspect",
+  "description": "Aspect model describing a message with a header and a content payload.",
+  "type": "object",
+  "components": {
+    "schemas": {
+      "DocumentIdCharacteristic": {
+        "type": "string",
+        "x-samm-aspect-model-urn": "urn:samm:io.catenax.shared.uuid:1.0.0#Uuid",
+        "description": "The unique identifier for a document, formatted as a UUID.",
+        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+      },
+      "CertificateStatusValue": {
+        "type": "string",
+        "x-samm-aspect-model-urn": "urn:samm:io.catenax.message_content:1.0.0#CertificateStatusValue",
+        "description": "The validation status of the certificate.",
+        "enum": [
+          "RECEIVED",
+          "ACCEPTED",
+          "REJECTED"
+        ]
+      },
+      "BpnTrait": {
+        "type": "string",
+        "x-samm-aspect-model-urn": "urn:samm:io.catenax.shared.bpn:1.0.0#BpnTrait",
+        "description": "The provided regular expression ensures that the BPN is composed of a prefix 'BPNS' or 'BPNA', followed by 12 alphanumeric characters.",
+        "pattern": "^(?:BPNS|BPNA)[a-zA-Z0-9]{12}$"
+      },
+      "LocationBpnsCharacteristic": {
+        "description": "A list of Business Partner Numbers (BPNs) for specific sites or addresses associated with the certificate.",
+        "x-samm-aspect-model-urn": "urn:samm:io.catenax.message_content:1.0.0#LocationBpnsCharacteristic",
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/BpnTrait"
+        }
+      },
+      "ErrorMessageEntity": {
+        "description": "An entity containing a single error message.",
+        "x-samm-aspect-model-urn": "urn:samm:io.catenax.message_content:1.0.0#ErrorMessageEntity",
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "A human-readable error message."
+          }
+        },
+        "required": ["message"]
+      },
+      "CertificateErrorsCharacteristic": {
+        "description": "A list of errors related to the certificate itself.",
+        "x-samm-aspect-model-urn": "urn:samm:io.catenax.message_content:1.0.0#CertificateErrorsCharacteristic",
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ErrorMessageEntity"
+        }
+      },
+      "LocationErrorDetailEntity": {
+        "description": "An entity containing a single error message for a location.",
+        "x-samm-aspect-model-urn": "urn:samm:io.catenax.message_content:1.0.0#LocationErrorDetailEntity",
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "A human-readable error message specific to a location."
+          }
+        },
+        "required": ["message"]
+      },
+      "LocationErrorEntity": {
+        "description": "An entity containing errors for a specific BPN location.",
+        "x-samm-aspect-model-urn": "urn:samm:io.catenax.message_content:1.0.0#LocationErrorEntity",
+        "type": "object",
+        "properties": {
+          "bpn": {
+            "$ref": "#/components/schemas/BpnTrait"
+          },
+          "locationErrors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LocationErrorDetailEntity"
+            }
+          }
+        },
+        "required": ["bpn", "locationErrors"]
+      },
+      "LocationErrorsCharacteristic": {
+        "description": "A list of errors, each associated with a specific BPN location.",
+        "x-samm-aspect-model-urn": "urn:samm:io.catenax.message_content:1.0.0#LocationErrorsCharacteristic",
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/LocationErrorEntity"
+        }
+      }
+    }
+  },
+  "properties": {
+    "header": {
+      "type": "object",
+      "description": "The header of the message. No specific validation rules are applied."
+    },
+    "content": {
+      "type": "object",
+      "description": "The content payload of the message.",
+      "properties": {
+        "documentId": {
+          "$ref": "#/components/schemas/DocumentIdCharacteristic"
+        },
+        "certificateStatus": {
+          "$ref": "#/components/schemas/CertificateStatusValue"
+        },
+        "locationBpns": {
+          "$ref": "#/components/schemas/LocationBpnsCharacteristic"
+        },
+        "certificateErrors": {
+          "$ref": "#/components/schemas/CertificateErrorsCharacteristic"
+        },
+        "locationErrors": {
+          "$ref": "#/components/schemas/LocationErrorsCharacteristic"
+        }
+      },
+      "required": [
+        "documentId",
+        "certificateStatus",
+        "locationBpns"
+      ],
+      "if": {
+        "properties": {
+          "certificateStatus": {
+            "const": "REJECTED"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "documentId",
+          "certificateStatus",
+          "locationBpns",
+          "certificateErrors",
+          "locationErrors"
+        ]
+      }
+    }
+  },
+  "required": [
+    "header",
+    "content"
+  ]
+}
