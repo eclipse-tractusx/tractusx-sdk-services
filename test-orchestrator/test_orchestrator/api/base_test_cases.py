@@ -71,11 +71,13 @@ async def ping_test(counter_party_address: str,
                            headers=get_dt_pull_service_headers())
 
     except HTTPError:
-        raise HTTPError(Error.CONNECTION_FAILED,
-                        message='Connection to the connector was not successful',
-                        details='Please check ' + \
-                                'https://eclipse-tractusx.github.io/docs-kits/kits/connector-kit/operation-view/ ' +\
-                                'for troubleshooting.')
+        raise HTTPError(
+            Error.CONNECTOR_UNAVAILABLE,
+            message="Connection to your connector was not successful.",
+            details="The testbed can't access the specified connector. Make sure the counter_party_address points " + \
+                    "to the DSP endpoint of your connector and the counter_party_id is correct. Please check " + \
+                    "https://eclipse-tractusx.github.io/docs-kits/kits/connector-kit/operation-view/ " + \
+                    "for troubleshooting.")
 
     return {'status': 'ok',
             'message': 'No errors found during the ping request'}
