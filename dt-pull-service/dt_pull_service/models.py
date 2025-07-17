@@ -130,8 +130,17 @@ class EdrHandler:
                                                          counter_party_address=self.partner_edc,
                                                          counter_party_id=self.partner_id,
                                                          queryspec=query_spec)
-        result:requests.Response = self.edc_client.catalogs.get_catalog(catalog_request, proxies=self.proxies)
-        
+
+        try:
+            result:requests.Response = self.edc_client.catalogs.get_catalog(catalog_request, proxies=self.proxies)
+        except (requests.exceptions.SSLError, requests.exceptions.JSONDecodeError) as e:
+            logger.error(f'EDR query catalog returned with an error: {e}')
+
+            raise HTTPError(Error.FORBIDDEN,
+                            message='EDC connection failed!',
+                            details='Check your credentials like your API key ' +\
+                                    'and also check your VPN if you use one') from e
+
         if result.status_code == 200:
             return result.json()
 
@@ -323,7 +332,7 @@ class EdrHandler:
         }
         time.sleep(4)
         transfer_process:requests.Response = self.edc_client.edrs.get_all(json=data, proxies=self.proxies)
-        
+
         transfer_process= transfer_process.json()
         transfer_process_id = transfer_process[0]['transferProcessId']
 
@@ -478,3 +487,37 @@ class DtrHandler:
             headers=headers, proxies=self.proxies, timeout=60).json()
 
         return result
+
+    def send_feedback(self, payload: Dict):
+        """
+        Sends a message for the partner's DTR about the certification status.
+
+        This method sends a POST request to the partner DTR about the status of the certificate
+
+        :return: A JSON object containing the server's response.
+        :raises HTTPError: Raised if the request encounters errors such as authentication issues,
+                           server unavailability, or unknown errors.
+        """
+
+        headers = {
+            'Authorization': self.partner_dtr_secret
+        }
+
+        result = requests.request(
+            'POST',
+            f'{self.partner_dtr_addr}/companycertificate/status/',
+            headers=headers,
+            json=payload,
+            proxies=self.proxies,
+            timeout=15)
+
+        if result.status_code != 200:
+            logger.error(f'Certification status message was not registered: {result.status_code}, {result.text}')
+
+            raise HTTPError(Error.INTERNAL_SERVER_ERROR,
+                            message='Certification status message was not registered',
+                            details='The data provider was not able to accept the status' + \
+                                    'message about the certification validation. ' + \
+                                    f'Original error: {result.status_code}, {result.text}')
+
+        return result.json()

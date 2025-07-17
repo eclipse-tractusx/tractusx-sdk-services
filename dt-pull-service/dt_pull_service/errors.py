@@ -42,11 +42,13 @@ class Error(Enum):
     FORBIDDEN = auto()
     BAD_GATEWAY = auto()
     UNKNOWN_ERROR = auto()
+    INTERNAL_SERVER_ERROR = auto()
 
 
 #: A dictionary of non-default error codes.
 non_default_http_codes = {
     Error.FORBIDDEN: 403,
+    Error.INTERNAL_SERVER_ERROR: 500,
     Error.BAD_GATEWAY: 502,
     Error.UNKNOWN_ERROR: 520
 }

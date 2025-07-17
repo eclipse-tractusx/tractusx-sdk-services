@@ -28,12 +28,16 @@ check_edr_negotiate_state: Checks the state of an EDR negotiation.
 
 get_ddtr_address: Retrieves the DDTR address.
 
+find_sub_model_edr_agreement_id: Retrieves the Digital Twin Registry (DDTR) address.
+
 ### DtrHandler Class
 Description: Manages communication with the partner's DTR.
 
 Key Methods:
 
 dtr_find_shell_descriptor: Queries a shell descriptor.
+
+send_feedback: Sends a message for the partner's DTR about the certification status.
 
 ## 4. Additional Utility Functions
 create_app
@@ -92,6 +96,9 @@ bpn: Business Partner Number. Returns: A JSON object containing the data address
 
 ### /shell-descriptors/
 Method: GET Description: Retrieves shell descriptors from the partner's DTR. Returns: A JSON object containing shell descriptor details.
+
+### /send-feedback/
+Method: Post Description: Sends a feedback about the result of the feedback validation. Returns: JSON information, if the feedback was accepted.
 
 ## 6. Developing
 Install poetry
@@ -154,14 +161,8 @@ poetry run pylint $(git ls-files '*.py')
 You can find the linting rules in the pyproject.toml file.
 
 ### Docker
-HERE BE DRAGONS
-To build you will need your ssh key to the ATC Github, as dsf-edc-lib can only be accessed from there for the time being.
-When this package goes opensource, this part will be not needed on the Dockerfile.
-However, I would like to emphasize, that this way it is dangerous to be used in a production environment, and should be deleted beforehand it goes live.
-YOU HAVE BEEN WARNED
 ```sh
-export SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa)"
-sudo docker build --build-arg SSH_PRIVATE_KEY="$SSH_PRIVATE_KEY" -t dt-pull .
+sudo docker build -t dt-pull .
 ```
 
 For the next command to work, you might need to create a network in Docker:
