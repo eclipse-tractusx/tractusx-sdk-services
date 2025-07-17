@@ -30,7 +30,7 @@ This module provides:
 """
 
 from enum import Enum, auto, unique
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -61,6 +61,20 @@ class Error(Enum):
     DATA_TRANSFER_FAILED = auto()
     SUBMODEL_VALIDATION_FAILED = auto()
     NO_SHELLS_FOUND = auto()
+    UNSUPPORTED_MEDIA_TYPE = auto()
+
+    CERTIFICATE_PARSING_ERROR = auto()
+    SCHEMA_VALIDATION_ERROR = auto()
+    MISSING_DATA = auto()
+    FILE_NOT_FOUND = auto()
+    MISSING_REQUIRED_FIELD = auto()
+    NULL_FOR_REQUIRED_FIELD = auto()
+    REGEX_VALIDATION_FAILED = auto()
+    INVALID_PAYLOAD_TYPE = auto()
+    MULTIPLE_VALIDATION_ERRORS = auto()
+    CONNECTOR_UNAVAILABLE = auto()
+    FEEDBACK_COULD_NOT_BE_SENT = auto()
+    TOO_MANY_ASSETS_FOUND = auto()
 
 
 #: A dictionary of non-default error codes.
@@ -70,6 +84,7 @@ non_default_http_codes = {
     Error.ASSET_NOT_FOUND: 404,
     Error.SUBMODEL_DESCRIPTOR_NOT_FOUND: 404,
     Error.CONTRACT_NEGOTIATION_FAILED: 409,
+    Error.UNSUPPORTED_MEDIA_TYPE: 415,
     Error.POLICY_VALIDATION_FAILED: 422,
     Error.SUBMODEL_DESCRIPTOR_MALFORMED: 422,
     Error.SUBMODEL_VALIDATION_FAILED: 422,
@@ -80,7 +95,20 @@ non_default_http_codes = {
     Error.BAD_GATEWAY: 502,
     Error.CONNECTION_FAILED: 502,
     Error.DATA_TRANSFER_FAILED: 502,
-    Error.UNKNOWN_ERROR: 520
+    Error.UNKNOWN_ERROR: 520,
+
+    Error.CERTIFICATE_PARSING_ERROR: 400,
+    Error.SCHEMA_VALIDATION_ERROR: 422,
+    Error.MISSING_DATA: 400,
+    Error.FILE_NOT_FOUND: 404,
+    Error.MISSING_REQUIRED_FIELD: 422,
+    Error.NULL_FOR_REQUIRED_FIELD: 422,
+    Error.REGEX_VALIDATION_FAILED: 422,
+    Error.INVALID_PAYLOAD_TYPE: 422,
+    Error.MULTIPLE_VALIDATION_ERRORS: 422,
+    Error.CONNECTOR_UNAVAILABLE: 502,
+    Error.FEEDBACK_COULD_NOT_BE_SENT: 502,
+    Error.TOO_MANY_ASSETS_FOUND: 409,
 }
 
 
@@ -127,6 +155,16 @@ class HTTPError(HTTPException):
         return ret
 
 
+class ValidationException(Exception):
+    """
+    Custom exception to aggregate multiple validation errors.
+    """
+    def __init__(self, errors: List[Dict]):
+        self.errors = errors
+        self.message = "Multiple validation errors occurred."
+        super().__init__(self.message)
+
+
 async def http_error_handler(_: Request, exc: HTTPError) -> JSONResponse:
     """
     Handles HTTPError exceptions and returns a JSON response.
@@ -144,3 +182,18 @@ async def http_error_handler(_: Request, exc: HTTPError) -> JSONResponse:
         response_kwargs['headers'] = exc.headers
 
     return JSONResponse(exc.json, **response_kwargs)
+
+
+async def validation_exception_handler(_: Request, exc: ValidationException) -> JSONResponse:
+    """
+    Handles ValidationException and returns a JSON response with a list of errors.
+    """
+
+    return JSONResponse(
+        status_code=non_default_http_codes[Error.MULTIPLE_VALIDATION_ERRORS],
+        content={
+            "error": Error.MULTIPLE_VALIDATION_ERRORS.name,
+            "message": exc.message,
+            "details": exc.errors,
+        },
+    )
