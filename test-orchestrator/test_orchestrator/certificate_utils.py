@@ -367,7 +367,7 @@ def run_certificate_checks(validation_schema: Dict,
 
 
 def read_feedback_rules_schema():
-    """Reades feedback rules from local file"""
+    """Reads feedback rules from local file"""
 
     file_path_feedback = "orchestrator/schema_files/MessageContentAspect-schema.json"
 
@@ -426,7 +426,7 @@ def run_feedback_check(semantic_id_header, semantic_id_content, validation_schem
     try:
         certificate_schema_content = submodel_schema_finder(semantic_id=semantic_id_content)
         rules_schema_content = certificate_schema_content['schema']
-    except Exception as e:
+    except (KeyError, TypeError) as e:
         rules_schema_content = read_feedback_rules_schema()
 
     json_validator(rules_schema_header, validation_schema)

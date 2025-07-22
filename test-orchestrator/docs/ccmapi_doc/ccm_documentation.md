@@ -1,4 +1,4 @@
-# Company Certificate Mangement (CCM) test-agent – PUSH : Documentation
+# Company Certificate Management (CCM) test-agent – PUSH : Documentation
 
 ## 1. Overview
 
