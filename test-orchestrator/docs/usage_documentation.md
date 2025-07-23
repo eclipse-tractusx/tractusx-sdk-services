@@ -63,7 +63,7 @@ These two tests show an example of when the test fails (test 1) and succeeds (te
 This test is an example of what should happen when all previous steps (DTR access, shell_descriptors retrieval, submodel access, submodel retrieval, schema retrieval) run successfully, but the retrieved submodel fails validation against the correctly identified jsonschema. 
 
 ```http
-GET test-cases/industry-core/v1/submodel-test/?counter_party_id=BPNL00000000000&counter_party_address=https://edc-controlplane.url/api/v1/dsp&semantic_id=urn:samm:io.catenax.serial_part:3.0.0%23SerialPart&aas_id=urn:uuid:da071e28-8cf2-46a1-b5af-65231887c7c5
+GET test-cases/industry-core/v1/submodel-test/?counter_party_id=BPNL00000000000&counter_party_address=https://edc-controlplane.url/api/v1/dsp&semantic_id=urn:samm:io.catenax.serial_part:3.0.0%23SerialPart&aas_id=urn:uuid:aasuuid2-111a-111a-aaaa-aa1aaaaaa11a
 Host: localhost:8000/
 ```
 
@@ -131,7 +131,7 @@ This test should run successfully and produce the following output:
 This test is an example of what should happen when all steps run successfully and the retrieved submodel json is validated against the corresponding jsonschema. 
 
 ```http
-GET test-cases/industry-core/v1/submodel-test/?counter_party_id=BPNL00000000000&counter_party_address=https://edc-controlplane.url/api/v1/dsp&semantic_id=urn:samm:io.catenax.single_level_bom_as_built:3.0.0%23SingleLevelBomAsBuilt&aas_id=urn:uuid:5bbb6d32-439e-461a-afff-ce6fbadaf29a
+GET test-cases/industry-core/v1/submodel-test/?counter_party_id=BPNL00000000000&counter_party_address=https://edc-controlplane.url/api/v1/dsp&semantic_id=urn:samm:io.catenax.single_level_bom_as_built:3.0.0%23SingleLevelBomAsBuilt&aas_id=urn:uuid:aasuuid2-111a-111a-aaaa-aa1aaaaaa11a
 Host: localhost:8000/
 ```
 

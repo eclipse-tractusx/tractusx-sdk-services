@@ -97,9 +97,10 @@ async def test_make_request_http_error(test_app, constants):
 
     assert response.status_code == 502
     assert response.json() == {
-        'details': 'Please check '
-        'https://eclipse-tractusx.github.io/docs-kits/kits/connector-kit/operation-view/ '
-        'for troubleshooting.',
-        'error': 'CONNECTION_FAILED',
-        'message': 'Connection to the connector was not successful',
+        'details': "The testbed can't access the specified connector. Make sure the counter_party_address points "
+                   "to the DSP endpoint of your connector and the counter_party_id is correct. Please check "
+                   "https://eclipse-tractusx.github.io/docs-kits/kits/connector-kit/operation-view/ "
+                   "for troubleshooting.",
+        'error': 'CONNECTOR_UNAVAILABLE',
+        'message': 'Connection to your connector was not successful.'
     }

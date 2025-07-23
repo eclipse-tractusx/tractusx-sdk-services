@@ -190,17 +190,16 @@ async def submodel_test(counter_party_address: str,
             message='The asset that is specified in the subprotocol body can’t be accessed.' +\
                     'Make sure the connector hosting it is available and the asset is visible ' +\
                     'to the testbed connector',
-            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' +\
-                    'software-development-view/digital-twins-development-view#edc-policies for troubleshooting.')
+            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                    'software-development-view/digital-twins#edc-policies for troubleshooting.')
 
     if 'errors' in shell_descriptors_spec:
         raise HTTPError(
             Error.AAS_ID_NOT_FOUND,
             message=f'The AAS ID {aas_id} could not be found in the DTR. ' +\
                     'Make sure you passed the right AAS ID',
-            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' +\
-                    'software-development-view/digital-twins-development-view' +\
-                    '#conventions-for-creating-digital-twins for troubleshooting.')
+            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                    'software-development-view/digital-twins#edc-policies for troubleshooting.')
 
     #Checking if shell_descriptors is not empty
     if 'submodelDescriptors' not in shell_descriptors_spec:
@@ -245,9 +244,8 @@ async def submodel_test(counter_party_address: str,
                 Error.SUBMODEL_DESCRIPTOR_NOT_FOUND,
                 message=f'The submodel descriptor for semanticID {semantic_id} could not be found in the DTR. ' +\
                         'Make sure the submodel is registered accordingly and visible for the testbed BPNL',
-                details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' +\
-                        'software-development-view/digital-twins-development-view' +\
-                        '#conventions-for-creating-digital-twins for troubleshooting.')
+                details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                        'software-development-view/digital-twins#edc-policies for troubleshooting.')
 
         submodel_info = fetch_submodel_info(correct_element, semantic_id)
 
@@ -286,7 +284,7 @@ async def submodel_test(counter_party_address: str,
                 message=f'The validation of the requested submodel for semanticID {semantic_id} failed: ' + \
                         'Could not find the submodel schema based on the semantic_id provided.',
                 details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
-                        'software-development-view/aspect-models-development-view for troubleshooting and samples.')
+                        'software-development-view/aspect-models for troubleshooting and samples.')
 
         subm_validation_error = json_validator(subm_schema, submodels)
 

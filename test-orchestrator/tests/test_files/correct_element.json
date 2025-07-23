@@ -4,13 +4,13 @@
             {
                 "interface": "SUBMODEL-3.0",
                 "protocolInformation": {
-                    "href": "https://dataplane-trace-prpd.edc.aws.bmw.cloud/public/urn:uuid:20f19751-56c7-48e6-aa9a-08565484bac2/submodel",
+                    "href": "https://dataplane-example.cloud/public/urn:uuid:fakeuuid/submodel",
                     "endpointProtocol": "HTTP",
                     "endpointProtocolVersion": [
                         "1.1"
                     ],
                     "subprotocol": "DSP",
-                    "subprotocolBody": "id=battery_bundle_slbb;dspEndpoint=https://connector-trace-prpd.edc.aws.bmw.cloud/api/v1/dsp",
+                    "subprotocolBody": "id=battery_bundle_slbb;dspEndpoint=https://connector-example.cloud/api/v1/dsp",
                     "subprotocolBodyEncoding": "plain",
                     "securityAttributes": [
                         {
@@ -23,7 +23,7 @@
             }
         ],
         "idShort": "singleLevelBoMAsBuilt",
-        "id": "urn:uuid:20f19751-56c7-48e6-aa9a-08565484bac2",
+        "id": "urn:uuid:fakeuuid",
         "semanticId": {
             "type": "ExternalReference",
             "keys": [
