@@ -109,6 +109,15 @@ async def get_dtr_access(counter_party_address: str,
                                               'limit': limit},
                                       headers=get_dt_pull_service_headers())
 
+    # Validate if there is a DTR offer available
+    if len(catalog_json["dcat:dataset"]) == 0:
+        raise HTTPError(
+            Error.CONTRACT_NEGOTIATION_FAILED,
+            message='There were no offers for the digital twin registry found in this connectors catalog. ' + \
+                    'Either the properties or access policy of the DTR asset are misconfigured.',
+            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/' + \
+                    'software-development-view/#digital-twin-registry-as-edc-data-asset for troubleshooting.')
+
     # Validate result of the policy from the catalog if required
     policy_validation_outcome = validate_policy(catalog_json)
 
