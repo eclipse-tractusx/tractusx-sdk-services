@@ -106,20 +106,18 @@ async def dtr_ping_test(counter_party_address: str,
      - :return: A dictionary containing a success or an error message.
     """
 
-    try:
-        dataplane_url, dtr_key, _ = await get_dtr_access(
+    dataplane_url, dtr_key, _ = await get_dtr_access(
                 counter_party_address,
                 counter_party_id,
                 operand_left='http://purl.org/dc/terms/type',
                 operand_right='%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%',
                 limit=1)
-
+    try:
+        
         shell_descriptors = await make_request('GET',
                                                f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
-                                               params={'dataplane_url': dataplane_url, 'limit': 1},
-                                               headers = get_dt_pull_service_headers(headers={'Authorization': dtr_key}),
-                                               timeout=60
-                                               )
+                                               params={'dataplane_url': dataplane_url},
+                                               headers = {'Authorization': dtr_key})
     except HTTPError:
         raise HTTPError(
             Error.CONNECTION_FAILED,
