@@ -52,9 +52,8 @@ RUN apt-get update && apt-get install -y curl && \
 
 WORKDIR /app
 
-# Copy Poetry installation and dependencies from builder
+# Copy Poetry installation from builder
 COPY --from=builder /opt/poetry /opt/poetry
-COPY --from=builder /root/.cache/pypoetry /root/.cache/pypoetry
 COPY --from=builder /app /app
 COPY . .
 
@@ -66,17 +65,16 @@ ENV POETRY_VENV_IN_PROJECT=true
 ENV POETRY_NO_INTERACTION=1
 RUN mkdir -p /tmp/poetry-cache
 
-# Fix permissions for app files, Poetry installation, Poetry cache, and tmp directory BEFORE switching user
+# Fix permissions for app files, Poetry installation, virtual environment, and tmp directory BEFORE switching user
 RUN chown -R 10000:10001 /app && chmod -R 775 /app/ && \
     chown -R 10000:10001 /opt/poetry && chmod -R 755 /opt/poetry && \
-    chown -R 10000:10001 /root/.cache && chmod -R 755 /root/.cache && \
     chown -R 10000:10001 /tmp/poetry-cache && chmod -R 755 /tmp/poetry-cache
 
 ## Choose the user
 USER 10000:10001 
 
-# Install dependencies and ensure virtual environment is created
-RUN poetry install --only=main --no-interaction --no-ansi
+# Verify Poetry works and create virtual environment for non-root user
+RUN poetry env info && poetry install --only=main --no-interaction --no-ansi
 
 # Expose the port for uvicorn
 EXPOSE 8001

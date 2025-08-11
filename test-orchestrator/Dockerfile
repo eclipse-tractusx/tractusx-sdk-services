@@ -28,16 +28,18 @@ ENV POETRY_VERSION=1.6.1 \
     PYTHONUNBUFFERED=1
 
 # Install Poetry
-RUN apt-get update && apt-get install -y curl && \
-    curl -sSL https://install.python-poetry.org | python3 - && \
-    ln -s /root/.local/bin/poetry /usr/local/bin/poetry && \
+ENV POETRY_HOME="/opt/poetry"
+ENV PATH="$POETRY_HOME/bin:$PATH"
+RUN apt-get update && apt-get install -y curl openssh-client && \
+    curl -sSL https://install.python-poetry.org | POETRY_HOME=$POETRY_HOME python3 - && \
+    chmod -R 755 $POETRY_HOME && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY pyproject.toml poetry.lock ./
 
 # Install dependencies using Poetry
-RUN poetry install --no-dev --no-interaction --no-ansi
+RUN poetry install --only=main --no-interaction --no-ansi
 
 COPY . .
 
@@ -49,24 +51,31 @@ RUN apt-get update && apt-get install -y curl libpq-dev && \
 # Set working directory
 WORKDIR /app
 
-# Copy installed dependencies from builder
-COPY --from=builder /root/.cache/pypoetry /root/.cache/pypoetry
+# Copy Poetry installation from builder
+COPY --from=builder /opt/poetry /opt/poetry
 COPY --from=builder /app /app
 COPY . .
 
-# Install Poetry in a location accessible to the non-root user
+# Set Poetry environment variables
 ENV POETRY_HOME="/opt/poetry"
 ENV PATH="$POETRY_HOME/bin:$PATH"
-RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=$POETRY_HOME python3 - && \
-    chmod -R 755 $POETRY_HOME
+ENV POETRY_CACHE_DIR="/tmp/poetry-cache"
+ENV POETRY_VENV_IN_PROJECT=true
+ENV POETRY_NO_INTERACTION=1
+RUN mkdir -p /tmp/poetry-cache
 
-# Fix permissions for app files and Poetry cache BEFORE switching user
+# Fix permissions for app files, Poetry installation, and tmp directory BEFORE switching user
 RUN chown -R 10000:10001 /app && chmod -R 775 /app/ && \
-    chown -R 10000:10001 /root/.cache && chmod -R 755 /root/.cache
+    chown -R 10000:10001 /opt/poetry && chmod -R 755 /opt/poetry && \
+    chown -R 10000:10001 /tmp/poetry-cache && chmod -R 755 /tmp/poetry-cache
 
 ## Choose the user
 USER 10000:10001 
+
+# Verify Poetry works and create virtual environment for non-root user
+RUN poetry env info && poetry install --only=main --no-interaction --no-ansi
+
 # Expose the port for uvicorn
 EXPOSE 8000
 
-CMD ["poetry", "run", "uvicorn", "--host", "0.0.0.0", "--port", "8000", "--factory", "test_orchestrator.app:create_app", "--proxy-headers"]
+CMD ["poetry", "run", "uvicorn", "--host", "0.0.0.0", "--port", "8000", "--factory", "test_orchestrator.app:create_app", "--proxy-headers", "--timeout-graceful-shutdown", "30"]
