@@ -43,13 +43,8 @@ COPY . .
 
 FROM python:3.13.2-slim AS runtime
 
-# Install runtime dependencies
 RUN apt-get update && apt-get install -y curl libpq-dev && \
-    curl -sSL https://install.python-poetry.org | python3 - && \
-    ln -s /root/.local/bin/poetry /usr/local/bin/poetry && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
-
-ENV PATH="/root/.local/bin:$PATH"
 
 # Set working directory
 WORKDIR /app
@@ -59,7 +54,15 @@ COPY --from=builder /root/.cache/pypoetry /root/.cache/pypoetry
 COPY --from=builder /app /app
 COPY . .
 
-RUN chown -R 10000:10001 /app && chmod -R 775 /app/
+# Install Poetry in a location accessible to the non-root user
+ENV POETRY_HOME="/opt/poetry"
+ENV PATH="$POETRY_HOME/bin:$PATH"
+RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=$POETRY_HOME python3 - && \
+    chmod -R 755 $POETRY_HOME
+
+# Fix permissions for app files and Poetry cache BEFORE switching user
+RUN chown -R 10000:10001 /app && chmod -R 775 /app/ && \
+    chown -R 10000:10001 /root/.cache && chmod -R 755 /root/.cache
 
 ## Choose the user
 USER 10000:10001 
