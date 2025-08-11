@@ -59,6 +59,10 @@ COPY --from=builder /root/.cache/pypoetry /root/.cache/pypoetry
 COPY --from=builder /app /app
 COPY . .
 
+RUN chown -R 10000:10001 /app && chmod -R 775 /app/
+
+## Choose the user
+USER 10000:10001 
 # Expose the port for uvicorn
 EXPOSE 8000
 

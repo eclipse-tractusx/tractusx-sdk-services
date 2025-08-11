@@ -21,3 +21,13 @@ As with all Docker images, these likely also contain other software which may be
 (such as Bash, etc. from the base distribution, along with any direct or indirect dependencies of the primary software being contained).
 
 As for any pre-built image usage, it is the image user's responsibility to ensure that any use of this image complies with any relevant licenses for all software contained within.
+
+## NOTICE
+
+This work is licensed under the [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/legalcode).
+
+- SPDX-License-Identifier: CC-BY-4.0
+- SPDX-FileCopyrightText: 2025 BMW AG
+- SPDX-FileCopyrightText: 2025 Contributors to the Eclipse Foundation
+- Source URL: https://github.com/eclipse-tractusx/tractusx-sdk-services
+
