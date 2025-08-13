@@ -48,7 +48,8 @@ logger = logging.getLogger(__name__)
             response_model=Dict,
             dependencies=[Depends(verify_auth)])
 async def ping_test(counter_party_address: str,
-                    counter_party_id: str):
+                    counter_party_id: str,
+                    timeout: int = 80):
     """
     This test case executes a catalogue request for the dsp endpoint of a specified connector (counter_party_address)
     to check if the connector is reachable. The test is successful if the test-agent receives a status code 200
@@ -68,7 +69,8 @@ async def ping_test(counter_party_address: str,
                                    'operand_right': '%https://w3id.org/catenax/taxonomy%23DigitalTwinRegistry%',
                                    'counter_party_address': counter_party_address,
                                    'counter_party_id': counter_party_id},
-                           headers=get_dt_pull_service_headers())
+                           headers=get_dt_pull_service_headers(),
+                           timeout=timeout)
 
     except HTTPError:
         raise HTTPError(
@@ -87,7 +89,8 @@ async def ping_test(counter_party_address: str,
             response_model=Dict,
             dependencies=[Depends(verify_auth)])
 async def dtr_ping_test(counter_party_address: str,
-                        counter_party_id: str):
+                        counter_party_id: str,
+                        timeout: int = 80):
     """
     This test case checks if the digital twin registry (DTR) of the test subject is reachable.
     The test is successful if the test-agent was able to perform the following steps:
@@ -111,13 +114,15 @@ async def dtr_ping_test(counter_party_address: str,
                 counter_party_id,
                 operand_left='http://purl.org/dc/terms/type',
                 operand_right='%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%',
-                limit=1)
+                limit=1,
+                timeout=timeout)
     try:
         
         shell_descriptors = await make_request('GET',
                                                f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
                                                params={'dataplane_url': dataplane_url},
-                                               headers = {'Authorization': dtr_key})
+                                               headers = {'Authorization': dtr_key},
+                                               timeout=timeout)
     except HTTPError:
         raise HTTPError(
             Error.CONNECTION_FAILED,

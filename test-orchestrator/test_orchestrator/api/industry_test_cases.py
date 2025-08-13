@@ -56,7 +56,8 @@ async def shell_descriptors_test(
     operand_left: Optional[str] = 'http://purl.org/dc/terms/type',
     operator: Optional[str] = 'like',
     operand_right: Optional[str] ='%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%',
-    policy_validation: Optional[bool] = None):
+    policy_validation: Optional[bool] = None,
+    timeout: int = 80):
 
     """
     This test case validates if a sample of digital twins registered in the digital twin registry (DTR)
@@ -88,7 +89,8 @@ async def shell_descriptors_test(
         operand_left=operand_left,
         operator=operator,
         operand_right=operand_right,
-        policy_validation=policy_validation
+        policy_validation=policy_validation,
+        timeout=timeout
         )
 
     shell_descriptors = await make_request(
@@ -96,7 +98,7 @@ async def shell_descriptors_test(
         f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
         params={'dataplane_url': dtr_url, 'limit': 1},
         headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key}),
-        timeout=60)
+        timeout=timeout)
 
     #Checking if shell_descriptors is not empty
     if 'result' not in shell_descriptors:
@@ -132,7 +134,8 @@ async def submodel_test(counter_party_address: str,
                         operand_left: Optional[str] = 'http://purl.org/dc/terms/type',
                         operator: Optional[str] = 'like',
                         operand_right: Optional[str] = '%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%',
-                        policy_validation: Optional[bool] = None
+                        policy_validation: Optional[bool] = None,
+                        timeout: int = 80
                         ):
     """
     This test case fetches and validates data for a specific submodel of a digital twin identified by the aas_id
@@ -173,7 +176,8 @@ async def submodel_test(counter_party_address: str,
         operand_left=operand_left,
         operand_right=operand_right,
         operator=operator,
-        policy_validation=policy_validation)
+        policy_validation=policy_validation,
+        timeout=timeout)
 
     # Here we get the main catalog only for the global asset specifice by catenaXid
     try:
@@ -182,7 +186,7 @@ async def submodel_test(counter_party_address: str,
             f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
             params={'dataplane_url': dtr_url_shell, 'aas_id': aas_id, 'limit': 1},
             headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key_shell}),
-            timeout=60)
+            timeout=timeout)
 
     except HTTPError:
         raise HTTPError(

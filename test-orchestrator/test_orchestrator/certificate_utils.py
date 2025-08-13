@@ -49,7 +49,8 @@ async def send_feedback(payload: Dict,
                         status: Literal['SUCCESS', 'REJECTED', 'RECEIVED'],
                         dataplane_url: str,
                         dataplane_access_key: str,
-                        errors: List
+                        errors: List,
+                        timeout: int = 80
                         ) -> Dict:
     """
     Sends a feedback message via the DTR endpoint using information extracted from the given payload.
@@ -104,7 +105,8 @@ async def send_feedback(payload: Dict,
             f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/send-feedback/',
             params={'dataplane_url': dataplane_url},
             json=message_body,
-            headers={'Authorization': dataplane_access_key})
+            headers={'Authorization': dataplane_access_key},
+            timeout=timeout)
     except HTTPError:
         raise HTTPError(
             Error.FEEDBACK_COULD_NOT_BE_SENT,
@@ -155,7 +157,8 @@ async def read_asset_policy(counter_party_address: str,
                             operator: Optional[str] = 'like',
                             operand_right: Optional[str] = None,
                             offset: Optional[int] = 0,
-                            limit: Optional[int] = 100):
+                            limit: Optional[int] = 100,
+                            timeout: int = 80):
     """Fetches asset and policy data from the catalog service.
 
     This function queries an external catalog service to retrieve the asset ID
@@ -184,7 +187,8 @@ async def read_asset_policy(counter_party_address: str,
                                                   'counter_party_address': counter_party_address,
                                                   'counter_party_id': counter_party_id,
                                                   'offset': offset,
-                                                  'limit': limit})
+                                                  'limit': limit},
+                                          timeout=timeout)
     except Exception as e:
         logger.info(f"counter_party_address or counter_party_id might be invalid. Exception: {e}")
         raise HTTPError(
@@ -440,7 +444,8 @@ async def get_ccmapi_access(counter_party_address: str,
                             operand_right: Optional[str] = None,
                             offset: Optional[int] = 0,
                             limit: Optional[int] = 100,
-                            asset_validation: Optional[bool] = None):
+                            asset_validation: Optional[bool] = None,
+                            timeout: int = 80):
     """
     Retrieves DTR access credentials for a CCMAPI asset by querying the remote catalog.
 
@@ -470,7 +475,8 @@ async def get_ccmapi_access(counter_party_address: str,
                                                   'counter_party_address': counter_party_address,
                                                   'counter_party_id': counter_party_id,
                                                   'offset': offset,
-                                                  'limit': limit})
+                                                  'limit': limit},
+                                          timeout=timeout)
     except Exception as e:
         logger.info(f"counter_party_address or counter_party_id might be invalid. Exception: {e}")
 
@@ -507,7 +513,8 @@ async def get_ccmapi_access(counter_party_address: str,
                                               f'{config.DT_PULL_SERVICE_ADDRESS}/edr/init-negotiation/',
                                               params={'counter_party_address': counter_party_address,
                                                       'counter_party_id': counter_party_id},
-                                              json=catalog_json)
+                                              json=catalog_json,
+                                              timeout=timeout)
     except HTTPError:
         raise HTTPError(
             Error.CONTRACT_NEGOTIATION_FAILED,
@@ -520,7 +527,8 @@ async def get_ccmapi_access(counter_party_address: str,
                        f'{config.DT_PULL_SERVICE_ADDRESS}/edr/negotiation-state/',
                        params={'counter_party_address': counter_party_address,
                                'counter_party_id': counter_party_id,
-                               'state_id': edr_state_id})
+                               'state_id': edr_state_id},
+                       timeout=timeout)
 
     data = {
         '@context': {'@vocab': 'https://w3id.org/edc/v0.0.1/ns/'},
@@ -543,6 +551,7 @@ async def get_ccmapi_access(counter_party_address: str,
                                           f'{config.DT_PULL_SERVICE_ADDRESS}/edr/data-address/',
                                           params={'counter_party_address': counter_party_address,
                                                   'counter_party_id': counter_party_id,
-                                                  'transfer_process_id': transfer_process_id})
+                                                  'transfer_process_id': transfer_process_id},
+                                          timeout=timeout)
 
     return edr_data_address.get('endpoint'), edr_data_address.get('authorization')

@@ -35,7 +35,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-async def make_request(method: str, url: str, timeout:int=15, **kwargs):
+async def make_request(method: str, url: str, timeout:int=80, **kwargs):
     """
     Makes an HTTP request and handles errors consistently.
 
@@ -93,7 +93,7 @@ async def make_request(method: str, url: str, timeout:int=15, **kwargs):
                             details=str(e)) from e
 
 
-async def make_request_with_retry(method: str, url: str, retries: int = 3, delay: int = 2, **kwargs):
+async def make_request_with_retry(method: str, url: str, retries: int = 3, delay: int = 2, timeout: int = 80, **kwargs):
     """
     Retrieves a response from an HTTP request with retry logic.
 
@@ -101,6 +101,7 @@ async def make_request_with_retry(method: str, url: str, retries: int = 3, delay
     :param url: The request URL
     :param retries: The number of retries we try to get the request to work. Default is 3.
     :param delay: Initial delay (in seconds) between retries. Default is 2 seconds.
+    :param timeout: Timeout for the request in seconds. Default is 80 seconds.
     :param kwargs: Additional arguments for httpx.request
     :return: Response JSON if successful
     :raises HTTPError: Custom exception if request fails
@@ -110,7 +111,7 @@ async def make_request_with_retry(method: str, url: str, retries: int = 3, delay
 
     while attempt < retries:
         try:
-            response = await make_request(method, url, **kwargs)
+            response = await make_request(method, url, timeout=timeout, **kwargs)
 
             return response
 

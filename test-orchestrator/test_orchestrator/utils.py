@@ -34,7 +34,7 @@ from test_orchestrator.request_handler import make_request
 from test_orchestrator.auth import get_dt_pull_service_headers
 
 # pylint: disable=R1702, R0912
-async def fetch_transfer_process(retries=5, delay=2, **request_params):
+async def fetch_transfer_process(retries=5, delay=2, timeout: int = 80, **request_params):
     """
     Retry mechanism for fetching the transfer process with exponential backoff.
 
@@ -55,7 +55,8 @@ async def fetch_transfer_process(retries=5, delay=2, **request_params):
                                       params={'counter_party_address': request_params['counter_party_address'],
                                               'counter_party_id': request_params['counter_party_id']},
                                       json=request_params['data'],
-                                      headers=get_dt_pull_service_headers())
+                                      headers=get_dt_pull_service_headers(),
+                                      timeout=timeout)
 
         if response and isinstance(response, list) and len(response) > 0:
             return response
@@ -78,7 +79,8 @@ async def get_dtr_access(counter_party_address: str,
                          operand_right: Optional[str] = None,
                          offset: Optional[int] = 0,
                          limit: Optional[int] = 10,
-                         policy_validation: Optional[bool] = None):
+                         policy_validation: Optional[bool] = None,
+                         timeout: int = 80):
     """
     Retrieves the Digital Twin Registry (DTR) access details.
 
@@ -107,6 +109,7 @@ async def get_dtr_access(counter_party_address: str,
                                               'counter_party_id': counter_party_id,
                                               'offset': offset,
                                               'limit': limit},
+                                      timeout=timeout,
                                       headers=get_dt_pull_service_headers())
 
     # Validate if there is a DTR offer available
@@ -135,7 +138,8 @@ async def get_dtr_access(counter_party_address: str,
                                               params={'counter_party_address': counter_party_address,
                                                       'counter_party_id': counter_party_id},
                                               json=catalog_json,
-                                              headers=get_dt_pull_service_headers())
+                                              headers=get_dt_pull_service_headers(),
+                                              timeout=timeout)
     except HTTPError:
         raise HTTPError(
             Error.CONTRACT_NEGOTIATION_FAILED,
@@ -152,7 +156,8 @@ async def get_dtr_access(counter_party_address: str,
                        params={'counter_party_address': counter_party_address,
                                'counter_party_id': counter_party_id,
                                'state_id': edr_state_id},
-                       headers=get_dt_pull_service_headers())
+                       headers=get_dt_pull_service_headers(),
+                       timeout=timeout)
 
     data = {
         '@context': {'@vocab': 'https://w3id.org/edc/v0.0.1/ns/'},
@@ -167,7 +172,8 @@ async def get_dtr_access(counter_party_address: str,
     transfer_process = await fetch_transfer_process(
         counter_party_address=counter_party_address,
         counter_party_id=counter_party_id,
-        data=data
+        data=data,
+        timeout=timeout
     )
     transfer_process_id = transfer_process[0]['transferProcessId']
 
@@ -176,7 +182,8 @@ async def get_dtr_access(counter_party_address: str,
                                           params={'counter_party_address': counter_party_address,
                                                   'counter_party_id': counter_party_id,
                                                   'transfer_process_id': transfer_process_id},
-                                          headers=get_dt_pull_service_headers())
+                                          headers=get_dt_pull_service_headers(),
+                                          timeout=timeout)
 
     return edr_data_address.get('endpoint'), edr_data_address.get('authorization'), policy_validation_outcome
 

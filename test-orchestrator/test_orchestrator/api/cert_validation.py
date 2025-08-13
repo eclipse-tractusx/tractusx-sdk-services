@@ -67,7 +67,8 @@ logger = logging.getLogger(__name__)
             dependencies=[Depends(verify_auth)])
 async def validate_ccmapi_offer_setup(counter_party_address: str,
                                       counter_party_id: str,
-                                      contract_reference: bool = True) -> Dict:
+                                      contract_reference: bool = True,
+                                      timeout: int = 80) -> Dict:
     """
     This test case validates if the CCMAPI Offer is set up correctly. The test is successful if the test-agent is
     able to perform the following steps:
@@ -86,7 +87,8 @@ async def validate_ccmapi_offer_setup(counter_party_address: str,
     asset_id, policies = await read_asset_policy(counter_party_address = counter_party_address,
                                                  counter_party_id = counter_party_id,
                                                  operand_left='http://purl.org/dc/terms/type',
-                                                 operand_right='%https://w3id.org/catenax/taxonomy#CCMAPI%')
+                                                 operand_right='%https://w3id.org/catenax/taxonomy#CCMAPI%',
+                                                 timeout=timeout)
 
     if asset_id is None:
         raise HTTPError(
@@ -119,7 +121,8 @@ async def validate_ccmapi_offer_setup(counter_party_address: str,
             dependencies=[Depends(verify_auth)])
 async def feedback_message_validation(payload: Dict,
                                       semantic_id_header: Optional[str] = SEMANTIC_ID_FEEDBACK_MESSAGE_HEADER,
-                                      semantic_id_content: Optional[str] = SEMANTIC_ID_FEEDBACK_MESSAGE_CONTENT):
+                                      semantic_id_content: Optional[str] = SEMANTIC_ID_FEEDBACK_MESSAGE_CONTENT,
+                                      timeout: int = 80):
     """
         This test case validates if a feedback message that is given as input conforms with the corresponding semantic
         model. It accepts the feedback types for “Status:Received”, “Status:Rejected” and “Status:Accepted”.
@@ -151,7 +154,8 @@ async def feedback_mechanism_validation(counter_party_address: str,
                                         counter_party_id: str,
                                         message_type: Optional[Literal['RECEIVED',
                                                                        'ACCEPTED',
-                                                                       'REJECTED']] = 'RECEIVED'):
+                                                                       'REJECTED']] = 'RECEIVED',
+                                        timeout: int = 80):
     """
     This test case validates if the feedback mechanism of the test subject works. The test is successful,
     if the test-agent is able to perform the following steps:
@@ -175,7 +179,8 @@ async def feedback_mechanism_validation(counter_party_address: str,
                                     counter_party_id = counter_party_id,
                                     operand_left = 'http://purl.org/dc/terms/type',
                                     operand_right = '%https://w3id.org/catenax/taxonomy#CCMAPI%',
-                                    asset_validation=True))
+                                    asset_validation=True,
+                                    timeout=timeout))
 
     payload = {'header': {'senderFeedbackUrl': counter_party_address,
                           'receiverBpn': counter_party_id,
@@ -232,7 +237,7 @@ async def feedback_mechanism_validation(counter_party_address: str,
                 }
         ]
 
-    await send_feedback(payload, message_type, dataplane_url, dataplane_access_key, errors=errors)
+    await send_feedback(payload, message_type, dataplane_url, dataplane_access_key, errors=errors, timeout=timeout)
 
     return {'status': 'ok',
             'message': f'{message_type} feedback sent successfully'}
@@ -243,7 +248,8 @@ async def feedback_mechanism_validation(counter_party_address: str,
              dependencies=[Depends(verify_auth)])
 async def validate_certificate(payload: Dict,
                                semantic_id: Optional[str] = SEMANTIC_ID_BUSINESS_PARTNER_CERTIFICATE,
-                               contract_reference: bool = True):
+                               contract_reference: bool = True,
+                               timeout: int = 80):
     """
     This test case validates if a certificate that is given as input conforms with the latest
     Business Partner Certificate semantic model
@@ -270,9 +276,10 @@ async def validate_certificate(payload: Dict,
                                                 counter_party_id=payload.get('header').get('senderBpn'),
                                                 operand_left='http://purl.org/dc/terms/type',
                                                 operand_right='%https://w3id.org/catenax/taxonomy#CCMAPI%',
-                                                asset_validation=True)
+                                                asset_validation=True,
+                                                timeout=timeout)
 
-    await send_feedback(payload, 'RECEIVED', dataplane_url, dataplane_access_key, errors=[])
+    await send_feedback(payload, 'RECEIVED', dataplane_url, dataplane_access_key, errors=[], timeout=timeout)
 
     result_asset_policy = {}
 
@@ -280,13 +287,14 @@ async def validate_certificate(payload: Dict,
         result_asset_policy = await validate_ccmapi_offer_setup(
             counter_party_address=payload.get('header').get('senderFeedbackUrl'),
             counter_party_id=payload.get('header').get('senderBpn'),
-            contract_reference=contract_reference)
+            contract_reference=contract_reference,
+            timeout=timeout)
         run_certificate_checks(validation_schema=payload,
                                semantic_id=semantic_id)
 
     except HTTPError as e:
         logger.error(f"Certificate validation failed with multiple errors: {e.json}")
-        await send_feedback(payload, 'REJECTED', dataplane_url, dataplane_access_key, errors=[e.json])
+        await send_feedback(payload, 'REJECTED', dataplane_url, dataplane_access_key, errors=[e.json], timeout=timeout)
 
         if 'warning' in result_asset_policy:
             if e.status_code == 422:
@@ -294,7 +302,7 @@ async def validate_certificate(payload: Dict,
 
         raise
 
-    await send_feedback(payload, 'ACCEPTED', dataplane_url, dataplane_access_key, errors=[])
+    await send_feedback(payload, 'ACCEPTED', dataplane_url, dataplane_access_key, errors=[], timeout=timeout)
 
     if 'warning' in result_asset_policy:
         return {
