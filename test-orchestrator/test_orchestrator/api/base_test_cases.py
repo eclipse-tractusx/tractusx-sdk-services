@@ -120,8 +120,8 @@ async def dtr_ping_test(counter_party_address: str,
         
         shell_descriptors = await make_request('GET',
                                                f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
-                                               params={'dataplane_url': dataplane_url},
-                                               headers = {'Authorization': dtr_key},
+                                               params={'dataplane_url': dataplane_url, 'limit': 1},
+                                                headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key}),
                                                timeout=timeout)
     except HTTPError:
         raise HTTPError(
