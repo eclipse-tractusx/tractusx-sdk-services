@@ -262,13 +262,14 @@ async def submodel_test(counter_party_address: str,
             policy_validation=False
             )
 
-        # Run the submodels request pointed at the href link
-        response = httpx.get(submodel_info['href'], headers={'Authorization': dtr_key_subm})
+        # Run the submodels request pointed at the href link. To comply with industry core standards, the testbed appends $value.
+        response = httpx.get(submodel_info['href']+'/$value', headers={'Authorization': dtr_key_subm})
 
         if response.status_code != 200:
             raise HTTPError(Error.UNPROCESSABLE_ENTITY,
-                            message='Failed to obtain the required submodel',
-                            details={'href': submodel_info['href']})
+                            message=f'Make sure your dataplane can resolve the request and that the href above ' +\
+                                    'is according to the industry core specification, ending in /submodel.',
+                            details=f'Failed to obtain the required submodel data for({submodel_info['href']}).')
 
         try:
             submodels = response.json()
