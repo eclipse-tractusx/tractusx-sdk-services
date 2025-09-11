@@ -48,7 +48,6 @@ async def make_request(method: str, url: str, timeout:int=80, **kwargs):
 
     async with httpx.AsyncClient() as client:
         try:
-            print(url)
             response = await client.request(method, url, timeout=timeout, **kwargs)
             try:
                 response_json = response.json()

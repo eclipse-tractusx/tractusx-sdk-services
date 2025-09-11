@@ -293,7 +293,25 @@ class EdrHandler:
 
         logger.warning(f'EDR negotiation state {state}')
 
-        raise EdrRequestError('EDR Contract negotiation failed!')
+        return state_json
+
+    def check_edr_negotiation_result(self, edr_id_response: str):
+            """
+            Retries and checks the EDR negotiation state until finalized.
+
+            :param edr_id_response: The ID response obtained from the EDR negotiation initiation.
+            :raises EdrRequestError: Raised if the EDR contract negotiation fails.
+            :return: A JSON object containing the finalized negotiation state.
+            """
+
+            logger.info('Checking EDR negotiation result')
+
+            negotiation_result_json:requests.Response = self.edc_client.contract_negotiations.get_by_id(
+                                    edr_id_response,
+                                    proxies=self.proxies)
+            negotiation_result_json = negotiation_result_json.json()
+
+            return negotiation_result_json
 
 
     def negotiate_ddtr_transfer_process_id(self):
@@ -316,7 +334,9 @@ class EdrHandler:
         edr_id_response = self.initiate_edr_negotiate(edr_offer_id, edr_asset_id, edr_permission,
                                                       edr_prohibition,
                                                       edr_obligation)['@id']
+
         self.check_edr_negotiate_state(edr_id_response)
+
         data = {
             "@context": {
                 "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
