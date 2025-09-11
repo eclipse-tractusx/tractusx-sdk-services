@@ -36,6 +36,7 @@ def get_dtr_handler(dtr_url: str, authorization: str):
     :param authorization: The negotiated key to access the DTR.
     :return: An initialized DtrHandler instance.
     """
+    
     dtr_handler = DtrHandler(
             dtr_url,
             authorization,

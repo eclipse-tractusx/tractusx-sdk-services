@@ -48,7 +48,9 @@ async def shell_descriptors(dataplane_url: str,
      - :param aas_id: The aas_id (asset) to get the shell descriptor for.
      - :return: A JSON object containing the shell descriptor details.
     """
+
     dtr_handler = get_dtr_handler(dataplane_url, authorization)
+    
     if aas_id:
         return dtr_handler.dtr_find_shell_descriptor(aas_id)
 

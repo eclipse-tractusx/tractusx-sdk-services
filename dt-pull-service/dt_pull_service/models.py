@@ -471,9 +471,11 @@ class DtrHandler:
         :return: A JSON object containing the shell descriptor details.
         :raises requests.exceptions.RequestException: Raised if the request fails due to network or server issues.
         """
+
         headers = {
             'Authorization': self.partner_dtr_secret
         }
+        
         result = requests.request(
             'GET',
             f'{self.partner_dtr_addr}/shell-descriptors/{base64.b64encode(aas_id.encode("utf-8")).decode("utf-8")}',

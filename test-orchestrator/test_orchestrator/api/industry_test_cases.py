@@ -260,7 +260,7 @@ async def submodel_test(counter_party_address: str,
             operand_left=submodel_info['subm_operandleft'],
             operand_right=submodel_info['subm_operandright'],
             policy_validation=False
-            )       
+            )
 
         # Run the submodels request pointed at the href link. To comply with industry core standards, the testbed appends $value.
         response = httpx.get(submodel_info['href']+'/$value', headers={'Authorization': dtr_key_subm})

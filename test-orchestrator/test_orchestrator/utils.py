@@ -118,7 +118,7 @@ async def get_dtr_access(counter_party_address: str,
     if len(catalog_json["dcat:dataset"]) == 0:
         raise HTTPError(
             Error.CONTRACT_NEGOTIATION_FAILED,
-            message='In case this the Digital Twin Registry Asset please check ' + \
+            message='In case this is the Digital Twin Registry Asset please check ' + \
                     'https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/' + \
                     'software-development-view/#digital-twin-registry-as-edc-data-asset for troubleshooting.',
             details=f'There were no offers of type/id {operand_right} found in the catalog of connector {counter_party_address}. ' + \
