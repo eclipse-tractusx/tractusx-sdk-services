@@ -114,7 +114,7 @@ async def get_dtr_access(counter_party_address: str,
                                       timeout=timeout,
                                       headers=get_dt_pull_service_headers())
 
-    # Validate if there is a DTR offer available
+    # Validate if there is an offer for the desired asset/type available. 
     if len(catalog_json["dcat:dataset"]) == 0:
         raise HTTPError(
             Error.CONTRACT_NEGOTIATION_FAILED,
@@ -125,7 +125,6 @@ async def get_dtr_access(counter_party_address: str,
                     'Either the properties or access policy of the asset are misconfigured. '+ \
                     'Make sure to allow access to the asset for the Testbed BPNL.')
 
-            
 
     # Validate result of the policy from the catalog if required
     policy_validation_outcome = validate_policy(catalog_json)
