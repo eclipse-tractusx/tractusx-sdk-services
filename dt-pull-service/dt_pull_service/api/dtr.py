@@ -50,7 +50,7 @@ async def shell_descriptors(dataplane_url: str,
     """
 
     dtr_handler = get_dtr_handler(dataplane_url, authorization)
-    
+
     if aas_id:
         return dtr_handler.dtr_find_shell_descriptor(aas_id)
 

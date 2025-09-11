@@ -184,7 +184,7 @@ async def edr_data_address(transfer_process_id: str,
      - :param counter_party_id: The Business Partner Number of the counterparty.
      - :return: A JSON object containing the EDR data address.
     """
-    
+
     edr_handler = get_edr_handler(counter_party_id, counter_party_address)
     edr_data_address_json:requests.Response = edr_handler.edc_client.edrs.get_data_address(transfer_process_id,
                                                                          params={"auto_refresh": "true"},

@@ -429,6 +429,7 @@ class DtrHandler:
         :param partner_dtr_secret: The secret key used for authorization with the partner DTR.
         :param proxy: (Optional) The proxy server address for HTTP and HTTPS requests.
         """
+
         self.partner_dtr_addr = partner_dtr_address
         self.partner_dtr_secret = partner_dtr_secret
         self.proxies = {'http': proxy, 'https': proxy} if proxy != '' else {}
@@ -448,6 +449,7 @@ class DtrHandler:
         headers = {
             'Authorization': self.partner_dtr_secret
         }
+
         base_url=f'{self.partner_dtr_addr}/shell-descriptors'
         
         if(limit is not None):
@@ -475,7 +477,7 @@ class DtrHandler:
         headers = {
             'Authorization': self.partner_dtr_secret
         }
-        
+
         result = requests.request(
             'GET',
             f'{self.partner_dtr_addr}/shell-descriptors/{base64.b64encode(aas_id.encode("utf-8")).decode("utf-8")}',
