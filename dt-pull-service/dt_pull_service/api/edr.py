@@ -89,7 +89,6 @@ async def init_negotiation(catalog_json: Dict,
      - :param counter_party_id: The Business Partner Number of the counterparty.
      - :return: A JSON object containing the negotiation details.
     """
-
     edr_handler = get_edr_handler(counter_party_id, counter_party_address)
 
     [edr_offer_id,
@@ -127,6 +126,25 @@ async def negotiation_state(state_id: str,
 
     return state_json
 
+@router.get('/negotiation-result/',
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
+async def negotiation_result(state_id: str,
+                            counter_party_address: str,
+                            counter_party_id: str):
+    """
+    Retrieves the state of the ongoing negotiation.
+
+     - :param state_id: The unique identifier for the negotiation state.
+     - :param counter_party_address: The address of the counterparty's EDC.
+     - :param counter_party_id: The Business Partner Number of the counterparty.
+     - :return: A JSON object containing the current state of the negotiation.
+    """
+
+    edr_handler = get_edr_handler(counter_party_id, counter_party_address)
+    negotiation_result = edr_handler.check_edr_negotiation_result(state_id)
+
+    return negotiation_result
 
 @router.post('/transfer-process/',
              response_model=List[Dict],
@@ -165,7 +183,6 @@ async def edr_data_address(transfer_process_id: str,
      - :param counter_party_id: The Business Partner Number of the counterparty.
      - :return: A JSON object containing the EDR data address.
     """
-
     edr_handler = get_edr_handler(counter_party_id, counter_party_address)
     edr_data_address_json:requests.Response = edr_handler.edc_client.edrs.get_data_address(transfer_process_id,
                                                                          params={"auto_refresh": "true"},

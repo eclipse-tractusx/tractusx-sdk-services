@@ -187,7 +187,7 @@ async def submodel_test(counter_party_address: str,
             params={'dataplane_url': dtr_url_shell, 'aas_id': aas_id, 'limit': 1},
             headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key_shell}),
             timeout=timeout)
-
+        
     except HTTPError:
         raise HTTPError(
             Error.ASSET_ACCESS_FAILED,
@@ -260,7 +260,7 @@ async def submodel_test(counter_party_address: str,
             operand_left=submodel_info['subm_operandleft'],
             operand_right=submodel_info['subm_operandright'],
             policy_validation=False
-            )
+            )       
 
         # Run the submodels request pointed at the href link. To comply with industry core standards, the testbed appends $value.
         response = httpx.get(submodel_info['href']+'/$value', headers={'Authorization': dtr_key_subm})
