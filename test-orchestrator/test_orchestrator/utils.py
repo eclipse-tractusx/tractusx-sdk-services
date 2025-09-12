@@ -28,6 +28,8 @@ from typing import Optional
 
 import httpx
 
+import json
+
 from test_orchestrator import config
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.request_handler import make_request
@@ -116,11 +118,12 @@ async def get_dtr_access(counter_party_address: str,
     if len(catalog_json["dcat:dataset"]) == 0:
         raise HTTPError(
             Error.CONTRACT_NEGOTIATION_FAILED,
-            message='In case of the Digital Twin Registry Asset please check ' + \
+            message='In case this is the Digital Twin Registry Asset please check ' + \
                     'https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/' + \
                     'software-development-view/#digital-twin-registry-as-edc-data-asset for troubleshooting.',
-            details=f'There were no offers of type/id {operand_right} found in this connectors catalog. ' + \
-                    'Either the properties or access policy of the asset are misconfigured.')
+            details=f'There were no offers of type/id {operand_right} found in the catalog of connector {counter_party_address}. ' + \
+                    'Either the properties or access policy of the asset are misconfigured. '+ \
+                    'Make sure to allow access to the asset for the Testbed BPNL.')
 
 
     # Validate result of the policy from the catalog if required
@@ -145,7 +148,7 @@ async def get_dtr_access(counter_party_address: str,
     except HTTPError:
         raise HTTPError(
             Error.CONTRACT_NEGOTIATION_FAILED,
-            message='The DTR asset could not be negotiated. ' + \
+            message=f'The asset of type/id {operand_right} could not be negotiated. ' + \
                     'Check if the usage policy is according to the standard. Also check your connector logs.',
             details='Please check ' + \
                     'https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/software-development-view/ ' + \
@@ -153,13 +156,42 @@ async def get_dtr_access(counter_party_address: str,
 
     edr_state_id = init_negotiation.get('@id')
 
-    await make_request('GET',
-                       f'{config.DT_PULL_SERVICE_ADDRESS}/edr/negotiation-state/',
-                       params={'counter_party_address': counter_party_address,
-                               'counter_party_id': counter_party_id,
-                               'state_id': edr_state_id},
-                       headers=get_dt_pull_service_headers(),
-                       timeout=timeout)
+    # Try to obtain negotiation state after completing negotiation process
+    try:
+        response = await make_request('GET',
+                        f'{config.DT_PULL_SERVICE_ADDRESS}/edr/negotiation-state/',
+                        params={'counter_party_address': counter_party_address,
+                                'counter_party_id': counter_party_id,
+                                'state_id': edr_state_id},
+                        headers=get_dt_pull_service_headers(),
+                        timeout=timeout)
+
+    except:
+        raise HTTPError(
+            Error.CONTRACT_NEGOTIATION_FAILED,
+            message=f'Unknown Error - Check your connector logs for details.',
+            details=f'Contract negotiation for asset of type/id {operand_right} failed.')
+
+    # In case negotiation was not successful 
+    if response["state"] == "TERMINATED":
+        error_message = await make_request('GET',
+                    f'{config.DT_PULL_SERVICE_ADDRESS}/edr/negotiation-result/',
+                    params={'counter_party_address': counter_party_address,
+                            'counter_party_id': counter_party_id,
+                            'state_id': edr_state_id},
+                    headers=get_dt_pull_service_headers(),
+                    timeout=timeout)
+        raise HTTPError(
+            Error.CONTRACT_NEGOTIATION_FAILED,
+            message=f'Error Message: {json.dumps(error_message["errorDetail"])}',
+            details=f'Contract negotiation for asset of type/id {operand_right} failed.')
+
+    # Any other case 
+    elif response["state"] != "FINALIZED":
+          raise HTTPError(
+            Error.CONTRACT_NEGOTIATION_FAILED,
+            message=f'Contract negotiation stuck in state {response["state"]}',
+            details=f'Contract negotiation for asset of type/id {operand_right} could not be completed.')      
 
     data = {
         '@context': {'@vocab': 'https://w3id.org/edc/v0.0.1/ns/'},
