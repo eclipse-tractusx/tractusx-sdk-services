@@ -27,15 +27,20 @@ import logging
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter
+from fastapi import Request, Depends, HTTPException
+from dt_pull_service.auth import verify_auth
 
 from dt_pull_service.edr_helper import get_edr_handler
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+import requests
+
 
 @router.get('/get-catalog/',
-            response_model=Dict)
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
 async def get_catalog(counter_party_address: str,
                       counter_party_id: str,
                       operand_left: Optional[str] = None,
@@ -71,7 +76,8 @@ async def get_catalog(counter_party_address: str,
 
 
 @router.post('/init-negotiation/',
-             response_model=Dict)
+             response_model=Dict,
+             dependencies=[Depends(verify_auth)])
 async def init_negotiation(catalog_json: Dict,
                            counter_party_address: str,
                            counter_party_id: str):
@@ -102,7 +108,8 @@ async def init_negotiation(catalog_json: Dict,
 
 
 @router.get('/negotiation-state/',
-            response_model=Dict)
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
 async def negotiation_state(state_id: str,
                             counter_party_address: str,
                             counter_party_id: str):
@@ -120,9 +127,29 @@ async def negotiation_state(state_id: str,
 
     return state_json
 
+@router.get('/negotiation-result/',
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
+async def negotiation_result(state_id: str,
+                            counter_party_address: str,
+                            counter_party_id: str):
+    """
+    Retrieves the state of the ongoing negotiation.
+
+     - :param state_id: The unique identifier for the negotiation state.
+     - :param counter_party_address: The address of the counterparty's EDC.
+     - :param counter_party_id: The Business Partner Number of the counterparty.
+     - :return: A JSON object containing the current state of the negotiation.
+    """
+
+    edr_handler = get_edr_handler(counter_party_id, counter_party_address)
+    negotiation_result = edr_handler.check_edr_negotiation_result(state_id)
+
+    return negotiation_result
 
 @router.post('/transfer-process/',
-             response_model=List[Dict])
+             response_model=List[Dict],
+             dependencies=[Depends(verify_auth)])
 async def transfer_process(data: Dict,
                            counter_party_address: str,
                            counter_party_id: str):
@@ -137,14 +164,15 @@ async def transfer_process(data: Dict,
 
     edr_handler = get_edr_handler(counter_party_id, counter_party_address)
 
-    transfer_process_json = edr_handler.edc_client.edrs.get_all(json=data,
+    transfer_process_json:requests.Response = edr_handler.edc_client.edrs.get_all(json=data,
                                                                 proxies=edr_handler.proxies)
 
-    return transfer_process_json
+    return transfer_process_json.json()
 
 
 @router.get('/data-address/',
-            response_model=Dict)
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
 async def edr_data_address(transfer_process_id: str,
                            counter_party_address: str,
                            counter_party_id: str):
@@ -158,8 +186,8 @@ async def edr_data_address(transfer_process_id: str,
     """
 
     edr_handler = get_edr_handler(counter_party_id, counter_party_address)
-    edr_data_address_json = edr_handler.edc_client.edrs.get_data_address(transfer_process_id,
+    edr_data_address_json:requests.Response = edr_handler.edc_client.edrs.get_data_address(transfer_process_id,
                                                                          params={"auto_refresh": "true"},
                                                                          proxies=edr_handler.proxies)
 
-    return edr_data_address_json
+    return edr_data_address_json.json()

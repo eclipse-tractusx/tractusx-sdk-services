@@ -60,11 +60,12 @@ class EdrHandler:
         proxies (dict): Proxy settings for HTTP requests.
     """
 
-    def __init__(self, partner_id, partner_edc, base_url, api_key, policies='', proxy=''):
+    def __init__(self, partner_id, partner_edc, base_url, api_key, api_context, policies='', proxy=''):
         """Initialize the EdrHanler class"""
 
-        headers = {'x-api-key': api_key}
-        self.edc_client = BaseEdcService('v0_9_0', base_url, '/api/data', headers)
+        headers = {'x-api-key': api_key, "Content-Type": "application/json"}
+        
+        self.edc_client = BaseEdcService('v0_9_0', base_url, api_context, headers)
         self.partner_edc = partner_edc
         self.partner_id = partner_id
         self.policies = policies
@@ -129,10 +130,19 @@ class EdrHandler:
                                                          counter_party_address=self.partner_edc,
                                                          counter_party_id=self.partner_id,
                                                          queryspec=query_spec)
-        result = self.edc_client.catalogs.get_catalog(catalog_request, proxies=self.proxies)
+
+        try:
+            result:requests.Response = self.edc_client.catalogs.get_catalog(catalog_request, proxies=self.proxies)
+        except (requests.exceptions.SSLError, requests.exceptions.JSONDecodeError) as e:
+            logger.error(f'EDR query catalog returned with an error: {e}')
+
+            raise HTTPError(Error.FORBIDDEN,
+                            message='EDC connection failed!',
+                            details='Check your credentials like your API key ' +\
+                                    'and also check your VPN if you use one') from e
 
         if result.status_code == 200:
-            return json.loads(result.body.decode())
+            return result.json()
 
         if result.status_code == 403:
             raise HTTPError(Error.FORBIDDEN,
@@ -251,9 +261,9 @@ class EdrHandler:
                                                           provider_id=self.partner_id,
                                                           offer_policy=offer)
 
-        edr_response = self.edc_client.edrs.create(edr, proxies=self.proxies)
+        edr_response:requests.Response = self.edc_client.edrs.create(edr, proxies=self.proxies)
 
-        return edr_response
+        return edr_response.json()
 
 
     def check_edr_negotiate_state(self, edr_id_response: str):
@@ -269,9 +279,10 @@ class EdrHandler:
         retries = 0
 
         while retries < 10:
-            state_json = json.loads(self.edc_client.contract_negotiations.get_state_by_id(
+            state_json:requests.Response = self.edc_client.contract_negotiations.get_state_by_id(
                                     edr_id_response,
-                                    proxies=self.proxies).body.decode())
+                                    proxies=self.proxies)
+            state_json = state_json.json()
             state = state_json['state']
 
             if state == 'FINALIZED':
@@ -282,7 +293,25 @@ class EdrHandler:
 
         logger.warning(f'EDR negotiation state {state}')
 
-        raise EdrRequestError('EDR Contract negotiation failed!')
+        return state_json
+
+    def check_edr_negotiation_result(self, edr_id_response: str):
+            """
+            Retries and checks the EDR negotiation state until finalized.
+
+            :param edr_id_response: The ID response obtained from the EDR negotiation initiation.
+            :raises EdrRequestError: Raised if the EDR contract negotiation fails.
+            :return: A JSON object containing the finalized negotiation state.
+            """
+
+            logger.info('Checking EDR negotiation result')
+
+            negotiation_result_json:requests.Response = self.edc_client.contract_negotiations.get_by_id(
+                                    edr_id_response,
+                                    proxies=self.proxies)
+            negotiation_result_json = negotiation_result_json.json()
+
+            return negotiation_result_json
 
 
     def negotiate_ddtr_transfer_process_id(self):
@@ -305,7 +334,9 @@ class EdrHandler:
         edr_id_response = self.initiate_edr_negotiate(edr_offer_id, edr_asset_id, edr_permission,
                                                       edr_prohibition,
                                                       edr_obligation)['@id']
+
         self.check_edr_negotiate_state(edr_id_response)
+
         data = {
             "@context": {
                 "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
@@ -320,7 +351,9 @@ class EdrHandler:
             ]
         }
         time.sleep(4)
-        transfer_process = json.loads(self.edc_client.edrs.get_all(json=data, proxies=self.proxies).body.decode())
+        transfer_process:requests.Response = self.edc_client.edrs.get_all(json=data, proxies=self.proxies)
+
+        transfer_process= transfer_process.json()
         transfer_process_id = transfer_process[0]['transferProcessId']
 
         return transfer_process_id
@@ -341,10 +374,10 @@ class EdrHandler:
         transfer_process_id = self.negotiate_ddtr_transfer_process_id()
 
         if transfer_process_id:
-            result = json.loads(self.edc_client.edrs.get_data_address(transfer_process_id,
+            result:requests.Response = self.edc_client.edrs.get_data_address(transfer_process_id,
                                                            params={'auto_refresh': 'true'},
-                                                           proxies=self.proxies).body.decode())
-            data_address = result
+                                                           proxies=self.proxies)
+            data_address = result.json()
 
             return data_address
 
@@ -401,7 +434,35 @@ class DtrHandler:
         self.partner_dtr_secret = partner_dtr_secret
         self.proxies = {'http': proxy, 'https': proxy} if proxy != '' else {}
 
-    def dtr_find_shell_descriptor(self, asset_id: str):
+    def get_all_shells(self, limit:int=None) -> list | None:
+        """
+        Retrieves the shell descriptor for a given asset from the partner's DTR.
+
+        This method sends a GET request to the `shell-descriptors` endpoint of the partner DTR
+        and retrieves the shell descriptor as a JSON object.
+
+        :param asset_id: The asset ID for which the shell descriptor is being requested.
+        :return: A JSON object containing the shell descriptor details.
+        :raises requests.exceptions.RequestException: Raised if the request fails due to network or server issues.
+        """
+
+        headers = {
+            'Authorization': self.partner_dtr_secret
+        }
+
+        base_url=f'{self.partner_dtr_addr}/shell-descriptors'
+        
+        if(limit is not None):
+            base_url += f'?limit={limit}'
+        
+        result = requests.request(
+            'GET',
+            base_url,
+            headers=headers, proxies=self.proxies, timeout=60).json()
+        
+        return result
+
+    def dtr_find_shell_descriptor(self, aas_id: str):
         """
         Retrieves the shell descriptor for a given asset from the partner's DTR.
 
@@ -419,8 +480,8 @@ class DtrHandler:
 
         result = requests.request(
             'GET',
-            f'{self.partner_dtr_addr}/shell-descriptors/{base64.b64encode(asset_id.encode("utf-8")).decode("utf-8")}',
-            headers=headers, proxies=self.proxies, timeout=15).json()
+            f'{self.partner_dtr_addr}/shell-descriptors/{base64.b64encode(aas_id.encode("utf-8")).decode("utf-8")}',
+            headers=headers, proxies=self.proxies, timeout=60).json()
 
         return result
 
@@ -443,6 +504,40 @@ class DtrHandler:
         result = requests.request(
             'GET',
             f'{self.partner_dtr_addr}/{base64.b64encode(asset_id.encode("utf-8")).decode("utf-8")}',
-            headers=headers, proxies=self.proxies, timeout=15).json()
+            headers=headers, proxies=self.proxies, timeout=60).json()
 
         return result
+
+    def send_feedback(self, payload: Dict):
+        """
+        Sends a message for the partner's DTR about the certification status.
+
+        This method sends a POST request to the partner DTR about the status of the certificate
+
+        :return: A JSON object containing the server's response.
+        :raises HTTPError: Raised if the request encounters errors such as authentication issues,
+                           server unavailability, or unknown errors.
+        """
+
+        headers = {
+            'Authorization': self.partner_dtr_secret
+        }
+
+        result = requests.request(
+            'POST',
+            f'{self.partner_dtr_addr}/companycertificate/status/',
+            headers=headers,
+            json=payload,
+            proxies=self.proxies,
+            timeout=15)
+
+        if result.status_code != 200:
+            logger.error(f'Certification status message was not registered: {result.status_code}, {result.text}')
+
+            raise HTTPError(Error.INTERNAL_SERVER_ERROR,
+                            message='Certification status message was not registered',
+                            details='The data provider was not able to accept the status' + \
+                                    'message about the certification validation. ' + \
+                                    f'Original error: {result.status_code}, {result.text}')
+
+        return result.json()

@@ -32,12 +32,13 @@ This module includes:
 import logging
 from typing import Dict, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from test_orchestrator.auth import verify_auth
 import httpx
 
 from test_orchestrator import config
 from test_orchestrator.request_handler import make_request
-
+from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.utils import get_dtr_access, fetch_submodel_info, submodel_schema_finder
 from test_orchestrator.validator import json_validator, schema_finder
@@ -47,14 +48,16 @@ logger = logging.getLogger(__name__)
 
 
 @router.get('/shell-descriptors-test/',
-            response_model=Dict)
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
 async def shell_descriptors_test(
     counter_party_address: str,
     counter_party_id: str,
     operand_left: Optional[str] = 'http://purl.org/dc/terms/type',
     operator: Optional[str] = 'like',
     operand_right: Optional[str] ='%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%',
-    policy_validation: Optional[bool] = None):
+    policy_validation: Optional[bool] = None,
+    timeout: int = 80):
 
     """
     This test case validates if a sample of digital twins registered in the digital twin registry (DTR)
@@ -86,14 +89,16 @@ async def shell_descriptors_test(
         operand_left=operand_left,
         operator=operator,
         operand_right=operand_right,
-        policy_validation=policy_validation
+        policy_validation=policy_validation,
+        timeout=timeout
         )
 
     shell_descriptors = await make_request(
         'GET',
         f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
-        params={'dataplane_url': dtr_url},
-        headers={'Authorization': dtr_key})
+        params={'dataplane_url': dtr_url, 'limit': 1},
+        headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key}),
+        timeout=timeout)
 
     #Checking if shell_descriptors is not empty
     if 'result' not in shell_descriptors:
@@ -120,7 +125,8 @@ async def shell_descriptors_test(
             'policy_validation_message': policy_validation_outcome}
 
 
-@router.get('/submodel-test/')
+@router.get('/submodel-test/',
+            dependencies=[Depends(verify_auth)])
 async def submodel_test(counter_party_address: str,
                         counter_party_id: str,
                         semantic_id: str,
@@ -128,7 +134,8 @@ async def submodel_test(counter_party_address: str,
                         operand_left: Optional[str] = 'http://purl.org/dc/terms/type',
                         operator: Optional[str] = 'like',
                         operand_right: Optional[str] = '%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%',
-                        policy_validation: Optional[bool] = None
+                        policy_validation: Optional[bool] = None,
+                        timeout: int = 80
                         ):
     """
     This test case fetches and validates data for a specific submodel of a digital twin identified by the aas_id
@@ -169,15 +176,17 @@ async def submodel_test(counter_party_address: str,
         operand_left=operand_left,
         operand_right=operand_right,
         operator=operator,
-        policy_validation=policy_validation)
+        policy_validation=policy_validation,
+        timeout=timeout)
 
     # Here we get the main catalog only for the global asset specifice by catenaXid
     try:
         shell_descriptors_spec = await make_request(
             'GET',
             f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
-            params={'dataplane_url': dtr_url_shell, 'agreement_id': aas_id},
-            headers={'Authorization': dtr_key_shell})
+            params={'dataplane_url': dtr_url_shell, 'aas_id': aas_id, 'limit': 1},
+            headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key_shell}),
+            timeout=timeout)
 
     except HTTPError:
         raise HTTPError(
@@ -185,17 +194,16 @@ async def submodel_test(counter_party_address: str,
             message='The asset that is specified in the subprotocol body can’t be accessed.' +\
                     'Make sure the connector hosting it is available and the asset is visible ' +\
                     'to the testbed connector',
-            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' +\
-                    'software-development-view/digital-twins-development-view#edc-policies for troubleshooting.')
+            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                    'software-development-view/digital-twins#edc-policies for troubleshooting.')
 
     if 'errors' in shell_descriptors_spec:
         raise HTTPError(
             Error.AAS_ID_NOT_FOUND,
             message=f'The AAS ID {aas_id} could not be found in the DTR. ' +\
                     'Make sure you passed the right AAS ID',
-            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' +\
-                    'software-development-view/digital-twins-development-view' +\
-                    '#conventions-for-creating-digital-twins for troubleshooting.')
+            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                    'software-development-view/digital-twins#edc-policies for troubleshooting.')
 
     #Checking if shell_descriptors is not empty
     if 'submodelDescriptors' not in shell_descriptors_spec:
@@ -240,9 +248,8 @@ async def submodel_test(counter_party_address: str,
                 Error.SUBMODEL_DESCRIPTOR_NOT_FOUND,
                 message=f'The submodel descriptor for semanticID {semantic_id} could not be found in the DTR. ' +\
                         'Make sure the submodel is registered accordingly and visible for the testbed BPNL',
-                details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' +\
-                        'software-development-view/digital-twins-development-view' +\
-                        '#conventions-for-creating-digital-twins for troubleshooting.')
+                details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                        'software-development-view/digital-twins#edc-policies for troubleshooting.')
 
         submodel_info = fetch_submodel_info(correct_element, semantic_id)
 
@@ -255,13 +262,14 @@ async def submodel_test(counter_party_address: str,
             policy_validation=False
             )
 
-        # Run the submodels request pointed at the href link
-        response = httpx.get(submodel_info['href'], headers={'Authorization': dtr_key_subm})
+        # Run the submodels request pointed at the href link. To comply with industry core standards, the testbed appends $value.
+        response = httpx.get(submodel_info['href']+'/$value', headers={'Authorization': dtr_key_subm})
 
         if response.status_code != 200:
             raise HTTPError(Error.UNPROCESSABLE_ENTITY,
-                            message='Failed to obtain the required submodel',
-                            details={'href': submodel_info['href']})
+                            message=f'Make sure your dataplane can resolve the request and that the href above ' +\
+                                    'is according to the industry core specification, ending in /submodel.',
+                            details=f'Failed to obtain the required submodel data for({submodel_info['href']}).')
 
         try:
             submodels = response.json()
@@ -281,7 +289,7 @@ async def submodel_test(counter_party_address: str,
                 message=f'The validation of the requested submodel for semanticID {semantic_id} failed: ' + \
                         'Could not find the submodel schema based on the semantic_id provided.',
                 details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
-                        'software-development-view/aspect-models-development-view for troubleshooting and samples.')
+                        'software-development-view/aspect-models for troubleshooting and samples.')
 
         subm_validation_error = json_validator(subm_schema, submodels)
 

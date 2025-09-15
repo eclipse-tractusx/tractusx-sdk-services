@@ -32,9 +32,9 @@ def test_fetch_submodel_info():
     """
 
     example_output = {
-        'href': 'https://dataplane-trace-prpd.edc.aws.bmw.cloud/public/' + \
-                'urn:uuid:20f19751-56c7-48e6-aa9a-08565484bac2/submodel',
-        'subm_counterparty': 'https://connector-trace-prpd.edc.aws.bmw.cloud/api/v1/dsp',
+        'href': 'https://dataplane-example.cloud/public/' + \
+                'urn:uuid:fakeuuid/submodel',
+        'subm_counterparty': 'https://connector-example.cloud/api/v1/dsp',
         'subm_operandleft': 'https://w3id.org/edc/v0.0.1/ns/id',
         'subm_operandright': 'battery_bundle_slbb'
         }

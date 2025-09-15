@@ -28,12 +28,15 @@ from typing import Optional
 
 import httpx
 
+import json
+
 from test_orchestrator import config
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.request_handler import make_request
+from test_orchestrator.auth import get_dt_pull_service_headers
 
 # pylint: disable=R1702, R0912
-async def fetch_transfer_process(retries=5, delay=2, **request_params):
+async def fetch_transfer_process(retries=5, delay=2, timeout: int = 80, **request_params):
     """
     Retry mechanism for fetching the transfer process with exponential backoff.
 
@@ -53,7 +56,9 @@ async def fetch_transfer_process(retries=5, delay=2, **request_params):
                                       f'{config.DT_PULL_SERVICE_ADDRESS}/edr/transfer-process/',
                                       params={'counter_party_address': request_params['counter_party_address'],
                                               'counter_party_id': request_params['counter_party_id']},
-                                      json=request_params['data'])
+                                      json=request_params['data'],
+                                      headers=get_dt_pull_service_headers(),
+                                      timeout=timeout)
 
         if response and isinstance(response, list) and len(response) > 0:
             return response
@@ -65,7 +70,7 @@ async def fetch_transfer_process(retries=5, delay=2, **request_params):
                 message='The submodel for the semanticID provided not be transferred. ' +\
                         'Make sure the href in the submodel descriptor point to the correct endpoint.',
                 details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' +\
-                        'software-development-view/digital-twins-development-view#submodel-descriptors ' +\
+                        'software-development-view/digital-twins#submodel-descriptors ' +\
                         'for troubleshooting.')
 
 
@@ -76,7 +81,8 @@ async def get_dtr_access(counter_party_address: str,
                          operand_right: Optional[str] = None,
                          offset: Optional[int] = 0,
                          limit: Optional[int] = 10,
-                         policy_validation: Optional[bool] = None):
+                         policy_validation: Optional[bool] = None,
+                         timeout: int = 80):
     """
     Retrieves the Digital Twin Registry (DTR) access details.
 
@@ -104,7 +110,21 @@ async def get_dtr_access(counter_party_address: str,
                                               'counter_party_address': counter_party_address,
                                               'counter_party_id': counter_party_id,
                                               'offset': offset,
-                                              'limit': limit})
+                                              'limit': limit},
+                                      timeout=timeout,
+                                      headers=get_dt_pull_service_headers())
+
+    # Validate if there is an offer for the desired asset/type available. 
+    if len(catalog_json["dcat:dataset"]) == 0:
+        raise HTTPError(
+            Error.CONTRACT_NEGOTIATION_FAILED,
+            message='In case this is the Digital Twin Registry Asset please check ' + \
+                    'https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/' + \
+                    'software-development-view/#digital-twin-registry-as-edc-data-asset for troubleshooting.',
+            details=f'There were no offers of type/id {operand_right} found in the catalog of connector {counter_party_address}. ' + \
+                    'Either the properties or access policy of the asset are misconfigured. '+ \
+                    'Make sure to allow access to the asset for the Testbed BPNL.')
+
 
     # Validate result of the policy from the catalog if required
     policy_validation_outcome = validate_policy(catalog_json)
@@ -114,20 +134,21 @@ async def get_dtr_access(counter_party_address: str,
             raise HTTPError(
                 Error.POLICY_VALIDATION_FAILED,
                 message='The usage policy that is used within the asset is not accurate. ',
-                details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/' +\
-                    'industry-core-kit/software-development-view/policies-development-view ' +\
-                        'for troubleshooting.')
+                details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                        'software-development-view/policies for troubleshooting.')
 
     try:
         init_negotiation = await make_request('POST',
                                               f'{config.DT_PULL_SERVICE_ADDRESS}/edr/init-negotiation/',
                                               params={'counter_party_address': counter_party_address,
                                                       'counter_party_id': counter_party_id},
-                                              json=catalog_json)
+                                              json=catalog_json,
+                                              headers=get_dt_pull_service_headers(),
+                                              timeout=timeout)
     except HTTPError:
         raise HTTPError(
             Error.CONTRACT_NEGOTIATION_FAILED,
-            message='The DTR asset could not be negotiated. ' + \
+            message=f'The asset of type/id {operand_right} could not be negotiated. ' + \
                     'Check if the usage policy is according to the standard. Also check your connector logs.',
             details='Please check ' + \
                     'https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/software-development-view/ ' + \
@@ -135,11 +156,42 @@ async def get_dtr_access(counter_party_address: str,
 
     edr_state_id = init_negotiation.get('@id')
 
-    await make_request('GET',
-                       f'{config.DT_PULL_SERVICE_ADDRESS}/edr/negotiation-state/',
-                       params={'counter_party_address': counter_party_address,
-                               'counter_party_id': counter_party_id,
-                               'state_id': edr_state_id})
+    # Try to obtain negotiation state after completing negotiation process
+    try:
+        response = await make_request('GET',
+                        f'{config.DT_PULL_SERVICE_ADDRESS}/edr/negotiation-state/',
+                        params={'counter_party_address': counter_party_address,
+                                'counter_party_id': counter_party_id,
+                                'state_id': edr_state_id},
+                        headers=get_dt_pull_service_headers(),
+                        timeout=timeout)
+
+    except:
+        raise HTTPError(
+            Error.CONTRACT_NEGOTIATION_FAILED,
+            message=f'Unknown Error - Check your connector logs for details.',
+            details=f'Contract negotiation for asset of type/id {operand_right} failed.')
+
+    # In case negotiation was not successful 
+    if response["state"] == "TERMINATED":
+        error_message = await make_request('GET',
+                    f'{config.DT_PULL_SERVICE_ADDRESS}/edr/negotiation-result/',
+                    params={'counter_party_address': counter_party_address,
+                            'counter_party_id': counter_party_id,
+                            'state_id': edr_state_id},
+                    headers=get_dt_pull_service_headers(),
+                    timeout=timeout)
+        raise HTTPError(
+            Error.CONTRACT_NEGOTIATION_FAILED,
+            message=f'Error Message: {json.dumps(error_message["errorDetail"])}',
+            details=f'Contract negotiation for asset of type/id {operand_right} failed.')
+
+    # Any other case 
+    elif response["state"] != "FINALIZED":
+          raise HTTPError(
+            Error.CONTRACT_NEGOTIATION_FAILED,
+            message=f'Contract negotiation stuck in state {response["state"]}',
+            details=f'Contract negotiation for asset of type/id {operand_right} could not be completed.')      
 
     data = {
         '@context': {'@vocab': 'https://w3id.org/edc/v0.0.1/ns/'},
@@ -154,7 +206,8 @@ async def get_dtr_access(counter_party_address: str,
     transfer_process = await fetch_transfer_process(
         counter_party_address=counter_party_address,
         counter_party_id=counter_party_id,
-        data=data
+        data=data,
+        timeout=timeout
     )
     transfer_process_id = transfer_process[0]['transferProcessId']
 
@@ -162,7 +215,9 @@ async def get_dtr_access(counter_party_address: str,
                                           f'{config.DT_PULL_SERVICE_ADDRESS}/edr/data-address/',
                                           params={'counter_party_address': counter_party_address,
                                                   'counter_party_id': counter_party_id,
-                                                  'transfer_process_id': transfer_process_id})
+                                                  'transfer_process_id': transfer_process_id},
+                                          headers=get_dt_pull_service_headers(),
+                                          timeout=timeout)
 
     return edr_data_address.get('endpoint'), edr_data_address.get('authorization'), policy_validation_outcome
 
@@ -223,9 +278,8 @@ def fetch_submodel_info(correct_element, semantic_id):
         raise HTTPError(
             Error.SUBMODEL_DESCRIPTOR_MALFORMED,
             message=f'The submodel descriptor for semanticID {semantic_id} is malformed.',
-            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/' +\
-                    'industry-core-kit/software-development-view/digital-twins-development-view' +\
-                    '#conventions-for-creating-digital-twins for troubleshooting.')
+            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                    'software-development-view/digital-twins#edc-policies for troubleshooting.')
 
     # Splitting subprotocolBody to obtain the correct parameters
     subprot_split = subprot_bod.split('=')
@@ -234,9 +288,8 @@ def fetch_submodel_info(correct_element, semantic_id):
         raise HTTPError(
             Error.SUBMODEL_DESCRIPTOR_MALFORMED,
             message=f'The submodel descriptor for semanticID {semantic_id} is malformed.',
-            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/' +\
-                    'industry-core-kit/software-development-view/digital-twins-development-view' +\
-                    '#conventions-for-creating-digital-twins for troubleshooting.')
+            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                    'software-development-view/digital-twins#edc-policies for troubleshooting.')
 
     subm_operandleft = 'https://w3id.org/edc/v0.0.1/ns/id'
     subm_operandright = subprot_split[1].split(';')[0]
@@ -292,6 +345,5 @@ def validate_policy(catalog_json):
 
     return {'status': 'Warning',
             'message': 'The usage policy that is used within the asset is not accurate. ',
-            'details': 'Please check https://eclipse-tractusx.github.io/docs-kits/kits/' +\
-                'industry-core-kit/software-development-view/policies-development-view ' +\
-                    'for troubleshooting.'}
+            'details': 'Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                       'software-development-view/policies for troubleshooting.'}

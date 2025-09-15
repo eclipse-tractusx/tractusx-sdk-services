@@ -1,5 +1,5 @@
 # *************************************************************
-# Eclipse Tractus-X - Test Orchestrator Service
+# Eclipse Tractus-X - Test Orchestrator
 #
 # Copyright (c) 2025 BMW AG
 # Copyright (c) 2025 Contributors to the Eclipse Foundation
@@ -20,8 +20,29 @@
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
 
-apiVersion: v2
-name: test_orchestrator
-description: The orchestration logic service for Catena-X testbed
-version: 0.1.0
-appVersion: "1.0.0"
+ingress:
+    enabled: true
+    ingressClassName: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - host: cx-ready.int.catena-x.net
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+       - secretName: "cx-ready.int.catena-x.net-tls"
+         hosts:
+           - "cx-ready.int.catena-x.net" 
+
+auth:
+  apiKey: 
+    key: "X-Api-Key"
+    value: "<path:test/data/cx-ready-tester#apiKey>"
+
+dt_pull_service:
+  url: "https://dt-pull-service.int.catena-x.net"
+  auth:
+    apiKey: 
+      key: "X-Api-Key"
+      value: "<path:test/data/dt-pull-service#apiKey>"

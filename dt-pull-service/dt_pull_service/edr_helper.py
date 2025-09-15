@@ -44,7 +44,8 @@ def get_edr_handler(bpn: str, counter_party_address: str):
             bpn,
             counter_party_address,
             config.BASE_URL,
-            config.API_KEY
+            config.API_KEY,
+            config.API_CONTEXT_EDR
     )
 
     return edr_handler

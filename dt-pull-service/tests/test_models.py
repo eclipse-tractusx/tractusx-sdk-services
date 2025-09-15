@@ -74,7 +74,7 @@ def test_get_recursively():
 def test_query_catalog(mock_edc_client):
     """Tests the .query_catalog method of EdrHandler"""
 
-    handler = EdrHandler('partner1', 'edc-address', [], 'http://test-url', 'api-key', None)
+    handler = EdrHandler('partner1', 'edc-address', [], 'http://test-url', 'api-key', None, '/management')
     handler.edc_client = mock_edc_client
     result = handler.query_catalog('some-property', 'some-value')
 
@@ -85,7 +85,7 @@ def test_query_catalog(mock_edc_client):
 def test_initiate_edr_negotiate(mock_edc_client):
     """Tests the initiate_edr_negotiate method of EdrHandler"""
 
-    handler = EdrHandler('partner1', 'edc-address', [], 'http://test-url', 'api-key', None)
+    handler = EdrHandler('partner1', 'edc-address', [], 'http://test-url', 'api-key', None,'/management')
     handler.edc_client = mock_edc_client
     edr_id = handler.initiate_edr_negotiate('offer-id', 'asset-id', {}, {}, {})
 
@@ -95,7 +95,7 @@ def test_initiate_edr_negotiate(mock_edc_client):
 def test_check_edr_negotiate_state(mock_edc_client):
     """Tests the check_edr_negotiate_state method of EdrHandler"""
 
-    handler = EdrHandler('partner1', 'edc-address', [], 'http://test-url', 'api-key', None)
+    handler = EdrHandler('partner1', 'edc-address', [], 'http://test-url', 'api-key', None, '/management')
     handler.edc_client = mock_edc_client
     result = handler.check_edr_negotiate_state('test-edr-id')
 
@@ -105,7 +105,7 @@ def test_check_edr_negotiate_state(mock_edc_client):
 def test_get_ddtr_address(mock_edc_client):
     """Tests the get_ddtr_address method of EdrHandler"""
 
-    handler = EdrHandler('partner1', 'edc-address', [], 'http://test-url', 'api-key', None)
+    handler = EdrHandler('partner1', 'edc-address', [], 'http://test-url', 'api-key', None, '/management')
     handler.edc_client = mock_edc_client
     ddtr_address_json = handler.get_ddtr_address()
 

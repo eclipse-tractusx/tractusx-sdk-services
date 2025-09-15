@@ -32,21 +32,24 @@ This module includes:
 import logging
 from typing import Dict
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from test_orchestrator import config
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.request_handler import make_request
 from test_orchestrator.utils import get_dtr_access
+from test_orchestrator.auth import get_dt_pull_service_headers, verify_auth
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
 @router.get('/ping-test/',
-            response_model=Dict)
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
 async def ping_test(counter_party_address: str,
-                    counter_party_id: str):
+                    counter_party_id: str,
+                    timeout: int = 80):
     """
     This test case executes a catalogue request for the dsp endpoint of a specified connector (counter_party_address)
     to check if the connector is reachable. The test is successful if the test-agent receives a status code 200
@@ -65,23 +68,29 @@ async def ping_test(counter_party_address: str,
                            params={'operand_left': 'http://purl.org/dc/terms/type',
                                    'operand_right': '%https://w3id.org/catenax/taxonomy%23DigitalTwinRegistry%',
                                    'counter_party_address': counter_party_address,
-                                   'counter_party_id': counter_party_id})
+                                   'counter_party_id': counter_party_id},
+                           headers=get_dt_pull_service_headers(),
+                           timeout=timeout)
 
     except HTTPError:
-        raise HTTPError(Error.CONNECTION_FAILED,
-                        message='Connection to the connector was not successful',
-                        details='Please check ' + \
-                                'https://eclipse-tractusx.github.io/docs-kits/kits/connector-kit/operation-view/ ' +\
-                                'for troubleshooting.')
+        raise HTTPError(
+            Error.CONNECTOR_UNAVAILABLE,
+            message="Connection to your connector was not successful.",
+            details="The testbed can't access the specified connector. Make sure the counter_party_address points " + \
+                    "to the DSP endpoint of your connector and the counter_party_id is correct. Please check " + \
+                    "https://eclipse-tractusx.github.io/docs-kits/kits/connector-kit/operation-view/ " + \
+                    "for troubleshooting.")
 
     return {'status': 'ok',
             'message': 'No errors found during the ping request'}
 
 
 @router.get('/dtr-ping-test/',
-            response_model=Dict)
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
 async def dtr_ping_test(counter_party_address: str,
-                        counter_party_id: str):
+                        counter_party_id: str,
+                        timeout: int = 80):
     """
     This test case checks if the digital twin registry (DTR) of the test subject is reachable.
     The test is successful if the test-agent was able to perform the following steps:
@@ -100,18 +109,21 @@ async def dtr_ping_test(counter_party_address: str,
      - :return: A dictionary containing a success or an error message.
     """
 
-    try:
-        dataplane_url, dtr_key, _ = await get_dtr_access(
+    dataplane_url, dtr_key, _ = await get_dtr_access(
                 counter_party_address,
                 counter_party_id,
                 operand_left='http://purl.org/dc/terms/type',
                 operand_right='%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%',
-                limit=1)
+                limit=1,
+                timeout=timeout)
+    try:
 
         shell_descriptors = await make_request('GET',
                                                f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
-                                               params={'dataplane_url': dataplane_url},
-                                               headers = {'Authorization': dtr_key})
+                                               params={'dataplane_url': dataplane_url, 'limit': 1},
+                                                headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key}),
+                                               timeout=timeout)
+
     except HTTPError:
         raise HTTPError(
             Error.CONNECTION_FAILED,

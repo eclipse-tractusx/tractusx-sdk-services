@@ -13,7 +13,7 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# WITHOUT WARRANTIES OR SERVICES OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations
 # under the License.
 #
@@ -35,7 +35,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-async def make_request(method: str, url: str, **kwargs):
+async def make_request(method: str, url: str, timeout:int=80, **kwargs):
     """
     Makes an HTTP request and handles errors consistently.
 
@@ -48,13 +48,23 @@ async def make_request(method: str, url: str, **kwargs):
 
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.request(method, url, timeout=15, **kwargs)
-            response_json = response.json()
+            response = await client.request(method, url, timeout=timeout, **kwargs)
+            try:
+                response_json = response.json()
+            except ValueError as e:
+                logger.error(f'Invalid JSON response from {url}: {e} - {response.content}')
+                raise HTTPError(Error.BAD_GATEWAY,
+                                message='Received invalid JSON from server',
+                                details=str(e)) from e
 
             if response.status_code != 200:
-                raise HTTPError(Error[response_json.get('error')],
-                                message=response_json.get('message'),
-                                details=response_json.get('details'))
+                error_code = response_json.get('error', 'BAD_GATEWAY')
+                message = response_json.get('message', 'Unknown error')
+                details = response_json.get('details', 'No additional details provided')
+                error_code_enum = Error.__members__.get(error_code, Error.BAD_GATEWAY)
+                raise HTTPError(error_code_enum,
+                                message=message,
+                                details=details)
 
             return response_json
 
@@ -82,7 +92,7 @@ async def make_request(method: str, url: str, **kwargs):
                             details=str(e)) from e
 
 
-async def make_request_with_retry(method: str, url: str, retries: int = 3, delay: int = 2, **kwargs):
+async def make_request_with_retry(method: str, url: str, retries: int = 3, delay: int = 2, timeout: int = 80, **kwargs):
     """
     Retrieves a response from an HTTP request with retry logic.
 
@@ -90,6 +100,7 @@ async def make_request_with_retry(method: str, url: str, retries: int = 3, delay
     :param url: The request URL
     :param retries: The number of retries we try to get the request to work. Default is 3.
     :param delay: Initial delay (in seconds) between retries. Default is 2 seconds.
+    :param timeout: Timeout for the request in seconds. Default is 80 seconds.
     :param kwargs: Additional arguments for httpx.request
     :return: Response JSON if successful
     :raises HTTPError: Custom exception if request fails
@@ -99,7 +110,7 @@ async def make_request_with_retry(method: str, url: str, retries: int = 3, delay
 
     while attempt < retries:
         try:
-            response = await make_request(method, url, **kwargs)
+            response = await make_request(method, url, timeout=timeout, **kwargs)
 
             return response
 

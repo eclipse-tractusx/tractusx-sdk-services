@@ -61,7 +61,7 @@ pypi/pypi/-/sqlmodel/0.0.22, MIT, approved, clearlydefined
 pypi/pypi/-/starlette/0.40.0, BSD-2-Clause AND BSD-3-Clause, approved, clearlydefined
 pypi/pypi/-/tomli/2.0.1, MIT, approved, #7824
 pypi/pypi/-/tomlkit/0.13.2, MIT, approved, clearlydefined
-pypi/pypi/-/tractusx_sdk/0.0.5, Apache-2.0 AND CC-BY-4.0, approved, #20505
+pypi/pypi/-/tractusx_sdk/0.0.7, Apache-2.0 AND CC-BY-4.0, approved, #20505
 pypi/pypi/-/typer/0.15.1, MIT, approved, #21293
 pypi/pypi/-/typing_extensions/4.12.2, Python-2.0, approved, #19383
 pypi/pypi/-/urllib3/2.3.0, MIT AND Python-2.0 AND MPL-2.0, approved, #19863

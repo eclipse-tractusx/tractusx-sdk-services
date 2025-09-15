@@ -1,7 +1,7 @@
 # *************************************************************
-# Eclipse Tractus-X - Test Orchestrator Service
+# Eclipse Tractus-X - Digital Twin Pull Service
 #
-# Copyright (c) 2025 BMW AG
+# Copyright (c) 2025 Catena-X Automotive Network e.V.
 # Copyright (c) 2025 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
@@ -20,15 +20,21 @@
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
 
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ .Release.Name }}
-spec:
-  type: {{ .Values.service.type }}
-  selector:
-    app: {{ .Release.Name }}
-  ports:
-    - protocol: TCP
-      port: {{ .Values.service.port }}
-      targetPort: 8000
+from tractusx_sdk.dataspace.managers import AuthManager
+from dt_pull_service import config
+from fastapi import  HTTPException, Request
+
+auth_manager = AuthManager(
+    configured_api_key=config.API_KEY_BACKEND,
+    api_key_header=config.API_KEY_BACKEND_HEADER,
+    auth_enabled=True
+)
+
+def verify_auth(
+    request: Request
+):
+    if(config.API_KEY_BACKEND is None or
+       config.API_KEY_BACKEND_HEADER is None):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    if not auth_manager.is_authenticated(request):
+        raise HTTPException(status_code=401, detail="Unauthorized")
