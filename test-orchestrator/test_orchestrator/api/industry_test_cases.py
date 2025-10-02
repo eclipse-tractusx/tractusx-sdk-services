@@ -140,7 +140,7 @@ async def submodel_test(counter_party_address: str,
     """
     This test case fetches and validates data for a specific submodel of a digital twin identified by the aas_id
     (“id” of the digital twin) and the semantic_id.
-    The test case returns successful if the test-agent was able eto perform the following steps:
+    The test case returns successful if the test-agent was able to perform the following steps:
 
     1.	Query for the digital twin registry (DTR) asset in the specified connector (counter_party_address).
     2.	Check for the correctness of all properties of the DTR asset.

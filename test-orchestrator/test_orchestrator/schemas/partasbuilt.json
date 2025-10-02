@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PartAsBuilt",
+  "description": "JSON Schema for Part As Built in Catena-X Traceability (placeholder)",
+  "type": "object",
+  "x-schema-version": "0.1.0",
+  "properties": {
+    "catenaXId": {
+      "type": "string",
+      "description": "The unique Catena-X ID for the part as built"
+    },
+    "partAsPlannedId": {
+      "type": "string",
+      "description": "The Catena-X ID of the related Part As Planned"
+    },
+    "manufacturingDate": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The date and time when the part was manufactured"
+    },
+    "manufacturerId": {
+      "type": "string",
+      "description": "The Business Partner Number (BPN) of the manufacturer"
+    },
+    "serialNumber": {
+      "type": "string",
+      "description": "The serial number assigned to the part by the manufacturer"
+    },
+    "batchId": {
+      "type": "string",
+      "description": "The batch ID for the part (if applicable)"
+    },
+    "partInstance": {
+      "type": "object",
+      "description": "Additional characteristics of the part instance",
+      "properties": {
+        "manufacturingCountry": {
+          "type": "string",
+          "description": "The country code where the part was manufactured"
+        },
+        "manufacturingPlant": {
+          "type": "string",
+          "description": "The plant identifier where the part was manufactured"
+        }
+      }
+    }
+  },
+  "required": ["catenaXId", "manufacturerId", "manufacturingDate"],
+  "oneOf": [
+    { "required": ["serialNumber"] },
+    { "required": ["batchId"] }
+  ],
+  "additionalProperties": false
+}

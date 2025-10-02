@@ -1,0 +1,36 @@
+# Traceability Test Suite
+#
+# This suite defines a sequence of tests for validating traceability functionality
+# according to Catena-X standards.
+#
+# Each step references a Python handler in test_orchestrator/checks/traceability/
+
+name: Traceability Test Suite
+description: Validates end-to-end traceability functionality according to Catena-X standards
+version: 1.0.0
+
+# Steps are executed in the order listed
+steps:
+  - name: schema_check
+    description: Validates traceability data against schema definitions
+    handler: test_orchestrator.checks.traceability.run_schema_check
+    timeout: 60
+    required: true
+    
+  - name: graph_check
+    description: Validates graph consistency for traceability data
+    handler: test_orchestrator.checks.traceability.run_graph_check
+    timeout: 60
+    required: true
+    
+  - name: edc_smoke
+    description: Validates EDC connectivity for traceability
+    handler: test_orchestrator.checks.traceability.run_edc_smoke
+    timeout: 120
+    required: true
+    
+  - name: recall_scenario
+    description: Tests recall process functionality
+    handler: test_orchestrator.checks.traceability.run_recall_scenario
+    timeout: 180
+    required: true

@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AssemblyPartRelationship",
+  "description": "JSON Schema for Assembly Part Relationship in Catena-X Traceability (placeholder)",
+  "type": "object",
+  "x-schema-version": "0.1.0",
+  "properties": {
+    "catenaXId": {
+      "type": "string",
+      "description": "The unique Catena-X ID for this relationship"
+    },
+    "parentCatenaXId": {
+      "type": "string",
+      "description": "The Catena-X ID of the parent/assembly part"
+    },
+    "childCatenaXId": {
+      "type": "string",
+      "description": "The Catena-X ID of the child/component part"
+    },
+    "relationshipType": {
+      "type": "string",
+      "description": "The type of relationship between parent and child",
+      "enum": ["assembledIn", "manufacturedFor", "hasComponent"]
+    },
+    "lifecycleContext": {
+      "type": "string",
+      "description": "The lifecycle context for this relationship",
+      "enum": ["asPlanned", "asBuilt"]
+    },
+    "quantityType": {
+      "type": "string",
+      "description": "Specification of the quantity type (e.g., piece, weight, volume)",
+      "enum": ["piece", "weight", "volume"]
+    },
+    "quantity": {
+      "type": "number",
+      "description": "The quantity of the child part in the parent assembly"
+    },
+    "measurementUnit": {
+      "type": "string",
+      "description": "The unit of measurement for the quantity (e.g., pc, kg, l)"
+    },
+    "validityPeriod": {
+      "type": "object",
+      "properties": {
+        "validFrom": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date and time from which this relationship is valid"
+        },
+        "validTo": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date and time until which this relationship is valid (optional)"
+        }
+      },
+      "required": ["validFrom"]
+    }
+  },
+  "required": [
+    "parentCatenaXId", 
+    "childCatenaXId", 
+    "relationshipType", 
+    "lifecycleContext"
+  ],
+  "additionalProperties": false
+}
