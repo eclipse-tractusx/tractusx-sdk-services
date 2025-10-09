@@ -127,6 +127,7 @@ async def get_dtr_access(counter_party_address: str,
 
 
     # Validate result of the policy from the catalog if required
+
     policy_validation_outcome = validate_policy(catalog_json)
 
     if policy_validation:

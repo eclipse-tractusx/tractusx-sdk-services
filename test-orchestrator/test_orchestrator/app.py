@@ -25,7 +25,9 @@
 
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
+
+from fastapi.security import APIKeyHeader
 
 from test_orchestrator.api import base_test_cases, cert_validation, industry_test_cases
 from test_orchestrator.errors import (
@@ -36,6 +38,7 @@ from test_orchestrator.errors import (
 )
 
 logger = logging.getLogger(__name__)
+
 
 
 async def health():
@@ -59,6 +62,14 @@ def create_app():
 
     :return: The FastAPI application instance.
     """
+    api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
+
+    async def get_api_key(api_key_header: str = Depends(api_key_header)):
+        if api_key_header != "dein_schluessel":
+            raise HTTPException(status_code=401)
+        return api_key_header
+    async def secure_endpoint(key: str = Depends(get_api_key)):
+        return {"status": "ok"}
 
     logger.info('Starting of the Test orchestrator application...')
 
@@ -66,7 +77,9 @@ def create_app():
                   description="This application is used for testing  " +
                               "Catena-X access",
                   contact={'name': 'Dénes Surman (dddenes)',
-                           'email': 'surmandenes@yahoo.com'})
+                           'email': 'surmandenes@yahoo.com'},
+                           swagger_ui_parameters={})
+
 
     app.add_exception_handler(HTTPError, http_error_handler)
     app.add_exception_handler(ValidationException, validation_exception_handler)

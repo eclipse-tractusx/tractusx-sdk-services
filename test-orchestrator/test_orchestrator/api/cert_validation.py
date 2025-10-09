@@ -248,7 +248,7 @@ async def feedback_mechanism_validation(counter_party_address: str,
              dependencies=[Depends(verify_auth)])
 async def validate_certificate(payload: Dict,
                                semantic_id: Optional[str] = SEMANTIC_ID_BUSINESS_PARTNER_CERTIFICATE,
-                               contract_reference: bool = True,
+                               contract_reference: bool = False,
                                timeout: int = 80):
     """
     This test case validates if a certificate that is given as input conforms with the latest
