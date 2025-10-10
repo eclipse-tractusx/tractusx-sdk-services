@@ -25,12 +25,9 @@ import copy
 import logging
 logger = logging.getLogger('staging')
 from utilities.operators import op
-import uuid
 import hashlib
-from service.edcService import EdcService
-from service.discoveryServices import EdcDiscoveryService
-from managers.idpManager import IdpManager
-from datetime import datetime, timezone
+from tractusx_sdk.dataspace.services.discovery import ConnectorDiscoveryService
+
 class EdcManager:
     """
     Class responsible for managing the edc location and search
@@ -40,12 +37,12 @@ class EdcManager:
     known_edcs: dict
     dct_type: str
     expiration_time: int
-    edc_discovery: EdcDiscoveryService
+    edc_discovery: ConnectorDiscoveryService
     catalog_timeout:int
     
     REFRESH_INTERVAL_KEY:str
 
-    def __init__(self, dct_type:str,  edc_discovery:EdcDiscoveryService, expiration_time=60):
+    def __init__(self, dct_type:str,  edc_discovery:ConnectorDiscoveryService, expiration_time=60):
         self.known_edcs = {}
         self.dct_type = dct_type
         self.expiration_time = expiration_time
@@ -110,7 +107,7 @@ class EdcManager:
         
         logger.info(f"[EDC Manager] No cached EDC were found, discoverying EDCs for bpn [{bpn}]...")
         
-        edcs:list|None = self.edc_discovery.find_edc_by_bpn(bpn=bpn)
+        edcs:list|None = self.edc_discovery.find_connector_by_bpn(bpn=bpn)
         if(edcs is None or len(edcs) == 0):
             return []
         

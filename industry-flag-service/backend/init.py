@@ -34,17 +34,19 @@ import uvicorn
 import yaml
 from fastapi import FastAPI, Request
 
-from managers.authManager import AuthManager
 from managers.edcManager import EdcManager
 from managers.flagManager import FlagManager
-from managers.idpManager import IdpManager
+from tractusx_sdk.dataspace.managers import AuthManager
+from tractusx_sdk.dataspace.managers import OAuth2Manager
 from models.requests import EdcRequest, EdcPostRequest
 from models.search import Search, SearchProof
-from service.discoveryServices import EdcDiscoveryService
+#from service.discoveryServices import EdcDiscoveryService
 from service.edcService import EdcService
 from service.flagService import FlagService
 from utilities.httpUtils import HttpUtils
 from utilities.operators import op
+from tractusx_sdk.dataspace.services.connector.jupiter import ConnectorService
+from tractusx_sdk.dataspace.services.discovery import ConnectorDiscoveryService
 from utilities.sovityAuth import SovityAuth
 
 op.make_dir("logs")
@@ -57,11 +59,11 @@ app_configuration: dict
 log_config: dict
 edcManager: EdcManager
 edcService: EdcService
-idpManager: IdpManager
+idpManager: OAuth2Manager
 flagService: FlagService
 authManager: AuthManager
 flagManager: FlagManager
-edcDiscoveryService: EdcDiscoveryService
+edcDiscoveryService: ConnectorDiscoveryService
 
 urllib3.disable_warnings()
 logging.captureWarnings(True)
@@ -219,7 +221,7 @@ async def data_post(post_request: EdcPostRequest, request: Request):
             path=post_request.path,
             policies=post_request.policies,
             headers=post_request.headers,
-            body=post_request.body,
+            data=post_request.body,
             content_type=post_request.content_type
         ))
     except Exception as e:
@@ -298,7 +300,7 @@ def init_app(host: str, port: int, log_level: str = "info"):
     if auth_enabled:
         api_key: dict = auth_config.get("apiKey", {"key": "X-Api-Key", "value": "password"})
         authManager = AuthManager(api_key_header=api_key.get("key", "X-Api-Key"),
-                                  api_key=api_key.get("value", "password"), auth_enabled=True)
+                                  configured_api_key=api_key.get("value", "password"), auth_enabled=True)
 
     #### [EDC CONNECTION CHECK] [START] ------
     ## Get start config configuration
@@ -306,6 +308,8 @@ def init_app(host: str, port: int, log_level: str = "info"):
     startup_config.get("checks", True)
     refresh_interval: int = startup_config.get("refresh_interval", 10)
     edc_config: dict = app_configuration.get("edc", None)
+    edc_url: str = edc_config.get("url",None)
+    dma_path: str = edc_config.get("dma_path",None)
 
     logger.info(edc_config)
 
@@ -314,6 +318,7 @@ def init_app(host: str, port: int, log_level: str = "info"):
         try:
             logger.info("[INIT] Attempting connection to the EDC Connector...")
             edcService = EdcService(config=edc_config)
+            #edcService = ConnectorService(dataspace_version="jupiter", base_url=edc_url, dma_path=dma_path, consumer_service=None, provider_service=None)
             connected = True
         except Exception as e:
             logger.critical(str(e))
@@ -351,7 +356,7 @@ def init_app(host: str, port: int, log_level: str = "info"):
 
     #### [KEYCLOAK AUTH CHECK] [START] ------
     try:
-        idpManager = IdpManager(auth_url=auth_url, clientid=clientid, clientsecret=clientsecret, realm=realm)
+        idpManager = OAuth2Manager(auth_url=auth_url, clientid=clientid, clientsecret=clientsecret, realm=realm)
         logger.info("[INIT] Sucessfully connected to the centralidp server!")
     except Exception as e:
         logger.critical("[INIT] The authentication service has failed! Reason: %s", str(e))
@@ -360,7 +365,13 @@ def init_app(host: str, port: int, log_level: str = "info"):
     if discovery_config is None:
         raise Exception("[INIT] No discovery config was specified!")
 
-    edcDiscoveryService = EdcDiscoveryService(oauth=idpManager, config=discovery_config)
+    discovery_keys: dict = discovery_config.get("keys",None)
+    if discovery_keys is None:
+        raise Exception("[INIT] No discovery key was specified!")
+
+    connector_discovery_key: str = discovery_keys.get("edc_discovery", None)
+
+    edcDiscoveryService = ConnectorDiscoveryService(oauth=idpManager, discovery_finder_service=discovery_config.get("url",None), connector_discovery_key=connector_discovery_key)
 
     ### EDC Manager Config
 
