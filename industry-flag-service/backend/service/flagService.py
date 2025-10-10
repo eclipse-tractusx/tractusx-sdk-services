@@ -27,9 +27,8 @@ from fastapi import FastAPI, Request
 
 from utilities.httpUtils import HttpUtils
 from utilities.operators import op
-from managers.idpManager import IdpManager
+from tractusx_sdk.dataspace.managers import OAuth2Manager
 from service.edcService import EdcService
-from service.discoveryServices import EdcDiscoveryService
 from managers.edcManager import EdcManager
 from managers.flagManager import FlagManager
 from io import BytesIO
@@ -45,13 +44,13 @@ class FlagService:
 
     edc_service: EdcService
     edc_manager: EdcManager
-    idp_manager: IdpManager
+    idp_manager: OAuth2Manager
     flag_manager: FlagManager
     catalog_timeout: int
     dct_type: str
     GET_FLAGS_PATH: str
 
-    def __init__(self,  edc_service: EdcService, edc_manager: EdcManager, idp_manager: IdpManager, flag_manager: FlagManager, config: dict, catalog_timeout: int = 10):
+    def __init__(self,  edc_service: EdcService, edc_manager: EdcManager, idp_manager: OAuth2Manager, flag_manager: FlagManager, config: dict, catalog_timeout: int = 10):
         # Pointers to the respective services
         self.edc_service = edc_service
         self.edc_manager = edc_manager
