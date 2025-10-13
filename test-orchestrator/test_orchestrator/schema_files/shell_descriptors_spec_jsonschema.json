@@ -230,7 +230,6 @@
     "description",
     "displayName",
     "id",
-    "specificAssetIds",
     "submodelDescriptors"
   ]
 }
