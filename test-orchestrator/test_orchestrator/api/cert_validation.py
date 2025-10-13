@@ -134,17 +134,19 @@ async def feedback_message_validation(payload: Dict,
     •	:return: A dictionary containing a success or an error message.
         """
     try:
-        run_feedback_check(semantic_id_header=semantic_id_header,
+        header_validation_errors, content_validation_errors = run_feedback_check(semantic_id_header=semantic_id_header,
                            semantic_id_content=semantic_id_content,
                            validation_schema=payload)
+    
     except HTTPError as e:
         logger.error(f"Feedback validation failed with multiple errors: {e.json}")
 
         raise
-    return {
-        'status': 'ok',
-        'message': 'Validation successful: The feedback payload conforms to the required standard.'
-    }
+
+    return {'message': 'Feedback message validation completed.',
+            'header_validation_message': header_validation_errors,
+            'content_validation_message': content_validation_errors}
+
 
 
 @router.get('/feedbackmechanism-validation/',
@@ -282,39 +284,36 @@ async def validate_certificate(payload: Dict,
     await send_feedback(payload, 'RECEIVED', dataplane_url, dataplane_access_key, errors=[], timeout=timeout)
 
     result_asset_policy = {}
+    
+    result_asset_policy = await validate_ccmapi_offer_setup(
+        counter_party_address=payload.get('header').get('senderFeedbackUrl'),
+        counter_party_id=payload.get('header').get('senderBpn'),
+        contract_reference=contract_reference,
+        timeout=timeout)
 
-    try:
-        result_asset_policy = await validate_ccmapi_offer_setup(
-            counter_party_address=payload.get('header').get('senderFeedbackUrl'),
-            counter_party_id=payload.get('header').get('senderBpn'),
-            contract_reference=contract_reference,
-            timeout=timeout)
-        run_certificate_checks(validation_schema=payload,
-                               semantic_id=semantic_id)
+    cert_validation_errors = run_certificate_checks(validation_schema=payload,
+                            semantic_id=semantic_id)
 
-    except HTTPError as e:
-        logger.error(f"Certificate validation failed with multiple errors: {e.json}")
+    if cert_validation_errors.get('status') == 'nok': 
         await send_feedback(payload, 'REJECTED', dataplane_url, dataplane_access_key, errors=[e.json], timeout=timeout)
-
-        if 'warning' in result_asset_policy:
-            if e.status_code == 422:
-                e.json["details"].update(result_asset_policy)
-
-        raise
 
     await send_feedback(payload, 'ACCEPTED', dataplane_url, dataplane_access_key, errors=[], timeout=timeout)
 
     if 'warning' in result_asset_policy:
         return {
-            'status': 'warning',
-            'message': 'Validation was successful, but policy is missing or is not accurate. ' + \
+            'message': 'Certificate validation completed.',
+            'certificate_validation_message': cert_validation_errors,
+            "policy_validation_message": result_asset_policy,
+            'details': 'Validation was successful, but policy is missing or is not accurate. ' + \
             'Please check https://catenax-ev.github.io/docs/next/standards/' + \
             'CX-0135-CompanyCertificateManagement#216-usage-policy (Release Saturn) for troubleshooting. ' + \
             'If you set the parameter “contract_reference” to true, ' + \
-            'make sure your policy contains a contract reference.',
+            'make sure your policy contains a contract reference.'
         }
 
     return {
-        'status': 'ok',
-        'message': 'Validation was successful'
-    }
+        'message': 'Certificate validation completed.',
+        'certificate_validation_message': cert_validation_errors,
+        "policy_validation_message": result_asset_policy}
+
+            

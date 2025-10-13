@@ -365,12 +365,15 @@ def run_certificate_checks(validation_schema: Dict,
             details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
                     'software-development-view/aspect-models' + \
                     'for troubleshooting and samples.')
-    json_validator(rules_schema, validation_schema['content'])
+
+    cert_validation_errors = json_validator(rules_schema, validation_schema['content'])
 
     content_base64 = validation_schema.get('content').get('document').get('contentBase64')
     content_type = validation_schema.get('content').get('document').get('contentType')
+
     decode_and_validate_document(content_base64, content_type)
 
+    return cert_validation_errors
 
 def read_feedback_rules_schema():
     """Reads feedback rules from local file"""
@@ -434,9 +437,10 @@ def run_feedback_check(semantic_id_header, semantic_id_content, validation_schem
     except (HTTPError, KeyError, TypeError) as e:
         rules_schema_content = read_feedback_rules_schema()
 
-    json_validator(rules_schema_header, validation_schema)
-    json_validator(rules_schema_content, validation_schema)
+    header_validation_errors = json_validator(rules_schema_header, validation_schema)
+    content_validation_errors = json_validator(rules_schema_content, validation_schema)
 
+    return header_validation_errors, content_validation_errors
 
 async def get_ccmapi_access(counter_party_address: str,
                             counter_party_id: str,
