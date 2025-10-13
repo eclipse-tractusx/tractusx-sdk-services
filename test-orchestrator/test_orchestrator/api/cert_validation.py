@@ -295,7 +295,7 @@ async def validate_certificate(payload: Dict,
                             semantic_id=semantic_id)
 
     if cert_validation_errors.get('status') == 'nok': 
-        await send_feedback(payload, 'REJECTED', dataplane_url, dataplane_access_key, errors=[e.json], timeout=timeout)
+        await send_feedback(payload, 'REJECTED', dataplane_url, dataplane_access_key, errors=[cert_validation_errors], timeout=timeout)
 
     await send_feedback(payload, 'ACCEPTED', dataplane_url, dataplane_access_key, errors=[], timeout=timeout)
 
