@@ -124,9 +124,8 @@ async def shell_descriptors_test(
                     message="An unknown error processing the shell descriptor occured.",
                     details="Please contact the testbed administrator.")
 
-    return {'status': 'ok',
-            'message': 'Shell descriptors validation completed successfully',
-            'validation_message': validation_error,
+    return {'message': 'Shell descriptors validation completed.',
+            'validation_message': subm_validation_error,
             'policy_validation_message': policy_validation_outcome}
 
 
@@ -302,5 +301,5 @@ async def submodel_test(counter_party_address: str,
         subm_validation_error = json_validator(subm_schema, submodels)
 
         return {'message': 'Submodel validation completed.',
-                'subm_validation_message': subm_validation_error,
+                'validation_message': subm_validation_error,
                 'policy_validation_message': policy_validation_outcome}
