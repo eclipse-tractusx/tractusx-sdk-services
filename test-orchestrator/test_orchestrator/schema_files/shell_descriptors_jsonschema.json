@@ -75,7 +75,6 @@
                 }
               },
               "required": [
-                "externalSubjectId",
                 "name",
                 "supplementalSemanticIds",
                 "value"

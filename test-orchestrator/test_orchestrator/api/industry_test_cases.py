@@ -104,9 +104,8 @@ async def shell_descriptors_test(
     if 'result' not in shell_descriptors:
         raise HTTPError(
             Error.NO_SHELLS_FOUND,
-            message="The DTR did not return at least one digital twin.",
-            details="Please check https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/" +\
-                " software-development-view/#registering-a-new-twin for troubleshooting")
+            message=f"Response from the DTR was: {shell_descriptors} instead.",
+            details="The DTR did not return any digital twins.")
 
     if len(shell_descriptors['result']) == 0:
         raise HTTPError(
@@ -115,9 +114,15 @@ async def shell_descriptors_test(
             details="Please check https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/" +\
                 " software-development-view/#registering-a-new-twin for troubleshooting")
 
+    try: 
+        shelldesc_schema = schema_finder('shell_descriptors')
+        shelldesc_validation_error = json_validator(shelldesc_schema, shell_descriptors_spec)
 
-    schema = schema_finder('shell_descriptors')
-    validation_error = json_validator(schema, shell_descriptors)
+    except Exception:
+        raise HTTPError(
+                    Error.UNKNOWN_ERROR,
+                    message="An unknown error processing the shell descriptor occured.",
+                    details="Please contact the testbed administrator.")
 
     return {'status': 'ok',
             'message': 'Shell descriptors validation completed successfully',
@@ -222,17 +227,20 @@ async def submodel_test(counter_party_address: str,
 
     # Validating the smaller shell_descriptors output against a specific schema
     # to ensure the data we are using is accurate
-    try:
+    
+    try: 
         shelldesc_schema = schema_finder('shell_descriptors_spec')
         shelldesc_validation_error = json_validator(shelldesc_schema, shell_descriptors_spec)
     except Exception:
         raise HTTPError(
-            Error.ASSET_NOT_FOUND,
-            message='The DTR asset could not be found in the specified connector. ' +\
-                    'It might be missing or misconfigured.',
-            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/' +\
-                    'software-development-view/#digital-twin-registry-as-edc-data-asset for troubleshooting. ' +\
-                    f'Furthermore, validate if the Access Policy allows access for the Testbed-BPNL {counter_party_id}')
+                    Error.UNKNOWN_ERROR,
+                    message="An unknown error processing the shell descriptor occured.",
+                    details="Please contact the testbed administrator.")
+
+    if shelldesc_validation_error.get('status') == 'nok':
+        raise HTTPError(Error.UNPROCESSABLE_ENTITY,
+                message='Validation error',
+                details={'validation_errors': shelldesc_validation_error})
 
     if shelldesc_validation_error.get('status') == 'ok':
         # Look inside the shell_descriptors output and find the correct href link
@@ -293,7 +301,6 @@ async def submodel_test(counter_party_address: str,
 
         subm_validation_error = json_validator(subm_schema, submodels)
 
-        return {'status': 'ok',
-                'message': 'Submodel validation completed successfully',
+        return {'message': 'Submodel validation completed.',
                 'subm_validation_message': subm_validation_error,
                 'policy_validation_message': policy_validation_outcome}

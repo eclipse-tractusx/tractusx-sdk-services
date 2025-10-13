@@ -118,9 +118,8 @@ def json_validator(schema, json_to_validate, validation_type = 'jsonschema'):
             })
 
         if error_records:
-            raise HTTPError(Error.UNPROCESSABLE_ENTITY,
-                            message='Validation error',
-                            details={'validation_errors': error_records})
+            return {"status": "nok",
+                    "message": error_records}
 
     return {"status": "ok",
             "message": "Congratulations, your JSON file passed the validation test"}
