@@ -331,7 +331,8 @@ def decode_and_validate_document(content_base64: Optional[str],
 
 
 def run_certificate_checks(validation_schema: Dict,
-                          semantic_id: str):
+                          semantic_id_header: str,
+                          semantic_id_content: str):
     """Validates the structure of a submodel and the certificate document it contains.
 
     This function performs two main validation steps:
@@ -354,13 +355,27 @@ def run_certificate_checks(validation_schema: Dict,
         # e.g., ValidationError: If the JSON validation fails.
     """
     try:
-        certificate_schema = submodel_schema_finder(semantic_id=semantic_id)
+        header_schema = submodel_schema_finder(semantic_id=semantic_id_header)
+        rules_schema = header_schema['schema']
+
+    except Exception:
+        raise HTTPError(
+            Error.SUBMODEL_VALIDATION_FAILED,
+            message=f'The validation of the requested submodel for semanticID {semantic_id_header} failed: ' + \
+                    'Could not find the submodel schema based on the semantic_id provided.',
+            details='Please check https://catenax-ev.github.io/docs/standards/CX-0135-CompanyCertificateManagement' + \
+                    'for troubleshooting and samples.')
+
+    header_validation_errors = json_validator(rules_schema, validation_schema)
+
+    try:
+        certificate_schema = submodel_schema_finder(semantic_id=semantic_id_content)
         rules_schema = certificate_schema['schema']
 
     except Exception:
         raise HTTPError(
             Error.SUBMODEL_VALIDATION_FAILED,
-            message=f'The validation of the requested submodel for semanticID {semantic_id} failed: ' + \
+            message=f'The validation of the requested submodel for semanticID {semantic_id_content} failed: ' + \
                     'Could not find the submodel schema based on the semantic_id provided.',
             details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
                     'software-development-view/aspect-models' + \
@@ -373,7 +388,7 @@ def run_certificate_checks(validation_schema: Dict,
 
     decode_and_validate_document(content_base64, content_type)
 
-    return cert_validation_errors
+    return header_validation_errors, cert_validation_errors
 
 def read_feedback_rules_schema():
     """Reads feedback rules from local file"""
@@ -430,6 +445,8 @@ def run_feedback_check(semantic_id_header, semantic_id_content, validation_schem
                     'software-development-view/aspect-models' + \
                     'for troubleshooting and samples.')
 
+    header_validation_errors = json_validator(rules_schema_header, validation_schema)
+
     # Read semantic schema for Content Feedback
     try:
         certificate_schema_content = submodel_schema_finder(semantic_id=semantic_id_content)
@@ -437,7 +454,6 @@ def run_feedback_check(semantic_id_header, semantic_id_content, validation_schem
     except (HTTPError, KeyError, TypeError) as e:
         rules_schema_content = read_feedback_rules_schema()
 
-    header_validation_errors = json_validator(rules_schema_header, validation_schema)
     content_validation_errors = json_validator(rules_schema_content, validation_schema)
 
     return header_validation_errors, content_validation_errors

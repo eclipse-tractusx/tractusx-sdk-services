@@ -249,7 +249,8 @@ async def feedback_mechanism_validation(counter_party_address: str,
              response_model=Dict,
              dependencies=[Depends(verify_auth)])
 async def validate_certificate(payload: Dict,
-                               semantic_id: Optional[str] = SEMANTIC_ID_BUSINESS_PARTNER_CERTIFICATE,
+                               semantic_id_header: Optional[str] = SEMANTIC_ID_FEEDBACK_MESSAGE_HEADER,
+                               semantic_id_content: Optional[str] = SEMANTIC_ID_BUSINESS_PARTNER_CERTIFICATE,
                                contract_reference: bool = False,
                                timeout: int = 80):
     """
@@ -265,7 +266,7 @@ async def validate_certificate(payload: Dict,
     “senderFeedbackUrl” and “senderBpn”.
     3.	Send a “RECEIVED”, or “REJECTED” feedback message to the CCMAPI asset dependent on the validation result
     of step 1. and receive a status code 200.
-    •	:param semantic_id: String. Defaults to
+    •	:param semantic_id_content: String. Defaults to
     urn:samm:io.catenax.business_partner_certificate:3.1.0#BusinessPartnerCertificate
     and points to the semantic model against which the certificate should be validated.
     •	:param contract_reference: Boolean (true/false) to toggle if the usage policy attached to the CCMAPI offer is
@@ -291,10 +292,12 @@ async def validate_certificate(payload: Dict,
         contract_reference=contract_reference,
         timeout=timeout)
 
-    cert_validation_errors = run_certificate_checks(validation_schema=payload,
-                            semantic_id=semantic_id)
+    header_validation_errors, cert_validation_errors = run_certificate_checks(semantic_id_header=semantic_id_header,
+                            semantic_id_content=semantic_id_content,
+                            validation_schema=payload
+                            )
 
-    if cert_validation_errors.get('status') == 'nok': 
+    if cert_validation_errors.get('status') == 'nok' or header_validation_errors.get('status') == 'nok': 
         await send_feedback(payload, 'REJECTED', dataplane_url, dataplane_access_key, errors=[cert_validation_errors], timeout=timeout)
 
     await send_feedback(payload, 'ACCEPTED', dataplane_url, dataplane_access_key, errors=[], timeout=timeout)
@@ -302,6 +305,7 @@ async def validate_certificate(payload: Dict,
     if 'warning' in result_asset_policy:
         return {
             'message': 'Certificate validation completed.',
+            'message_header_validation_message': header_validation_errors,
             'certificate_validation_message': cert_validation_errors,
             "policy_validation_message": result_asset_policy,
             'details': 'Validation was successful, but policy is missing or is not accurate. ' + \
@@ -313,6 +317,7 @@ async def validate_certificate(payload: Dict,
 
     return {
         'message': 'Certificate validation completed.',
+        'message_header_validation_message': header_validation_errors,
         'certificate_validation_message': cert_validation_errors,
         "policy_validation_message": result_asset_policy}
 
