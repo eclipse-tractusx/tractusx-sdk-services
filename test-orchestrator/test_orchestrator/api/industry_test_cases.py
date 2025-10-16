@@ -116,7 +116,7 @@ async def shell_descriptors_test(
 
     try: 
         shelldesc_schema = schema_finder('shell_descriptors')
-        shelldesc_validation_error = json_validator(shelldesc_schema, shell_descriptors_spec)
+        shelldesc_validation_error = json_validator(shelldesc_schema, shell_descriptors)
 
     except Exception:
         raise HTTPError(
@@ -125,7 +125,7 @@ async def shell_descriptors_test(
                     details="Please contact the testbed administrator.")
 
     return {'message': 'Shell descriptors validation completed.',
-            'validation_message': subm_validation_error,
+            'shell_validation_message': shelldesc_validation_error,
             'policy_validation_message': policy_validation_outcome}
 
 
@@ -301,5 +301,5 @@ async def submodel_test(counter_party_address: str,
         subm_validation_error = json_validator(subm_schema, submodels)
 
         return {'message': 'Submodel validation completed.',
-                'validation_message': subm_validation_error,
+                'submodel_validation_message': subm_validation_error,
                 'policy_validation_message': policy_validation_outcome}
