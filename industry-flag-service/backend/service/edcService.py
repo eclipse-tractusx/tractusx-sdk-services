@@ -30,6 +30,7 @@ from fastapi.responses import Response
 from utilities.dspUtils import DspUtils
 from utilities.httpUtils import HttpUtils
 from utilities.operators import op
+from tractusx_sdk.dataspace.services.connector import ServiceFactory
 from utilities.sovityAuth import SovityAuth
 
 logger = logging.getLogger('staging')
@@ -58,6 +59,7 @@ class EdcService:
     edr_managment_url: str
     edr_waiting_timeout: int
     edr_max_retries: int
+    connector_service:ServiceFactory
 
     ## Here will be stored the contract agreement information
     cached_edrs: dict
@@ -113,6 +115,7 @@ class EdcService:
                 attrPath='apis',
                 defaultValue=
                 {
+                    "dma_path": "/management",
                     "readiness": "/api/check/readiness",
                     "catalog": "/data/v3/catalog/request",
                     "edr_prefix": "/data/v2/edrs",
@@ -127,6 +130,7 @@ class EdcService:
 
         ## If it was specified get the data, if not get the default values
         self.edc_apis = {
+            "dma_path": tmp_apis.get("dma_path","/management"),
             "readiness": tmp_apis.get("readiness", "/api/check/readiness"),
             "catalog": tmp_apis.get("catalog", "/control/data/v3/catalog/request"),
             "edr_prefix": tmp_apis.get("edr_prefix", "/control/data/v2/edrs"),
@@ -136,6 +140,8 @@ class EdcService:
         }
 
         self.edr_managment_url = HttpUtils.join_path(url=self.consumer_endpoint, path=self.edc_apis["edr_prefix"])
+        self.connector_service = ServiceFactory.get_connector_consumer_service(dataspace_version="jupiter", base_url=self.consumer_endpoint,dma_path=self.edc_apis["dma_path"],headers={"X-Api-Key": self.apiKey, "Content-Type": "application/json"}, verbose=True)
+
 
         if (not self.test_connection_catalog()):
             raise Exception("[EDC Service] It was not possible to connect to the EDC! It is not yet available...")
@@ -163,8 +169,8 @@ class EdcService:
         return data["isSystemHealthy"]
 
     def test_connection_catalog(self) -> bool:
-        ## Try to get the connection endpoint 
-        response: Response = self.get_catalog(counter_party_address=self.consumer_endpoint)
+        ## Try to get the connection endpoint
+        response: Response = self.connector_service.get_catalog(counter_party_id= self.participant_id, counter_party_address=self.build_dsp_endpoint(url=self.consumer_endpoint))
 
         ## In case the response code is not successfull or the response is null
         if response is None:
