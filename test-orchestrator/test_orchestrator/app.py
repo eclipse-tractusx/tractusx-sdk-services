@@ -23,19 +23,18 @@
 """Application factory
 """
 
-import logging
-
 from fastapi import FastAPI
 
-from test_orchestrator.api import base_test_cases, cert_validation, industry_test_cases
+from test_orchestrator.api import base_test_cases, cert_validation, industry_test_cases, traceability_test
 from test_orchestrator.errors import (
     HTTPError,
     http_error_handler,
     ValidationException,
     validation_exception_handler
 )
+from test_orchestrator.logging.log_manager import LoggingManager
 
-logger = logging.getLogger(__name__)
+logger = LoggingManager.get_logger(__name__)
 
 
 async def health():
@@ -82,6 +81,10 @@ def create_app():
     app.include_router(industry_test_cases.router,
                        prefix='/test-cases/industry-core/v1',
                        tags=['Industry Core Tests'])
+
+    app.include_router(traceability_test.router,
+                       prefix='/test-cases/traceability/v1',
+                       tags=['Traceability Tests'])
 
     app.get('/_/health', status_code=200)(health)
 
