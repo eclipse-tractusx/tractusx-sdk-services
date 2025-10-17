@@ -40,13 +40,13 @@ from tractusx_sdk.dataspace.managers import AuthManager
 from tractusx_sdk.dataspace.managers import OAuth2Manager
 from models.requests import EdcRequest, EdcPostRequest
 from models.search import Search, SearchProof
-#from service.discoveryServices import EdcDiscoveryService
 from service.edcService import EdcService
 from service.flagService import FlagService
 from utilities.httpUtils import HttpUtils
 from utilities.operators import op
-from tractusx_sdk.dataspace.services.connector.jupiter import ConnectorService
+from tractusx_sdk.dataspace.services.connector import ServiceFactory
 from tractusx_sdk.dataspace.services.discovery import ConnectorDiscoveryService
+from tractusx_sdk.dataspace.services.discovery import DiscoveryFinderService
 from utilities.sovityAuth import SovityAuth
 
 op.make_dir("logs")
@@ -64,6 +64,8 @@ flagService: FlagService
 authManager: AuthManager
 flagManager: FlagManager
 edcDiscoveryService: ConnectorDiscoveryService
+discoveryFinderService: DiscoveryFinderService
+connectorService: ServiceFactory
 
 urllib3.disable_warnings()
 logging.captureWarnings(True)
@@ -274,7 +276,7 @@ async def get_proof(searchProof: SearchProof, request: Request):
 
 
 def init_app(host: str, port: int, log_level: str = "info"):
-    global app, app_configuration, flagManager, flagService, edcService, edcManager, edcDiscoveryService, authManager
+    global app, app_configuration, flagManager, flagService, edcService, edcManager, edcDiscoveryService, discoveryFinderService, authManager
     ## Load company flags
     flags_config: list = app_configuration["flags"]
 
@@ -318,7 +320,6 @@ def init_app(host: str, port: int, log_level: str = "info"):
         try:
             logger.info("[INIT] Attempting connection to the EDC Connector...")
             edcService = EdcService(config=edc_config)
-            #edcService = ConnectorService(dataspace_version="jupiter", base_url=edc_url, dma_path=dma_path, consumer_service=None, provider_service=None)
             connected = True
         except Exception as e:
             logger.critical(str(e))
@@ -371,7 +372,8 @@ def init_app(host: str, port: int, log_level: str = "info"):
 
     connector_discovery_key: str = discovery_keys.get("edc_discovery", None)
 
-    edcDiscoveryService = ConnectorDiscoveryService(oauth=idpManager, discovery_finder_service=discovery_config.get("url",None), connector_discovery_key=connector_discovery_key)
+    discoveryFinderService = DiscoveryFinderService(oauth=idpManager, url=discovery_config.get("url",None))
+    edcDiscoveryService = ConnectorDiscoveryService(oauth=idpManager, discovery_finder_service=discoveryFinderService, connector_discovery_key=connector_discovery_key)
 
     ### EDC Manager Config
 

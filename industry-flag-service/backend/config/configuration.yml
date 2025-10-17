@@ -73,6 +73,7 @@ ifs:
 edc:
   url: "https://control.plane.url"
   apis:
+    dma_path: "/management/"
     readiness: "/api/check/readiness"
     catalog: "/management/v3/catalog/request"
     edr_prefix: "/management/v2/edrs"
@@ -84,7 +85,7 @@ edc:
     apiKey: ""
 
   participantId: ""
-  
+
   dct_type_key: "'http://purl.org/dc/terms/type'.'@id'"
 
   cache:
