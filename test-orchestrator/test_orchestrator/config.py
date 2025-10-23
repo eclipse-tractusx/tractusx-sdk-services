@@ -25,11 +25,10 @@
 
 import os
 
-from dotenv import find_dotenv, load_dotenv
-
 DT_PULL_SERVICE_ADDRESS = os.getenv('DT_PULL_SERVICE_ADDRESS')
 SCHEMA_PATH = 'test_orchestrator/schema_files'
 DT_PULL_SERVICE_API_KEY = os.getenv('DT_PULL_SERVICE_API_KEY')
 DT_PULL_SERVICE_API_KEY_HEADER = os.getenv('DT_PULL_SERVICE_API_KEY_HEADER')
 API_KEY_BACKEND = os.getenv('API_KEY_BACKEND')
 API_KEY_BACKEND_HEADER = os.getenv('API_KEY_BACKEND_HEADER')
+SENDER_BPN = os.getenv('SENDER_BPN')
