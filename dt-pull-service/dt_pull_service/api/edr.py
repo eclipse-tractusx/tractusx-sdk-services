@@ -187,8 +187,42 @@ async def edr_data_address(transfer_process_id: str,
     """
 
     edr_handler = get_edr_handler(counter_party_id, counter_party_address)
-    edr_data_address_json:requests.Response = edr_handler.edc_client.edrs.get_data_address(transfer_process_id,
-                                                                         params={"auto_refresh": "true"},
-                                                                         proxies=edr_handler.proxies)
+    resp: requests.Response = edr_handler.edc_client.edrs.get_data_address(
+        transfer_process_id,
+        params={"auto_refresh": "true"},
+        proxies=edr_handler.proxies
+    )
 
-    return edr_data_address_json.json()
+    # Build augmented body with actual downstream request/response metadata
+    try:
+        body = resp.json()
+    except Exception:
+        body = {}
+
+    try:
+        sent_req = getattr(resp, 'request', None)
+        request_info = {
+            'method': getattr(sent_req, 'method', None),
+            'url': str(getattr(sent_req, 'url', '')) if sent_req else '',
+            'headers': dict(getattr(sent_req, 'headers', {})) if sent_req else {},
+            'content': None
+        }
+        if sent_req is not None and getattr(sent_req, 'body', None) is not None:
+            try:
+                request_info['content'] = sent_req.body.decode('utf-8') if isinstance(sent_req.body, (bytes, bytearray)) else str(sent_req.body)
+            except Exception:
+                request_info['content'] = None
+    except Exception:
+        request_info = None
+
+    response_info = {
+        'status_code': resp.status_code,
+        'headers': dict(getattr(resp, 'headers', {})) if hasattr(resp, 'headers') else {},
+        'text': getattr(resp, 'text', None),
+    }
+
+    if isinstance(body, dict):
+        body.setdefault('request', request_info)
+        body.setdefault('response', response_info)
+
+    return body

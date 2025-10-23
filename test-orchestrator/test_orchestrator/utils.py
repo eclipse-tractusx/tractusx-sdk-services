@@ -22,22 +22,21 @@
 
 """Utility methods
 """
-import logging
 import asyncio
+import json
 from typing import Optional
 
 import httpx
 
-import json
-
 from test_orchestrator import config
-from test_orchestrator.errors import Error, HTTPError
-from test_orchestrator.request_handler import make_request
 from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.checks.policy_validation import validate_policy
 from test_orchestrator.checks.request_catalog import get_catalog
+from test_orchestrator.errors import Error, HTTPError
+from test_orchestrator.logging.log_manager import LoggingManager
+from test_orchestrator.request_handler import make_request
 
-logger = logging.getLogger(__name__)
+logger = LoggingManager.get_logger(__name__)
 
 
 # pylint: disable=R1702, R0912
@@ -64,6 +63,8 @@ async def fetch_transfer_process(retries=5, delay=2, timeout: int = 80, **reques
                                       json=request_params['data'],
                                       headers=get_dt_pull_service_headers(),
                                       timeout=timeout)
+
+        logger.info(f'Transfer process response: {response}')
 
         if response and isinstance(response, list) and len(response) > 0:
             return response

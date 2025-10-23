@@ -28,7 +28,7 @@ from test_orchestrator import config
 from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import HTTPError, Error
 from test_orchestrator.logging.log_manager import LoggingManager
-from test_orchestrator.request_handler import make_request
+from test_orchestrator.request_handler import make_request, make_request_verbose
 
 logger = LoggingManager.get_logger(__name__)
 
@@ -48,7 +48,7 @@ async def get_catalog(
 
     Parameters mirror those previously used directly in utils.get_dtr_access.
     """
-    catalog_json = await make_request(
+    response = await make_request_verbose(
         "GET",
         f"{config.DT_PULL_SERVICE_ADDRESS}/edr/get-catalog/",
         params={
@@ -64,7 +64,21 @@ async def get_catalog(
         headers=get_dt_pull_service_headers(),
     )
 
-    logger.debug("Catalog JSON received from DT Pull Service: %s", catalog_json)
+    catalog_json = response['response_json']
+
+    # Validate if the response code is 200.
+    status_code = response.get('response', {}).get('status_code')
+    if status_code != 200:
+        error_code = catalog_json.get('error', 'BAD_GATEWAY')
+        message = catalog_json.get('message', 'Unknown error')
+        details = catalog_json.get('details', 'No additional details provided')
+        error_code_enum = Error.__members__.get(error_code, Error.BAD_GATEWAY)
+        raise HTTPError(error_code_enum,
+                        message=message,
+                        details=details)
+
+    logger.info("Catalog JSON received: %s", catalog_json)
+
     # Validate if there is an offer for the desired asset/type available.
     if len(catalog_json["dcat:dataset"]) == 0:
         raise HTTPError(
@@ -76,4 +90,4 @@ async def get_catalog(
                     'Either the properties or access policy of the asset are misconfigured. ' + \
                     'Make sure to allow access to the asset for the Testbed BPNL.')
 
-    return catalog_json
+    return response
