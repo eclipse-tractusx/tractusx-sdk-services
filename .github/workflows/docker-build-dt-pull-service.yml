@@ -20,7 +20,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #################################################################################
 
-name: testbed-docker-build-push
+name: Build - Docker image (SemVer)
 
 on:
   push:
