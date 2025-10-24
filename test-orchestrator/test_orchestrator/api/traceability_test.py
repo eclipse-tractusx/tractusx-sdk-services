@@ -24,21 +24,20 @@
 Provide FastAPI endpoints for data asset checks.
 
 """
-import logging
 
 from fastapi import APIRouter, Depends
 
 from test_orchestrator import config
 from test_orchestrator.auth import verify_auth
-from test_orchestrator.errors import Error, HTTPError
-from test_orchestrator.logging.log_manager import LoggingManager
-from test_orchestrator.checks.request_catalog import get_catalog
-from test_orchestrator.checks.policy_validation import validate_policy
-from test_orchestrator.utils import init_negotiation, obtain_negotiation_state, get_data_address
 from test_orchestrator.checks.create_notification import (
     qualitynotification_receive,
     qualitynotification_update,
 )
+from test_orchestrator.checks.policy_validation import validate_policy
+from test_orchestrator.checks.request_catalog import get_catalog
+from test_orchestrator.errors import Error, HTTPError
+from test_orchestrator.logging.log_manager import LoggingManager
+from test_orchestrator.utils import init_negotiation, obtain_negotiation_state, get_data_address
 
 router = APIRouter()
 logger = LoggingManager.get_logger(__name__)
@@ -49,7 +48,8 @@ logger = LoggingManager.get_logger(__name__)
 async def traceability_test(
         counter_party_address: str,
         counter_party_id: str,
-        job_id: str
+        job_id: str,
+        asset_id: str,
 ):
     """
     Execute data asset checks for all Quality Notification API data assets.
@@ -238,7 +238,7 @@ async def traceability_test(
             results.append(asset_result)
             continue
 
-        # Step 6: Invoke notification operation based on asset type
+        # Step 6: Invoke notification operation based on the asset type
         dct_type_lower = asset['dct_type_id'].lower()
         step_name = None
         try:
@@ -251,6 +251,7 @@ async def traceability_test(
                     job_id=job_id,
                     sender_bpn=f'{config.SENDER_BPN}',
                     receiver_bpn=counter_party_id,
+                    asset_id=asset_id,
                 )
                 asset_result['message'] = "Receive invoked successfully"
                 r_req = response.get('request') if isinstance(response, dict) else None
@@ -265,6 +266,7 @@ async def traceability_test(
                     job_id=job_id,
                     sender_bpn=f'{config.SENDER_BPN}',
                     receiver_bpn=counter_party_id,
+                    asset_id=asset_id,
                 )
                 asset_result['message'] = "Update invoked successfully"
                 u_req = response.get('request') if isinstance(response, dict) else None

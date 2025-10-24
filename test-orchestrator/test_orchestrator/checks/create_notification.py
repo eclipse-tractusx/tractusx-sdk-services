@@ -49,6 +49,7 @@ async def qualitynotification_receive(
         job_id: str,
         sender_bpn: str,
         receiver_bpn: str,
+        asset_id: str,
 ) -> dict:
     """Send a Quality Notification receive request.
 
@@ -59,6 +60,7 @@ async def qualitynotification_receive(
     - jobId: Job identifier to include in the payload.
     - senderBpn: Sender BPN to include in the payload.
     - receiverBpn: Receiver BPN to include in the payload.
+    - asset_id: Affected item identifier.
 
     Returns the parsed JSON response from the server.
     """
@@ -81,7 +83,7 @@ async def qualitynotification_receive(
         },
         "content": {
             "information": "Automated test notification",
-            "listOfAffectedItems": ["urn:uuid:6b2296cc-26c0-4f38-8a22-092338c36e22"],
+            "listOfAffectedItems": [asset_id],
         },
     }
 
@@ -97,6 +99,7 @@ async def qualitynotification_update(
         job_id: str,
         sender_bpn: str,
         receiver_bpn: str,
+        asset_id: str,
 ) -> Dict[str, Any]:
     """Send a Quality Notification update request.
 
@@ -122,7 +125,7 @@ async def qualitynotification_update(
         },
         "content": {
             "information": "Automated test notification",
-            "listOfAffectedItems": ["urn:uuid:6b2296cc-26c0-4f38-8a22-092338c36e22"],
+            "listOfAffectedItems": [asset_id],
         },
     }
 
