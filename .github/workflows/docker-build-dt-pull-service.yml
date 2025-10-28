@@ -23,8 +23,6 @@
 name: Build - Docker image (SemVer)
 
 on:
-  push:
-    branches: [ "feature/CXTM-81-implement-traceability-provider-scenario" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
