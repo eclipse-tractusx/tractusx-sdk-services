@@ -24,14 +24,16 @@
 """
 
 import logging
+import os
 
-from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi import FastAPI
 
 from dt_pull_service.api import dtr, edr
 from dt_pull_service.errors import HTTPError, http_error_handler
-from dt_pull_service import config
+from dt_pull_service.logging.log_manager import LoggingManager
 
-logger = logging.getLogger(__name__)
+logger = LoggingManager.get_logger(__name__)
+
 
 async def health():
     """

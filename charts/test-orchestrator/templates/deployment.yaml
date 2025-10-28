@@ -73,6 +73,8 @@ spec:
               value: {{ .Values.auth.apiKey.value }}
             - name: API_KEY_BACKEND_HEADER
               value: {{ .Values.auth.apiKey.key }}
+            - name: SENDER_BPN
+              value: {{ .Values.test_parameter.sender_bpn }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
