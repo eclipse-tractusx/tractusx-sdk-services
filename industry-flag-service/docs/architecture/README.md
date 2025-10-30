@@ -35,32 +35,32 @@ One of the objectives of the industry flags service is to understand how the EDC
 
 This is the initial context:
 
-![context](./resources/FlagManagmentContextProposal.png)
+![context](./resources/FlagManagmentContextProposal.svg)
 
 
 
 The industry flags service is located both in provider and consumer, but it will behave differently depending on the APIs called.
 
-![tech-context](./resources/industry-flags-context.png)
+![tech-context](./resources/industry-flags-context.svg)
 
 
 
 ## EDC Interaction
 
 To ease the context from the application interaction with the EDC the following diagram was created:
-![context2](./resources/EDC-Interaction-v9.drawio.png)
+![context2](./resources/EDC%20Interaction-v9.drawio.svg)
 
 ## EDC Service
 
 The EDC Service is a library developed in Python that allows any application to interact in an optimized way with applications behind the EDC.
 
-![context3](./resources/Architecture-EDC-Service-Library.drawio.png)
+![context3](./resources/Architecture-EDC-Service-Library.drawio.svg)
 
 ### Basic functionality
 
 The simple functionality of the EDC Service is the following:
 
-![simplified](./resources/simplified-context.png)
+![simplified](./resources/simplified-context.svg)
 
 The first step is the connection that will be realized when a condition in the negotiation has changed:
 
@@ -76,7 +76,7 @@ Allowing application to communicate at least from one side really fast.
 
 In the detailed functionality we can visualize the "white box" approach, where a negotiation is done by using the EDR interface of the EDC Connector.
 
-![detailed](./resources/detailed-negotiation.png)
+![detailed](./resources/detailed-negotiation.svg)
 
 What will be stored is the EDR with the following parameters:
 
@@ -98,7 +98,7 @@ Which is a limitation at the moment from the EDR interface at the EDC. Because t
 ### Backend Components Overview
 
 
-![backend-components](./resources/backend-components.drawio.png)
+![backend-components](./resources/backend-components.drawio.svg)
 
 #### Startup
 
@@ -108,13 +108,13 @@ To initializate the backend just run:
 
 When started the backend will try to connect to the EDC consumer and the central idp from Catena-X if all the secrets and urls are correctly configured.
 
-![alt text](./resources/startup-backend.png)
+![alt text](./resources/startup-backend.svg)
 
 In case the connection with the EDC consumer fails, it will retry every 10 seconds.
 
 ### Frontend Components Overview
 
-![frontend-components](./resources/frontend-components.drawio.png)
+![frontend-components](./resources/frontend-components.drawio.svg)
 #### Startup
 
 For starting the frontend run:
