@@ -37,7 +37,6 @@ Digital Twin interactions function reliably across the network.
 
 Endpoints:
 - POST /notification-validation/: Validates the structure and content of a notification payload.
-- POST /data-transfer/: Validates the payload and verifies Digital Twin availability in the partner DTR.
 - POST /schema-validation/: Validates the payload and checks partner submodels against semantic schemas.
 """
 
