@@ -38,7 +38,7 @@ from test_orchestrator import config
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.logging.log_manager import LoggingManager
 from test_orchestrator.request_handler import make_request
-from test_orchestrator.utils import get_dtr_access
+from test_orchestrator.base_utils import get_dtr_access
 from test_orchestrator.auth import get_dt_pull_service_headers, verify_auth
 
 router = APIRouter()
