@@ -23,8 +23,6 @@
 """Utility methods
 """
 import asyncio
-from typing import Any, Dict, Optional, List
-import json
 import json
 from typing import Dict, Optional
 
@@ -32,7 +30,7 @@ import httpx
 
 from test_orchestrator import config
 from test_orchestrator.auth import get_dt_pull_service_headers
-from test_orchestrator.checks.policy_validation import validate_policy
+from test_orchestrator.checks.policy_validation import validate_policy as check_policy_validation
 from test_orchestrator.checks.request_catalog import get_catalog
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.logging.log_manager import LoggingManager
@@ -91,7 +89,7 @@ async def init_negotiation(counter_party_address: str,
     """
     Initiate a contract negotiation using the DT Pull Service.
 
-    Wrapped from get_dtr_access to provide a reusable step and clearer separation of concerns.
+    Wrapped from get_dataplane_access to provide a reusable step and clearer separation of concerns.
     Mirrors existing error handling by mapping any HTTPError from the request to CONTRACT_NEGOTIATION_FAILED.
     """
     try:
@@ -112,7 +110,7 @@ async def init_negotiation(counter_party_address: str,
                     'for troubleshooting.')
 
 
-async def get_dtr_access(counter_party_address: str,
+async def get_dataplane_access(counter_party_address: str,
                          counter_party_id: str,
                          operand_left: Optional[str] = None,
                          operator: Optional[str] = 'like',
@@ -122,14 +120,14 @@ async def get_dtr_access(counter_party_address: str,
                          policy_validation: Optional[bool] = None,
                          timeout: int = 80):
     """
-    Retrieves the Digital Twin Registry (DTR) access details.
+    Retrieves the access details.
 
     This function performs a sequence of API calls to:
-    1. Query the catalog from the DT Pull Service.
+    1. Query the catalog.
     2. Initiate a negotiation for the retrieved catalog data.
     3. Check the negotiation state.
-    4. Execute a transfer process to retrieve DTR access details.
-    5. Fetch the endpoint and authorization information for DTR access.
+    4. Execute a transfer process to retrieve access details.
+    5. Fetch the endpoint and authorization information for access.
 
     :param operand_left: The left operand for filtering the catalog query.
     :param operand_right: The right operand for filtering the catalog query.
@@ -137,7 +135,7 @@ async def get_dtr_access(counter_party_address: str,
     :param counter_party_id: The Business Partner Number for the transaction.
     :param offset: (Optional) The offset for pagination. Default is 0.
     :param limit: (Optional) The maximum number of results to retrieve. Default is 50.
-    :return: A tuple containing the endpoint URL and authorization credentials for DTR access.
+    :return: A tuple containing the endpoint URL and authorization credentials for access.
     """
 
     catalog_response = await get_catalog(
@@ -155,15 +153,15 @@ async def get_dtr_access(counter_party_address: str,
     logger.debug(f'Catalog JSON: {catalog_json}')
 
     # Validate result of the policy from the catalog if required
-    policy_validation_outcome = validate_policy(catalog_json, "DigitalTwinRegistry", "DataExchangeGovernance:1.0")
+    policy_validation_outcome = check_policy_validation(catalog_json, "DigitalTwinRegistry", "DataExchangeGovernance:1.0")
 
     if policy_validation:
         if policy_validation_outcome['status'] != 'ok':
             raise HTTPError(
                 Error.POLICY_VALIDATION_FAILED,
                 message='The usage policy that is used within the asset is not accurate. ',
-                details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/'
-                        'digital-twin-kit/software-development-view/#usage-policies for troubleshooting.')
+                details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                        'software-development-view/policies for troubleshooting.')
 
     negotiation = await init_negotiation(
         counter_party_address=counter_party_address,
@@ -204,19 +202,18 @@ async def obtain_negotiation_state(counter_party_address: str,
     Returns the negotiation state response when finalized; raises HTTPError for failures or non-finalized states.
     """
     try:
-        response = await make_request(
-                        'GET',
-                        f'{config.DT_PULL_SERVICE_ADDRESS}/edr/negotiation-state/',
-                        params={'counter_party_address': counter_party_address,
-                                'counter_party_id': counter_party_id,
-                                'state_id': edr_state_id},
-                        headers=get_dt_pull_service_headers(),
-                        timeout=timeout
-        )
-    except:
+        response = await make_request('GET',
+                                      f'{config.DT_PULL_SERVICE_ADDRESS}/edr/negotiation-state/',
+                                      params={'counter_party_address': counter_party_address,
+                                              'counter_party_id': counter_party_id,
+                                              'state_id': edr_state_id},
+                                      headers=get_dt_pull_service_headers(),
+                                      timeout=timeout)
+
+    except Exception:
         raise HTTPError(
             Error.CONTRACT_NEGOTIATION_FAILED,
-            message='Unknown Error - Check your connector logs for details.',
+            message=f'Unknown Error - Check your connector logs for details.',
             details=f'Contract negotiation for asset of type/id {operand_right} failed.')
 
     # In case negotiation was not successful
@@ -233,14 +230,16 @@ async def obtain_negotiation_state(counter_party_address: str,
             message=f'Error Message: {json.dumps(error_message["errorDetail"])}',
             details=f'Contract negotiation for asset of type/id {operand_right} failed.')
 
-    if response["state"] != "FINALIZED":
+    # Any other case
+    elif response["state"] != "FINALIZED":
         raise HTTPError(
             Error.CONTRACT_NEGOTIATION_FAILED,
             message=f'Contract negotiation stuck in state {response["state"]}',
             details=f'Contract negotiation for asset of type/id {operand_right} could not be completed.')
-    
+
     return response
-  
+
+
 async def get_data_address(counter_party_address: str,
                            counter_party_id: str,
                            edr_state_id: str,
@@ -248,7 +247,7 @@ async def get_data_address(counter_party_address: str,
     """
     Execute the transfer process query and fetch the EDR data address.
 
-    This function wraps the two final steps of get_dtr_access:
+    This function wraps the two final steps of get_dataplane_access:
     - fetch_transfer_process: query for transfer process by contractNegotiationId
     - GET /edr/data-address/: obtain endpoint and authorization by transfer_process_id
 
@@ -279,11 +278,7 @@ async def get_data_address(counter_party_address: str,
                                                   'transfer_process_id': transfer_process_id},
                                           headers=get_dt_pull_service_headers(),
                                           timeout=timeout)
-
-    return (edr_data_address.get('endpoint'),
-            edr_data_address.get('authorization'),
-            policy_validation_outcome,
-            warnings)
+    return edr_data_address
 
 
 def submodel_schema_finder(
@@ -366,99 +361,51 @@ def fetch_submodel_info(correct_element, semantic_id):
          'subm_operandright': subm_operandright
          })
 
+def validate_policy(catalog_json):
+    """Validates the usage policy"""
 
-def validate_policy(
-    catalog_json: Dict[str, Any],
-    data_exchange_policy: Optional[Dict[str, Any]] = None,
-    dtr_policy: Optional[Dict[str, Any]] = None
-) -> Dict[str, str]:
-    """Validates the usage policy in a catalog entry.
-    """
-
-    # Default policies if not passed in param
-    data_exchange_policy = data_exchange_policy or {
+    data_exchange_policy = {
         'odrl:leftOperand': {'@id': 'cx-policy:FrameworkAgreement'},
         'odrl:operator': {'@id': 'odrl:eq'},
-        'odrl:rightOperand': 'DataExchangeGovernance:1.0'
-    }
+        'odrl:rightOperand': 'DataExchangeGovernance:1.0'}
 
-    dtr_policy = dtr_policy or {
+    dtr_policy = {
         'odrl:leftOperand': {'@id': 'cx-policy:UsagePurpose'},
         'odrl:operator': {'@id': 'odrl:eq'},
-        'odrl:rightOperand': 'cx.core.digitalTwinRegistry:1'
-    }
+        'odrl:rightOperand': 'cx.core.digitalTwinRegistry:1'}
 
-    policy_warning =  {
-        "status": "Warning",
-        "message": (
-            "The usage policy that is used within the asset is not accurate. "
-        ),
-        "details": (
-            "Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/"
-            "software-development-view/policies for troubleshooting."
-        )
-    }
+    policy_validation_outcome = False
 
-    datasets = catalog_json.get("dcat:dataset", [])
+    if 'dcat:dataset' in catalog_json:
+        if isinstance(catalog_json['dcat:dataset'], list):
+            for element in catalog_json['dcat:dataset']:
+                if 'dct:type' in element:
+                    if isinstance(element['dct:type'], dict):
+                        id_in_dct_type = element['dct:type'].get('@id')
 
-    if not isinstance(datasets, list):
-        return policy_warning
+                        if id_in_dct_type:
+                            if element['dct:type']['@id'] == 'https://w3id.org/catenax/taxonomy#DigitalTwinRegistry':
+                                if 'odrl:hasPolicy' in element:
+                                    if 'odrl:permission' in element['odrl:hasPolicy']:
+                                        if 'odrl:constraint' in element['odrl:hasPolicy']['odrl:permission']:
+                                            spec_part = element['odrl:hasPolicy']['odrl:permission']['odrl:constraint']
 
-    for element in datasets:
-        dct_type = element.get("dct:type", {})
+                                            if isinstance(spec_part, dict):
+                                                if 'and' in spec_part:
+                                                    if isinstance(spec_part['and'], list):
+                                                        if data_exchange_policy in spec_part['and'] and \
+                                                          dtr_policy in spec_part['and']:
+                                                            policy_validation_outcome = True
 
-        if dct_type.get("@id") != "https://w3id.org/catenax/taxonomy#DigitalTwinRegistry":
-            continue
+    if policy_validation_outcome:
+        return {'status': 'ok',
+                'message': 'The usage policy that is used within the asset was successfully validated. ',
+                'details': 'No further policy checks necessary'}
 
-        has_policy = _find_case_insensitive(element, "odrl:hasPolicy")
-
-        if not isinstance(has_policy, dict):
-            continue
-
-        permission = _find_case_insensitive(has_policy, "odrl:permission")
-
-        if not isinstance(permission, dict):
-            continue
-
-        constraint = _find_case_insensitive(permission, "odrl:constraint")
-
-        if constraint is None:
-            continue
-
-        # odrl:constraint is a list
-        if isinstance(constraint, list):
-            and_constraints: Optional[List[Any]] = constraint
-        # odrl:constraint is an object with and list
-        elif isinstance(constraint, dict):
-            and_constraints = _find_case_insensitive(constraint, "odrl:and")
-        else:
-            continue
-
-        if not isinstance(and_constraints, list):
-            continue
-
-        if data_exchange_policy in and_constraints and dtr_policy in and_constraints:
-            return {
-                "status": "ok",
-                "message": "The usage policy that is used within the asset was successfully validated.",
-                "details": "No further policy checks necessary"
-            }
-
-    return policy_warning
-
-
-def _find_case_insensitive(container: Dict[str, Any], key: str) -> Any:
-    """Returns value from container where the key matches case-insensitively.
-    """
-
-    target = key.lower()
-
-    for k, v in container.items():
-        if k.lower() == target:
-            return v
-
-    return None
-
+    return {'status': 'Warning',
+            'message': 'The usage policy that is used within the asset is not accurate. ',
+            'details': 'Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                       'software-development-view/policies for troubleshooting.'}
 
 async def submodel_validation(
     counter_party_id,
@@ -542,7 +489,7 @@ async def submodel_validation(
         submodel_info = fetch_submodel_info(correct_element, semantic_id)
 
         # Gain access to the submodel link
-        (dtr_url_subm, dtr_key_subm, policy_validation_outcome_not_used) = await get_dtr_access(
+        (dtr_url_subm, dtr_key_subm, policy_validation_outcome_not_used) = await get_dataplane_access(
             counter_party_address=submodel_info['subm_counterparty'],
             counter_party_id=counter_party_id,
             operand_left=submodel_info['subm_operandleft'],
