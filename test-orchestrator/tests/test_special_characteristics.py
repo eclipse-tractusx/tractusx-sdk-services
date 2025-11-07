@@ -35,23 +35,20 @@ from orchestrator.utils.special_characteristics import (
     is_notification_valid
 )
 
-# --------------------------------------------------------------------
-# Setup FastAPI app and client
-# --------------------------------------------------------------------
-
+# Create a FastAPI app instance and include the router for testing
 app = FastAPI()
 app.include_router(notification_router)
 
 
+# Correctly handle the custom HTTPError to return a proper JSON response
 @app.exception_handler(HTTPError)
 async def http_error_handler(request, exc: HTTPError):
     """Error handler for tests"""
     return JSONResponse(status_code=exc.status_code, content=exc.json)
 
-
 client = TestClient(app)
 
-# Dummy payloads for testing
+# Dummy data for testing
 DUMMY_VALID_NOTIFICATION_PAYLOAD = {
     "header": {
         "messageId": "05e5CC3A-BDce-c3EB-0E0b-Ec8BDA34DeBc",
@@ -116,15 +113,15 @@ def test_validate_notification_payload_valid():
 def test_validate_notification_payload_missing_fields():
     """Validation should fail when required fields are missing."""
     result = validate_notification_payload(DUMMY_INVALID_NOTIFICATION_PAYLOAD_MISSING_FIELDS)
-    assert result["status"] == "nok"
-    assert any("Missing" in e for e in result["errors"])
+    assert result["message"] == "Required fields are missing in the notification"
+    assert any("Missing" in e for e in result["details"])
 
 
 def test_validate_notification_payload_invalid_formats():
     """Validation should fail with proper error messages for wrong UUID, BPN, or datetime."""
     result = validate_notification_payload(DUMMY_INVALID_NOTIFICATION_PAYLOAD_WRONG_FORMATS)
-    assert result["status"] == "nok"
-    error_text = " ".join(result["errors"])
+    assert result["message"] == "Notification validation failed"
+    error_text = " ".join(result["details"])
     assert "Invalid UUID format" in error_text
     assert "Invalid BPN format" in error_text
     assert "Invalid datetime format" in error_text

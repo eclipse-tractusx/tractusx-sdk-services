@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
              response_model=Dict,
              dependencies=[Depends(verify_auth)])
 async def notification_validation(payload: Dict,
-                                  timeout: int = 80) -> Dict:
+                                  timeout: int = 80):
     """
     Endpoint to validate a notification payload.
     """
