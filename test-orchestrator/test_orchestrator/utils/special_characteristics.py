@@ -26,7 +26,9 @@ import re
 from typing import Dict, List
 from datetime import datetime
 
+from test_orchestrator import config
 from test_orchestrator.errors import Error, HTTPError
+from test_orchestrator.base_utils import get_dtr_access, fetch_transfer_process, fetch_submodel_info
 
 logger = logging.getLogger(__name__)
 
@@ -105,15 +107,94 @@ def validate_notification_payload(payload: Dict):
 
     return {'status': 'ok'}
 
-def is_notification_valid(payload: Dict) -> bool:
-    """
-    Runs the notification validation and returns True if valid, False otherwise.
 
-    • :param payload: The notification JSON object to be validated.
-    • :return: Boolean indicating if the notification is valid.
+async def process_notification_and_retrieve_dtr(payload: Dict, counter_party_address: str, counter_party_id: str, timeout: int, max_events: int = 2):
     """
-    try:
-        result = validate_notification_payload(payload)
-        return result.get("status") == "ok"
-    except HTTPError:
-        return False
+    Process a notification payload:
+    - Validate payload
+    - Limit number of events to `max_events`
+    - Validate all Catena-X IDs exist via DT Pull Service
+    """
+
+    validate_notification_payload(payload)
+
+    header = payload["header"]
+    content = payload["content"]
+    receiver_bpn = header["receiverBpn"]
+
+    events = content.get("listOfEvents", [])
+    if len(events) > max_events:
+        raise HTTPError(
+            Error.NOTIFICATION_VALIDATION_FAILED,
+            message=f"Notification contains more than {max_events} events",
+            details=[f"listOfEvents has {len(events)} items, maximum allowed is {max_events}"]
+        )
+
+    dtr_endpoint, _dtr_token, _policy_validation = await get_dtr_access(
+        counter_party_address=counter_party_address,
+        counter_party_id=counter_party_id,
+        operand_left="http://purl.org/dc/terms/type",
+        operator="like",
+        operand_right="https://w3id.org/catenax/taxonomy#DigitalTwinRegistry",
+        policy_validation=True,
+        timeout=timeout
+    )
+
+    if not dtr_endpoint:
+        raise HTTPError(
+            Error.NOT_FOUND,
+            message="Partner DTR endpoint not found",
+            details="DT Pull Service did not return a DTR endpoint for the partner"
+        )
+
+    errors = []
+    results = []
+
+    for event in events:
+        catena_x_id = event.get("catenaXId")
+        try:
+            query_spec = {
+                '@context': {'@vocab': 'https://w3id.org/edc/v0.0.1/ns/'},
+                '@type': 'QuerySpec',
+                'filterExpression': [{
+                    'operandLeft': 'assetId',
+                    'operator': '=',
+                    'operandRight': catena_x_id
+                }]
+            }
+
+            transfer_process = await fetch_transfer_process(
+                counter_party_address=counter_party_address,
+                counter_party_id=counter_party_id,
+                data=query_spec,
+                timeout=timeout
+            )
+
+            if not transfer_process or len(transfer_process) == 0:
+                errors.append(f"Digital Twin not found for Catena-X ID {catena_x_id}")
+                continue
+
+            shell_info = fetch_submodel_info(transfer_process, catena_x_id)
+            results.append({
+                "catenaXId": catena_x_id,
+                "dtr_endpoint": dtr_endpoint,
+                "shell_descriptor": shell_info
+            })
+
+        except HTTPError as exc:
+            errors.append(f"Failed to fetch Digital Twin for {catena_x_id}: {exc.message}")
+        except Exception as exc:
+            errors.append(f"Unexpected error for {catena_x_id}: {str(exc)}")
+
+    if errors:
+        raise HTTPError(
+            Error.NOTIFICATION_VALIDATION_FAILED,
+            message="One or more events failed DTR validation",
+            details=errors
+        )
+
+    return {
+        "status": "ok",
+        "receiverBpn": receiver_bpn,
+        "results": results
+    }

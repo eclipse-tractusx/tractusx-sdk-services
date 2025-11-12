@@ -21,17 +21,20 @@
 # *************************************************************
 
 """
-Provides FastAPI endpoints for validating notifications.
+FastAPI router providing endpoints for notification validation and data transfer orchestration.
 
-This module defines an API endpoint built with FastAPI to validate Catena-X notification payloads
-against the required format and field rules. The endpoint checks for required fields, validates
-UUIDs, timestamps, and semantic identifiers used in the header and content sections of the message.
+Endpoints
+----------
+1. **POST /notification-validation/**
+   Validates the structure and content of a Catena-X notification payload.
+   Returns `{ "status": "ok" }` on success or raises `HTTPError` if invalid.
 
-The primary goal is to ensure that the notification structure and key values conform to the
-expected messaging standards.
+2. **POST /data-transfer/**
+   Validates the payload, resolves the partner EDC endpoint, queries the partner DTR
+   to check for the presence of the Digital Twin (DT) matching the notification’s Catena-X ID.
+   Returns DTR data if found or raises `HTTPError` otherwise.
 
-Endpoints:
-- POST /notification-validation/: Validates a given notification payload against its expected format.
+Both endpoints are protected by authentication (`verify_auth`).
 """
 
 import logging
@@ -39,7 +42,7 @@ from typing import Dict
 from fastapi import APIRouter, Depends
 
 from test_orchestrator.auth import verify_auth
-from test_orchestrator.utils.special_characteristics import validate_notification_payload
+from test_orchestrator.utils.special_characteristics import validate_notification_payload, process_notification_and_retrieve_dtr
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -54,3 +57,20 @@ async def notification_validation(payload: Dict,
     Endpoint to validate a notification payload.
     """
     return validate_notification_payload(payload)
+
+@router.post("/data-transfer/",
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
+async def data_transfer(payload: Dict,
+                        counter_party_address: str,
+                        counter_party_id: str,
+                        timeout: int = 80,
+                        max_events: int = 2):
+    """
+    Orchestrates data transfer validation and Digital Twin verification.
+    """
+    return await process_notification_and_retrieve_dtr(payload=payload,
+                                                       counter_party_address=counter_party_address,
+                                                       counter_party_id=counter_party_id,
+                                                       timeout=timeout,
+                                                       max_events=max_events)
