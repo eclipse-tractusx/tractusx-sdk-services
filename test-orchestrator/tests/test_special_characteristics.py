@@ -27,6 +27,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from fastapi.responses import JSONResponse
 import pytest
+from unittest.mock import AsyncMock, Mock, patch
 
 from orchestrator.api.special_characteristics import router as notification_router
 from orchestrator.errors import HTTPError
@@ -49,6 +50,8 @@ async def http_error_handler(request, exc: HTTPError):
 client = TestClient(app)
 
 # Dummy data for testing
+DUMMY_COUNTER_PARTY_ADDRESS = "https://connector.example.com/api/v1/dsp"
+DUMMY_COUNTER_PARTY_ID = "BPNL000000000001"
 DUMMY_VALID_NOTIFICATION_PAYLOAD = {
     "header": {
         "messageId": "05e5CC3A-BDce-c3EB-0E0b-Ec8BDA34DeBc",
@@ -162,3 +165,127 @@ def test_notification_validation_api_invalid_formats():
     data = response.json()
     assert data["status"] == "nok"
     assert any("Invalid" in e for e in data["errors"])
+
+
+@pytest.fixture
+def mock_get_dtr_access():
+    """Mocks get_dtr_access call for EDC lookup."""
+    with patch('orchestrator.api.data_transfer.get_dtr_access', new_callable=AsyncMock) as mock:
+        yield mock
+
+
+@pytest.fixture
+def mock_fetch_transfer_process():
+    """Mocks fetch_transfer_process to simulate DT retrieval."""
+    with patch('orchestrator.api.data_transfer.fetch_transfer_process', new_callable=AsyncMock) as mock:
+        yield mock
+
+
+@pytest.fixture
+def mock_fetch_submodel_info():
+    """Mocks fetch_submodel_info to return synthetic descriptor."""
+    with patch('orchestrator.api.data_transfer.fetch_submodel_info') as mock:
+        yield mock
+
+
+def test_data_transfer_success(mock_get_dtr_access, mock_fetch_transfer_process, mock_fetch_submodel_info):
+    """
+    Test /data-transfer/ endpoint when everything works correctly.
+    """
+    mock_get_dtr_access.return_value = (
+        "https://dtr.partner.example.com",
+        "dummy-token",
+        True
+    )
+    mock_fetch_transfer_process.return_value = [{"assetId": "urn:uuid:11111111-1111-1111-1111-111111111111"}]
+    mock_fetch_submodel_info.return_value = {"idShort": "ExampleTwin"}
+
+    response = client.post(
+        "/data-transfer/",
+        json=DUMMY_VALID_NOTIFICATION_PAYLOAD,
+        params={
+            "counter_party_address": DUMMY_COUNTER_PARTY_ADDRESS,
+            "counter_party_id": DUMMY_COUNTER_PARTY_ID,
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
+    assert "results" in data
+    assert len(data["results"]) == 1
+    assert data["results"][0]["catenaXId"] == "urn:uuid:11111111-1111-1111-1111-111111111111"
+
+
+def test_data_transfer_dtr_not_found(mock_get_dtr_access):
+    """
+    Test /data-transfer/ endpoint when DTR endpoint is missing.
+    """
+    mock_get_dtr_access.return_value = (None, None, None)
+
+    response = client.post(
+        "/data-transfer/",
+        json=DUMMY_VALID_NOTIFICATION_PAYLOAD_FOR_TRANSFER,
+        params={
+            "counter_party_address": DUMMY_COUNTER_PARTY_ADDRESS,
+            "counter_party_id": DUMMY_COUNTER_PARTY_ID,
+        },
+    )
+
+    assert response.status_code == 404
+    data = response.json()
+    assert data["error"] == "NOT_FOUND"
+    assert "Partner DTR endpoint not found" in data["message"]
+
+
+def test_data_transfer_invalid_payload():
+    """
+    Test /data-transfer/ when payload is invalid (missing fields).
+    """
+    response = client.post(
+        "/data-transfer/",
+        json=DUMMY_INVALID_NOTIFICATION_PAYLOAD_MISSING_FIELDS,
+        params={
+            "counter_party_address": DUMMY_COUNTER_PARTY_ADDRESS,
+            "counter_party_id": DUMMY_COUNTER_PARTY_ID,
+        },
+    )
+
+    assert response.status_code == 400 or response.status_code == 200
+    data = response.json()
+    assert "status" in data
+    assert "nok" in data["status"] or "validation" in data.get("message", "").lower()
+
+
+def test_data_transfer_too_many_events(mock_get_dtr_access):
+    """
+    Test /data-transfer/ rejects payloads with too many listOfEvents.
+    """
+    mock_get_dtr_access.return_value = (
+        "https://dtr.partner.example.com",
+        "dummy-token",
+        True
+    )
+
+    payload = DUMMY_VALID_NOTIFICATION_PAYLOAD_FOR_TRANSFER.copy()
+    payload["content"]["listOfEvents"] = [
+        {
+            "eventType": "CreateSubmodel",
+            "catenaXId": f"urn:uuid:{i:032d}",
+            "submodelSemanticId": "urn:bamm:io.catenax.serial_part:3.0.0#SerialPart",
+        }
+        for i in range(5)
+    ]
+
+    response = client.post(
+        "/data-transfer/",
+        json=payload,
+        params={
+            "counter_party_address": DUMMY_COUNTER_PARTY_ADDRESS,
+            "counter_party_id": DUMMY_COUNTER_PARTY_ID,
+        },
+    )
+
+    assert response.status_code == 400 or response.status_code == 200
+    data = response.json()
+    assert "more than" in data["message"] or "maximum" in str(data)
