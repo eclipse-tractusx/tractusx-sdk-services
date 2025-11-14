@@ -169,26 +169,19 @@ def test_notification_validation_api_invalid_formats():
 
 @pytest.fixture
 def mock_get_dtr_access():
-    """Mocks get_dtr_access call for EDC lookup."""
-    with patch('orchestrator.api.data_transfer.get_dtr_access', new_callable=AsyncMock) as mock:
+    """Mock get_dtr_access for DTR lookup."""
+    with patch("orchestrator.api.data_transfer.get_dtr_access", new_callable=AsyncMock) as mock:
         yield mock
 
 
 @pytest.fixture
-def mock_fetch_transfer_process():
-    """Mocks fetch_transfer_process to simulate DT retrieval."""
-    with patch('orchestrator.api.data_transfer.fetch_transfer_process', new_callable=AsyncMock) as mock:
+def mock_make_request():
+    """Mock make_request for DT Pull Service calls."""
+    with patch("orchestrator.api.data_transfer.make_request", new_callable=AsyncMock) as mock:
         yield mock
 
 
-@pytest.fixture
-def mock_fetch_submodel_info():
-    """Mocks fetch_submodel_info to return synthetic descriptor."""
-    with patch('orchestrator.api.data_transfer.fetch_submodel_info') as mock:
-        yield mock
-
-
-def test_data_transfer_success(mock_get_dtr_access, mock_fetch_transfer_process, mock_fetch_submodel_info):
+def test_data_transfer_success(mock_get_dtr_access, mock_make_request):
     """
     Test /data-transfer/ endpoint when everything works correctly.
     """
@@ -197,8 +190,10 @@ def test_data_transfer_success(mock_get_dtr_access, mock_fetch_transfer_process,
         "dummy-token",
         True
     )
-    mock_fetch_transfer_process.return_value = [{"assetId": "urn:uuid:11111111-1111-1111-1111-111111111111"}]
-    mock_fetch_submodel_info.return_value = {"idShort": "ExampleTwin"}
+
+    mock_make_request.return_value = {
+        "items": [{"idShort": "ExampleTwin"}]
+    }
 
     response = client.post(
         "/data-transfer/",
@@ -212,9 +207,7 @@ def test_data_transfer_success(mock_get_dtr_access, mock_fetch_transfer_process,
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "ok"
-    assert "results" in data
-    assert len(data["results"]) == 1
-    assert data["results"][0]["catenaXId"] == "urn:uuid:11111111-1111-1111-1111-111111111111"
+    assert data["receiverBpn"] == DUMMY_VALID_NOTIFICATION_PAYLOAD["header"]["receiverBpn"]
 
 
 def test_data_transfer_dtr_not_found(mock_get_dtr_access):
