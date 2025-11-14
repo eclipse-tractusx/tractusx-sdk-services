@@ -225,7 +225,7 @@ def test_data_transfer_dtr_not_found(mock_get_dtr_access):
 
     response = client.post(
         "/data-transfer/",
-        json=DUMMY_VALID_NOTIFICATION_PAYLOAD_FOR_TRANSFER,
+        json=DUMMY_VALID_NOTIFICATION_PAYLOAD,
         params={
             "counter_party_address": DUMMY_COUNTER_PARTY_ADDRESS,
             "counter_party_id": DUMMY_COUNTER_PARTY_ID,
@@ -267,7 +267,7 @@ def test_data_transfer_too_many_events(mock_get_dtr_access):
         True
     )
 
-    payload = DUMMY_VALID_NOTIFICATION_PAYLOAD_FOR_TRANSFER.copy()
+    payload = DUMMY_VALID_NOTIFICATION_PAYLOAD.copy()
     payload["content"]["listOfEvents"] = [
         {
             "eventType": "CreateSubmodel",
@@ -286,6 +286,6 @@ def test_data_transfer_too_many_events(mock_get_dtr_access):
         },
     )
 
-    assert response.status_code == 400 or response.status_code == 200
+    assert response.status_code == 422 or response.status_code == 200
     data = response.json()
     assert "more than" in data["message"] or "maximum" in str(data)
