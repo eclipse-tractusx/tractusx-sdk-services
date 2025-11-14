@@ -154,7 +154,7 @@ async def process_notification_and_retrieve_dtr(payload: Dict, counter_party_add
                 'GET',
                 f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
                 params={'dataplane_url': dtr_url_shell, 'aas_id': aas_id, 'limit': 1},
-                headers=get_dt_pull_service_headers(headers={'Authorization': dtr_url_shell}),
+                headers=get_dt_pull_service_headers(headers={'Authorization': dtr_token}),
                 timeout=timeout)
 
         except HTTPError as exc:
@@ -174,6 +174,5 @@ async def process_notification_and_retrieve_dtr(payload: Dict, counter_party_add
 
     return {
         "status": "ok",
-        "receiverBpn": receiver_bpn,
-        "results": results
+        "receiverBpn": receiver_bpn
     }
