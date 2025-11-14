@@ -27,6 +27,8 @@ from typing import Dict, List
 from datetime import datetime
 
 from test_orchestrator import config
+from test_orchestrator.request_handler import make_request
+from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.base_utils import get_dtr_access, fetch_transfer_process, fetch_submodel_info
 
@@ -94,10 +96,6 @@ def validate_notification_payload(payload: Dict):
                 if catena_id and not uuid_pattern.match(catena_id):
                     errors.append(f"Invalid UUID format in listOfEvents[{i}].catenaXId: {catena_id}")
 
-                semantic_id = event.get('submodelSemanticId')
-                if semantic_id and not semantic_id.startswith('urn:bamm:io.catenax.'):
-                    errors.append(f"Invalid semantic ID in listOfEvents[{i}].submodelSemanticId: {semantic_id}")
-
     if errors:
         logger.error(f"Notification validation failed: {errors}")
         raise HTTPError(
@@ -130,17 +128,16 @@ async def process_notification_and_retrieve_dtr(payload: Dict, counter_party_add
             details=[f"listOfEvents has {len(events)} items, maximum allowed is {max_events}"]
         )
 
-    dtr_endpoint, _dtr_token, _policy_validation = await get_dtr_access(
+    dtr_url_shell, dtr_token, _policy_validation = await get_dtr_access(
         counter_party_address=counter_party_address,
         counter_party_id=counter_party_id,
-        operand_left="http://purl.org/dc/terms/type",
-        operator="like",
-        operand_right="https://w3id.org/catenax/taxonomy#DigitalTwinRegistry",
-        policy_validation=True,
+        operand_left='http://purl.org/dc/terms/type',
+        operand_right='%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%',
+        policy_validation=False,
         timeout=timeout
     )
 
-    if not dtr_endpoint:
+    if not dtr_url_shell:
         raise HTTPError(
             Error.NOT_FOUND,
             message="Partner DTR endpoint not found",
@@ -151,40 +148,22 @@ async def process_notification_and_retrieve_dtr(payload: Dict, counter_party_add
     results = []
 
     for event in events:
-        catena_x_id = event.get("catenaXId")
+        aas_id = event.get("catenaXId")
         try:
-            query_spec = {
-                '@context': {'@vocab': 'https://w3id.org/edc/v0.0.1/ns/'},
-                '@type': 'QuerySpec',
-                'filterExpression': [{
-                    'operandLeft': 'assetId',
-                    'operator': '=',
-                    'operandRight': catena_x_id
-                }]
-            }
-
-            transfer_process = await fetch_transfer_process(
-                counter_party_address=counter_party_address,
-                counter_party_id=counter_party_id,
-                data=query_spec,
-                timeout=timeout
-            )
-
-            if not transfer_process or len(transfer_process) == 0:
-                errors.append(f"Digital Twin not found for Catena-X ID {catena_x_id}")
-                continue
-
-            shell_info = fetch_submodel_info(transfer_process, catena_x_id)
-            results.append({
-                "catenaXId": catena_x_id,
-                "dtr_endpoint": dtr_endpoint,
-                "shell_descriptor": shell_info
-            })
+            shell_descriptors_spec = await make_request(
+                'GET',
+                f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
+                params={'dataplane_url': dtr_url_shell, 'aas_id': aas_id, 'limit': 1},
+                headers=get_dt_pull_service_headers(headers={'Authorization': dtr_url_shell}),
+                timeout=timeout)
 
         except HTTPError as exc:
-            errors.append(f"Failed to fetch Digital Twin for {catena_x_id}: {exc.message}")
+            errors.append(f"Failed to fetch Digital Twin for {aas_id}: {exc.message}")
         except Exception as exc:
-            errors.append(f"Unexpected error for {catena_x_id}: {str(exc)}")
+            errors.append(f"Unexpected error for {aas_id}: {str(exc)}")
+        
+        if 'errors' in shell_descriptors_spec:
+            errors.append(f"The AAS ID {aas_id} could not be found in the DTR")
 
     if errors:
         raise HTTPError(
