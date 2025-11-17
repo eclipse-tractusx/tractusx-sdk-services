@@ -13,7 +13,7 @@
 # https://www.apache.org/licenses/LICENSE-2.0.
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
+# distributed under the License is distributed on an 'AS IS' BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations
 # under the License.
@@ -30,9 +30,10 @@ from test_orchestrator import config
 from test_orchestrator.request_handler import make_request
 from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
-from test_orchestrator.base_utils import get_dtr_access, fetch_transfer_process, fetch_submodel_info
+from test_orchestrator.base_utils import get_dtr_access
 
 logger = logging.getLogger(__name__)
+
 
 def validate_notification_payload(payload: Dict):
     """
@@ -45,7 +46,7 @@ def validate_notification_payload(payload: Dict):
         errors.append("Missing required sections: 'header' and/or 'content'.")
         raise HTTPError(
             Error.MISSING_REQUIRED_FIELD,
-            message="Required fields are missing in the notification",
+            message='Required fields are missing in the notification',
             details=errors)
 
     header = payload.get('header', {})
@@ -55,37 +56,42 @@ def validate_notification_payload(payload: Dict):
         'messageId', 'context', 'sentDateTime', 'senderBpn',
         'receiverBpn', 'expectedResponseBy', 'relatedMessageId', 'version'
     ]
+
     for field in required_header_fields:
         if field not in header:
-            errors.append(f"Missing header field: {field}")
+            errors.append(f'Missing header field: {field}')
 
-    uuid_pattern = re.compile(r"^(urn:uuid:)?[0-9a-fA-F-]{36}$")
-    bpn_pattern = re.compile(r"^BPN[LSA][A-Z0-9]{10}[A-Z0-9]{2}$")
+    uuid_pattern = re.compile(r'^(urn:uuid:)?[0-9a-fA-F-]{36}$')
+    bpn_pattern = re.compile(r'^BPN[LSA][A-Z0-9]{10}[A-Z0-9]{2}$')
 
     for key in ['messageId', 'relatedMessageId']:
         value = header.get(key)
+
         if value and not uuid_pattern.match(value):
-            errors.append(f"Invalid UUID format in header.{key}: {value}")
+            errors.append(f'Invalid UUID format in header.{key}: {value}')
 
     for key in ['sentDateTime', 'expectedResponseBy']:
         value = header.get(key)
+
         try:
             if value:
-                datetime.fromisoformat(value.replace("Z", "+00:00"))
+                datetime.fromisoformat(value.replace('Z', '+00:00'))
         except Exception:
-            errors.append(f"Invalid datetime format in header.{key}: {value}")
+            errors.append(f'Invalid datetime format in header.{key}: {value}')
 
     for key in ['senderBpn', 'receiverBpn']:
         value = header.get(key)
+
         if value and not bpn_pattern.match(value):
-            errors.append(f"Invalid BPN format in header.{key}: {value} (expected e.g. BPNL000000000000)")
+            errors.append(f'Invalid BPN format in header.{key}: {value} (expected e.g. BPNL000000000000)')
 
     if 'information' not in content or 'listOfEvents' not in content:
         errors.append("Missing required content fields: 'information' and/or 'listOfEvents'.")
     else:
         list_of_events = content.get('listOfEvents', [])
+
         if not isinstance(list_of_events, list) or not list_of_events:
-            errors.append("listOfEvents must be a non-empty array.")
+            errors.append('listOfEvents must be a non-empty array.')
         else:
             for i, event in enumerate(list_of_events):
                 for key in ['eventType', 'catenaXId', 'submodelSemanticId']:
@@ -93,11 +99,12 @@ def validate_notification_payload(payload: Dict):
                         errors.append(f"Missing field '{key}' in listOfEvents[{i}]")
 
                 catena_id = event.get('catenaXId')
+                
                 if catena_id and not uuid_pattern.match(catena_id):
-                    errors.append(f"Invalid UUID format in listOfEvents[{i}].catenaXId: {catena_id}")
+                    errors.append(f'Invalid UUID format in listOfEvents[{i}].catenaXId: {catena_id}')
 
     if errors:
-        logger.error(f"Notification validation failed: {errors}")
+        logger.error(f'Notification validation failed: {errors}')
         raise HTTPError(
             Error.NOTIFICATION_VALIDATION_FAILED,
             message='Notification validation failed',
@@ -106,7 +113,13 @@ def validate_notification_payload(payload: Dict):
     return {'status': 'ok'}
 
 
-async def process_notification_and_retrieve_dtr(payload: Dict, counter_party_address: str, counter_party_id: str, timeout: int, max_events: int = 2):
+async def process_notification_and_retrieve_dtr(
+    payload: Dict,
+    counter_party_address: str,
+    counter_party_id: str,
+    timeout: int,
+    max_events: int = 2
+    ):
     """
     Process a notification payload:
     - Validate payload
@@ -114,18 +127,17 @@ async def process_notification_and_retrieve_dtr(payload: Dict, counter_party_add
     - Validate all Catena-X IDs exist via DT Pull Service
     """
 
-    validate_notification_payload(payload)
+    header = payload['header']
+    content = payload['content']
+    receiver_bpn = header['receiverBpn']
 
-    header = payload["header"]
-    content = payload["content"]
-    receiver_bpn = header["receiverBpn"]
+    events = content.get('listOfEvents', [])
 
-    events = content.get("listOfEvents", [])
     if len(events) > max_events:
         raise HTTPError(
             Error.NOTIFICATION_VALIDATION_FAILED,
-            message=f"Notification contains more than {max_events} events",
-            details=[f"listOfEvents has {len(events)} items, maximum allowed is {max_events}"]
+            message=f'Notification contains more than {max_events} events',
+            details=[f'listOfEvents has {len(events)} items, maximum allowed is {max_events}']
         )
 
     dtr_url_shell, dtr_token, _policy_validation = await get_dtr_access(
@@ -140,15 +152,15 @@ async def process_notification_and_retrieve_dtr(payload: Dict, counter_party_add
     if not dtr_url_shell:
         raise HTTPError(
             Error.NOT_FOUND,
-            message="Partner DTR endpoint not found",
-            details="DT Pull Service did not return a DTR endpoint for the partner"
+            message='Partner DTR endpoint not found',
+            details='DT Pull Service did not return a DTR endpoint for the partner'
         )
 
     errors = []
-    results = []
 
     for event in events:
-        aas_id = event.get("catenaXId")
+        aas_id = event.get('catenaXId')
+
         try:
             shell_descriptors_spec = await make_request(
                 'GET',
@@ -156,23 +168,22 @@ async def process_notification_and_retrieve_dtr(payload: Dict, counter_party_add
                 params={'dataplane_url': dtr_url_shell, 'aas_id': aas_id, 'limit': 1},
                 headers=get_dt_pull_service_headers(headers={'Authorization': dtr_token}),
                 timeout=timeout)
-
         except HTTPError as exc:
-            errors.append(f"Failed to fetch Digital Twin for {aas_id}: {exc.message}")
+            errors.append(f'Failed to fetch Digital Twin for {aas_id}: {exc.message}')
         except Exception as exc:
-            errors.append(f"Unexpected error for {aas_id}: {str(exc)}")
-        
+            errors.append(f'Unexpected error for {aas_id}: {str(exc)}')
+
         if 'errors' in shell_descriptors_spec:
-            errors.append(f"The AAS ID {aas_id} could not be found in the DTR")
+            errors.append(f'The AAS ID {aas_id} could not be found in the DTR')
 
     if errors:
         raise HTTPError(
             Error.NOTIFICATION_VALIDATION_FAILED,
-            message="One or more events failed DTR validation",
+            message='One or more events failed DTR validation',
             details=errors
         )
 
     return {
-        "status": "ok",
-        "receiverBpn": receiver_bpn
+        'status': 'ok',
+        'receiverBpn': receiver_bpn
     }

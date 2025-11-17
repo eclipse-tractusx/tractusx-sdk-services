@@ -42,7 +42,10 @@ from typing import Dict
 from fastapi import APIRouter, Depends
 
 from test_orchestrator.auth import verify_auth
-from test_orchestrator.utils.special_characteristics import validate_notification_payload, process_notification_and_retrieve_dtr
+from test_orchestrator.utils.special_characteristics import (
+    validate_notification_payload,
+    process_notification_and_retrieve_dtr
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -58,7 +61,8 @@ async def notification_validation(payload: Dict,
     """
     return validate_notification_payload(payload)
 
-@router.post("/data-transfer/",
+
+@router.post('/data-transfer/',
             response_model=Dict,
             dependencies=[Depends(verify_auth)])
 async def data_transfer(payload: Dict,
@@ -69,6 +73,8 @@ async def data_transfer(payload: Dict,
     """
     Orchestrates data transfer validation and Digital Twin verification.
     """
+    validate_notification_payload(payload)
+
     return await process_notification_and_retrieve_dtr(payload=payload,
                                                        counter_party_address=counter_party_address,
                                                        counter_party_id=counter_party_id,
