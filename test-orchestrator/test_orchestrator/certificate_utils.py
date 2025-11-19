@@ -35,6 +35,7 @@ from test_orchestrator.errors import HTTPError, Error
 from test_orchestrator.request_handler import make_request
 from test_orchestrator.utils import submodel_schema_finder, fetch_transfer_process
 from test_orchestrator.validator import json_validator
+from test_orchestrator.auth import get_dt_pull_service_headers
 
 
 SEMANTIC_ID_FEEDBACK_MESSAGE_HEADER = "urn:samm:io.catenax.shared.message_header:3.0.0#MessageHeaderAspect"
@@ -105,7 +106,7 @@ async def send_feedback(payload: Dict,
             f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/send-feedback/',
             params={'dataplane_url': dataplane_url},
             json=message_body,
-            headers={'Authorization': dataplane_access_key},
+            headers=get_dt_pull_service_headers(headers={'Authorization': dataplane_access_key}),
             timeout=timeout)
     except HTTPError:
         raise HTTPError(
@@ -188,6 +189,7 @@ async def read_asset_policy(counter_party_address: str,
                                                   'counter_party_id': counter_party_id,
                                                   'offset': offset,
                                                   'limit': limit},
+                                          headers=get_dt_pull_service_headers(),
                                           timeout=timeout)
     except Exception as e:
         logger.info(f"counter_party_address or counter_party_id might be invalid. Exception: {e}")
@@ -372,8 +374,7 @@ def run_certificate_checks(validation_schema: Dict,
 
 def read_feedback_rules_schema():
     """Reads feedback rules from local file"""
-
-    file_path_feedback = "orchestrator/schema_files/MessageContentAspect-schema.json"
+    file_path_feedback = "test_orchestrator/schema_files/MessageContentAspect-schema.json"
 
     with open(file_path_feedback, 'r', encoding='utf-8') as f:
         return json.load(f)
@@ -430,7 +431,7 @@ def run_feedback_check(semantic_id_header, semantic_id_content, validation_schem
     try:
         certificate_schema_content = submodel_schema_finder(semantic_id=semantic_id_content)
         rules_schema_content = certificate_schema_content['schema']
-    except (KeyError, TypeError) as e:
+    except (HTTPError, KeyError, TypeError) as e:
         rules_schema_content = read_feedback_rules_schema()
 
     json_validator(rules_schema_header, validation_schema)
@@ -476,6 +477,7 @@ async def get_ccmapi_access(counter_party_address: str,
                                                   'counter_party_id': counter_party_id,
                                                   'offset': offset,
                                                   'limit': limit},
+                                          headers=get_dt_pull_service_headers(),
                                           timeout=timeout)
     except Exception as e:
         logger.info(f"counter_party_address or counter_party_id might be invalid. Exception: {e}")
@@ -514,6 +516,7 @@ async def get_ccmapi_access(counter_party_address: str,
                                               params={'counter_party_address': counter_party_address,
                                                       'counter_party_id': counter_party_id},
                                               json=catalog_json,
+                                              headers=get_dt_pull_service_headers(),
                                               timeout=timeout)
     except HTTPError:
         raise HTTPError(
@@ -528,7 +531,8 @@ async def get_ccmapi_access(counter_party_address: str,
                        params={'counter_party_address': counter_party_address,
                                'counter_party_id': counter_party_id,
                                'state_id': edr_state_id},
-                       timeout=timeout)
+                        headers=get_dt_pull_service_headers(),
+                        timeout=timeout)
 
     data = {
         '@context': {'@vocab': 'https://w3id.org/edc/v0.0.1/ns/'},
@@ -552,6 +556,7 @@ async def get_ccmapi_access(counter_party_address: str,
                                           params={'counter_party_address': counter_party_address,
                                                   'counter_party_id': counter_party_id,
                                                   'transfer_process_id': transfer_process_id},
+                                          headers=get_dt_pull_service_headers(),
                                           timeout=timeout)
 
     return edr_data_address.get('endpoint'), edr_data_address.get('authorization')
