@@ -33,14 +33,14 @@ import logging
 from typing import Dict, Optional
 
 from fastapi import APIRouter, Depends
-from test_orchestrator.auth import verify_auth
 import httpx
 
 from test_orchestrator import config
+from test_orchestrator.auth import verify_auth
 from test_orchestrator.request_handler import make_request
 from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
-from test_orchestrator.base_utils import get_dtr_access, fetch_submodel_info, submodel_schema_finder
+from test_orchestrator.base_utils import get_dtr_access, fetch_submodel_info, submodel_schema_finder, submodel_validation
 from test_orchestrator.validator import json_validator, schema_finder
 
 router = APIRouter()
@@ -214,24 +214,13 @@ async def submodel_test(counter_party_address: str,
             details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
                     'software-development-view/digital-twins#edc-policies for troubleshooting.')
 
-    #Checking if shell_descriptors is not empty
-    if 'submodelDescriptors' not in shell_descriptors_spec:
-        raise HTTPError(
-            Error.NO_SHELLS_FOUND,
-            message="The DTR did not return at least one digital twin.",
-            details="Please check https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/" +\
-                " software-development-view/#registering-a-new-twin for troubleshooting")
 
-    if len(shell_descriptors_spec['submodelDescriptors']) == 0:
-        raise HTTPError(
-            Error.NO_SHELLS_FOUND,
-            message="The DTR did not return at least one digital twin.",
-            details="Please check https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/" +\
-                " software-development-view/#registering-a-new-twin for troubleshooting")
+    subm_validation_error = submodel_validation(counter_party_id,
+                                                shell_descriptors_spec,
+                                                semantic_id)
 
     # Validating the smaller shell_descriptors output against a specific schema
     # to ensure the data we are using is accurate
-    
     try:
         shelldesc_schema = schema_finder('shell_descriptors_spec')
         shelldesc_validation_error = json_validator(shelldesc_schema, shell_descriptors_spec)
