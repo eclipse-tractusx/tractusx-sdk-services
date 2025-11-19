@@ -62,22 +62,22 @@ async def traceability_test(
         {
             'dct_type_id': 'ReceiveQualityInvestigationNotification',
             'asset_id': 'qualityinvestigationnotification-receive',
-            'notificationType': 'QM-Investigation'
+            'notificationType': 'Traceability-QualityNotification-Investigation:2.0.0'
         },
         {
             'dct_type_id': 'ReceiveQualityAlertNotification',
             'asset_id': 'qualityalertnotification-receipt',
-            'notificationType': 'QM-Alert'
+            'notificationType': 'Traceability-QualityNotification-Alert:2.0.0'
         },
         {
             'dct_type_id': 'UpdateQualityInvestigationNotification',
             'asset_id': 'qualityinvestigationnotification-update',
-            'notificationType': 'QM-Investigation'
+            'notificationType': 'Traceability-QualityNotification-Investigation:2.0.0'
         },
         {
             'dct_type_id': 'UpdateQualityAlertNotification',
             'asset_id': 'qualityalertnotification-update',
-            'notificationType': 'QM-Alert'
+            'notificationType': 'Traceability-QualityNotification-Alert:2.0.0'
         }
     ]
 
@@ -152,7 +152,59 @@ async def traceability_test(
             results.append(asset_result)
             continue
 
-        # Step 3: Initiate negotiation
+        # Step 3: Validate catalog version (https://w3id.org/catenax/ontology/common#version == 2.0)
+        try:
+            logger.info(f"Validating catalog version for {asset['asset_id']}")
+            catalog_json = catalog_response.get('response_json', {}) if isinstance(catalog_response, dict) else {}
+            datasets = catalog_json.get('dcat:dataset')
+            if datasets is None:
+                raise HTTPError(
+                    Error.UNPROCESSABLE_ENTITY,
+                    message='Catalog response does not contain dcat:dataset.',
+                    details='The catalog response must include a dcat:dataset element.'
+                )
+            if not isinstance(datasets, list):
+                datasets = [datasets]
+
+            target_type_id = f"https://w3id.org/catenax/taxonomy#{asset['dct_type_id']}"
+            # Prefer dataset matching the requested dct:type; fallback to first dataset
+            target_dataset = None
+            for ds in datasets:
+                dct_type = ds.get('dct:type', {}) if isinstance(ds, dict) else {}
+                if isinstance(dct_type, dict) and dct_type.get('@id') == target_type_id:
+                    target_dataset = ds
+                    break
+            if target_dataset is None and datasets:
+                target_dataset = datasets[0] if isinstance(datasets[0], dict) else None
+
+            if not isinstance(target_dataset, dict):
+                raise HTTPError(
+                    Error.UNPROCESSABLE_ENTITY,
+                    message='Catalog dataset is malformed or missing.',
+                    details='Expected dataset object with dct:type and version fields.'
+                )
+
+            version = target_dataset.get('https://w3id.org/catenax/ontology/common#version')
+            if version != '2.0':
+                raise HTTPError(
+                    Error.UNPROCESSABLE_ENTITY,
+                    message='Invalid API version in catalog dataset.',
+                    details=f"Expected https://w3id.org/catenax/ontology/common#version to be '2.0' but got '{version}'."
+                )
+
+            add_step('validate_catalog_version', 'success')
+        except HTTPError as e:
+            asset_result['status'] = 'failed'
+            add_step('validate_catalog_version', 'failed', str(e), getattr(e, 'details', None))
+            results.append(asset_result)
+            continue
+        except Exception as e:
+            asset_result['status'] = 'failed'
+            add_step('validate_catalog_version', 'failed', f'Unexpected error: {e}')
+            results.append(asset_result)
+            continue
+
+        # Step 4: Initiate negotiation
         try:
             logger.info(f"Initiate negotiation for {asset['asset_id']}")
             negotiation = await init_negotiation(
@@ -177,7 +229,7 @@ async def traceability_test(
             results.append(asset_result)
             continue
 
-        # Step 4: Obtain negotiation state
+        # Step 5: Obtain negotiation state
         try:
             logger.info(f"Obtain negotiation state for {asset['asset_id']}")
             # Support both wrapper ({request,response,response_json}) and plain JSON
@@ -204,7 +256,7 @@ async def traceability_test(
             results.append(asset_result)
             continue
 
-        # Step 5: Get EDR data address
+        # Step 6: Get EDR data address
         try:
             logger.info(f"Get EDR data address for {asset['asset_id']}")
             edr_data_address = await get_data_address(
@@ -238,7 +290,7 @@ async def traceability_test(
             results.append(asset_result)
             continue
 
-        # Step 6: Invoke notification operation based on the asset type
+        # Step 7: Invoke notification operation based on the asset type
         dct_type_lower = asset['dct_type_id'].lower()
         step_name = None
         try:
@@ -266,7 +318,6 @@ async def traceability_test(
                     job_id=job_id,
                     sender_bpn=f'{config.SENDER_BPN}',
                     receiver_bpn=counter_party_id,
-                    asset_id=asset_id,
                 )
                 asset_result['message'] = "Update invoked successfully"
                 u_req = response.get('request') if isinstance(response, dict) else None
