@@ -25,6 +25,8 @@
 import asyncio
 from typing import Any, Dict, Optional, List
 import json
+import json
+from typing import Dict, Optional
 
 import httpx
 
@@ -35,6 +37,7 @@ from test_orchestrator.checks.request_catalog import get_catalog
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.logging.log_manager import LoggingManager
 from test_orchestrator.request_handler import make_request
+from test_orchestrator.validator import json_validator, schema_finder
 
 logger = LoggingManager.get_logger(__name__)
 
@@ -455,3 +458,125 @@ def _find_case_insensitive(container: Dict[str, Any], key: str) -> Any:
             return v
 
     return None
+
+
+async def submodel_validation(
+    counter_party_id,
+    shell_descriptors_spec: Dict,
+    semantic_id: str
+    ):
+    """
+    This method validates if a submodel descriptor and its corresponding submodel data
+    retrieved from the digital twin registry (DTR) are according to specification.
+
+    For this test case to execute successfully, there should be at least one submodel descriptor
+    registered in the DTR for the given semantic ID.
+
+    The test is successful if the test-agent was able to perform the following steps:
+
+    1.  Verify that the shell descriptor specification contains at least one submodel descriptor.
+    2.  Validate the shell descriptor structure against the expected schema.
+    3.  Locate the correct submodel descriptor entry matching the semantic ID.
+    4.  Retrieve submodel information and negotiate access to the partner's DTR.
+    5.  Fetch the submodel data via the provided href link.
+    6.  Validate the submodel data against the schema retrieved from the semantic ID.
+
+     - :param counter_party_id: The identifier of the test subject that operates the connector.
+                                Until at least Catena-X Release 25.09 this is the BPNL of the test subject.
+     - :param shell_descriptors_spec: Dictionary containing shell descriptors returned by the DTR.
+     - :optional param semantic_id: Semantic ID of the submodel to validate. If not provided,
+                                    the first semantic ID in the descriptor list is used.
+     - :return: A dictionary containing the result of the submodel validation.
+                Example: {"status": "ok"} or {"status": "nok", "validation_errors": [...]}
+    """
+
+    #Checking if shell_descriptors is not empty
+    if 'submodelDescriptors' not in shell_descriptors_spec:
+        raise HTTPError(
+            Error.NO_SHELLS_FOUND,
+            message="The DTR did not return at least one digital twin.",
+            details="Please check https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/" +\
+                " software-development-view/#registering-a-new-twin for troubleshooting")
+
+    if len(shell_descriptors_spec['submodelDescriptors']) == 0:
+        raise HTTPError(
+            Error.NO_SHELLS_FOUND,
+            message="The DTR did not return at least one digital twin.",
+            details="Please check https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/" +\
+                " software-development-view/#registering-a-new-twin for troubleshooting")
+
+    # Validating the smaller shell_descriptors output against a specific schema
+    # to ensure the data we are using is accurate
+
+    try:
+        shelldesc_schema = schema_finder('shell_descriptors_spec')
+        shelldesc_validation_error = json_validator(shelldesc_schema, shell_descriptors_spec)
+    except Exception:
+        raise HTTPError(
+                    Error.UNKNOWN_ERROR,
+                    message="An unknown error processing the shell descriptor occured.",
+                    details="Please contact the testbed administrator.")
+
+    if shelldesc_validation_error.get('status') == 'nok':
+        raise HTTPError(Error.UNPROCESSABLE_ENTITY,
+                message='Validation error',
+                details={'validation_errors': shelldesc_validation_error})
+
+    if shelldesc_validation_error.get('status') == 'ok':
+        # Look inside the shell_descriptors output and find the correct href link
+        submodels_list = shell_descriptors_spec['submodelDescriptors']
+
+        correct_element = [
+            item for item in submodels_list
+            if item['semanticId']['keys'][0]['value'] == semantic_id
+        ]
+
+        if not correct_element:
+            raise HTTPError(
+                Error.SUBMODEL_DESCRIPTOR_NOT_FOUND,
+                message=f'The submodel descriptor for semanticID {semantic_id} could not be found in the DTR. ' +\
+                        'Make sure the submodel is registered accordingly and visible for the testbed BPNL',
+                details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                        'software-development-view/digital-twins#edc-policies for troubleshooting.')
+
+        submodel_info = fetch_submodel_info(correct_element, semantic_id)
+
+        # Gain access to the submodel link
+        (dtr_url_subm, dtr_key_subm, policy_validation_outcome_not_used) = await get_dtr_access(
+            counter_party_address=submodel_info['subm_counterparty'],
+            counter_party_id=counter_party_id,
+            operand_left=submodel_info['subm_operandleft'],
+            operand_right=submodel_info['subm_operandright'],
+            policy_validation=False
+            )
+
+        # Run the submodels request pointed at the href link. To comply with industry core standards, the testbed appends $value.
+        response = httpx.get(submodel_info['href']+'/$value', headers={'Authorization': dtr_key_subm})
+
+        if response.status_code != 200:
+            raise HTTPError(Error.UNPROCESSABLE_ENTITY,
+                            message='Make sure your dataplane can resolve the request and that the href above ' +\
+                                    'is according to the industry core specification, ending in /submodel.',
+                            details=f'Failed to obtain the required submodel data for({submodel_info['href']}).')
+
+        try:
+            submodels = response.json()
+        except Exception:
+            raise HTTPError(
+                Error.UNPROCESSABLE_ENTITY,
+                message='The submodel response is not a valid json',
+                details=f'Response: {response}')
+
+        # Find the right schema and validate the submodels against it
+        try:
+            subm_schema_dict = submodel_schema_finder(semantic_id)
+            subm_schema = subm_schema_dict['schema']
+        except Exception:
+            raise HTTPError(
+                Error.SUBMODEL_VALIDATION_FAILED,
+                message=f'The validation of the requested submodel for semanticID {semantic_id} failed: ' + \
+                        'Could not find the submodel schema based on the semantic_id provided.',
+                details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                        'software-development-view/aspect-models for troubleshooting and samples.')
+
+        return json_validator(subm_schema, submodels)
