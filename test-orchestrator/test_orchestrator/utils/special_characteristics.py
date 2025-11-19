@@ -21,10 +21,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
 
+from datetime import datetime
 import logging
 import re
 from typing import Dict, List
-from datetime import datetime
 
 from test_orchestrator import config
 from test_orchestrator.request_handler import make_request
@@ -113,24 +113,10 @@ def validate_notification_payload(payload: Dict):
     return {'status': 'ok'}
 
 
-async def process_notification_and_retrieve_dtr(
-    payload: Dict,
-    counter_party_address: str,
-    counter_party_id: str,
-    timeout: int,
-    max_events: int = 2
-    ):
-    """
-    Process a notification payload:
-    - Validate payload
-    - Limit number of events to `max_events`
-    - Validate all Catena-X IDs exist via DT Pull Service
-    """
-
+async def validate_payload(payload: Dict, max_events: int):
     header = payload['header']
     content = payload['content']
     receiver_bpn = header['receiverBpn']
-
     events = content.get('listOfEvents', [])
 
     if len(events) > max_events:
@@ -140,6 +126,10 @@ async def process_notification_and_retrieve_dtr(
             details=[f'listOfEvents has {len(events)} items, maximum allowed is {max_events}']
         )
 
+    return receiver_bpn, events
+
+
+async def get_partner_dtr(counter_party_address: str, counter_party_id: str, timeout: int):
     dtr_url_shell, dtr_token, _policy_validation = await get_dtr_access(
         counter_party_address=counter_party_address,
         counter_party_id=counter_party_id,
@@ -156,21 +146,27 @@ async def process_notification_and_retrieve_dtr(
             details='DT Pull Service did not return a DTR endpoint for the partner'
         )
 
+    return dtr_url_shell, dtr_token
+
+
+async def validate_events_in_dtr(events: list, dtr_url_shell: str, dtr_token: str, timeout: int):
     errors = []
+    shell_descriptors = []
 
     for event in events:
         aas_id = event.get('catenaXId')
-
         try:
             shell_descriptors_spec = await make_request(
                 'GET',
                 f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
                 params={'dataplane_url': dtr_url_shell, 'aas_id': aas_id, 'limit': 1},
                 headers=get_dt_pull_service_headers(headers={'Authorization': dtr_token}),
-                timeout=timeout)
+                timeout=timeout
+            )
+            shell_descriptors.append(shell_descriptors_spec)
         except HTTPError as exc:
             errors.append(f'Failed to fetch Digital Twin for {aas_id}: {exc.message}')
-        except Exception as exc:
+        except Exception as exc:  # W: Catching too general exception Exception
             errors.append(f'Unexpected error for {aas_id}: {str(exc)}')
 
         if 'errors' in shell_descriptors_spec:
@@ -183,7 +179,24 @@ async def process_notification_and_retrieve_dtr(
             details=errors
         )
 
-    return {
-        'status': 'ok',
-        'receiverBpn': receiver_bpn
-    }
+    return shell_descriptors
+
+
+async def process_notification_and_retrieve_dtr(
+    payload: Dict,
+    counter_party_address: str,
+    counter_party_id: str,
+    timeout: int,
+    max_events: int = 2
+):
+    """
+    Process a notification payload:
+    - Validate payload
+    - Limit number of events to `max_events`
+    - Validate all Catena-X IDs exist via DT Pull Service
+    """
+    receiver_bpn, events = await validate_payload(payload, max_events)
+    dtr_url_shell, dtr_token = await get_partner_dtr(counter_party_address, counter_party_id, timeout)
+    shell_descriptors = await validate_events_in_dtr(events, dtr_url_shell, dtr_token, timeout)
+
+    return shell_descriptors
