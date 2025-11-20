@@ -113,6 +113,7 @@ async def get_dtr_access(counter_party_address: str,
                                               'limit': limit},
                                       timeout=timeout,
                                       headers=get_dt_pull_service_headers())
+    warnings = []
 
     # Validate if there is an offer for the desired asset/type available. 
     if len(catalog_json["dcat:dataset"]) == 0:
@@ -125,6 +126,8 @@ async def get_dtr_access(counter_party_address: str,
                     'Either the properties or access policy of the asset are misconfigured. '+ \
                     'Make sure to allow access to the asset for the Testbed BPNL.')
 
+    if len(catalog_json["dcat:dataset"]) > 1:
+        warnings.append('Multiple DTRs were returned. This is not an issue, but it may lead to unexpected behavior.')
 
     # Validate result of the policy from the catalog if required
 
@@ -159,21 +162,22 @@ async def get_dtr_access(counter_party_address: str,
 
     # Try to obtain negotiation state after completing negotiation process
     try:
-        response = await make_request('GET',
+        response = await make_request(
+                        'GET',
                         f'{config.DT_PULL_SERVICE_ADDRESS}/edr/negotiation-state/',
                         params={'counter_party_address': counter_party_address,
                                 'counter_party_id': counter_party_id,
                                 'state_id': edr_state_id},
                         headers=get_dt_pull_service_headers(),
-                        timeout=timeout)
-
+                        timeout=timeout
+        )
     except:
         raise HTTPError(
             Error.CONTRACT_NEGOTIATION_FAILED,
             message='Unknown Error - Check your connector logs for details.',
             details=f'Contract negotiation for asset of type/id {operand_right} failed.')
 
-    # In case negotiation was not successful 
+    # In case negotiation was not successful
     if response["state"] == "TERMINATED":
         error_message = await make_request('GET',
                     f'{config.DT_PULL_SERVICE_ADDRESS}/edr/negotiation-result/',
@@ -187,12 +191,11 @@ async def get_dtr_access(counter_party_address: str,
             message=f'Error Message: {json.dumps(error_message["errorDetail"])}',
             details=f'Contract negotiation for asset of type/id {operand_right} failed.')
 
-    # Any other case 
-    elif response["state"] != "FINALIZED":
-          raise HTTPError(
+    if response["state"] != "FINALIZED":
+        raise HTTPError(
             Error.CONTRACT_NEGOTIATION_FAILED,
             message=f'Contract negotiation stuck in state {response["state"]}',
-            details=f'Contract negotiation for asset of type/id {operand_right} could not be completed.')      
+            details=f'Contract negotiation for asset of type/id {operand_right} could not be completed.')
 
     data = {
         '@context': {'@vocab': 'https://w3id.org/edc/v0.0.1/ns/'},
@@ -220,7 +223,10 @@ async def get_dtr_access(counter_party_address: str,
                                           headers=get_dt_pull_service_headers(),
                                           timeout=timeout)
 
-    return edr_data_address.get('endpoint'), edr_data_address.get('authorization'), policy_validation_outcome
+    return (edr_data_address.get('endpoint'),
+            edr_data_address.get('authorization'),
+            policy_validation_outcome,
+            warnings)
 
 
 def submodel_schema_finder(

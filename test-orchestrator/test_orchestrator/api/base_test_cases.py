@@ -110,7 +110,7 @@ async def dtr_ping_test(counter_party_address: str,
      - :return: A dictionary containing a success or an error message.
     """
 
-    dataplane_url, dtr_key, policy_validation_outcome = await get_dtr_access(
+    dataplane_url, dtr_key, policy_validation_outcome, warnings = await get_dtr_access(
                 counter_party_address,
                 counter_party_id,
                 operand_left='http://purl.org/dc/terms/type',
@@ -135,6 +135,9 @@ async def dtr_ping_test(counter_party_address: str,
 
     return_message = {'status': 'ok',
                       'message': 'No errors found, the DTR is reachable'}
+
+    if warnings:
+        return_message['warnings'] = warnings
 
     if policy_validation_outcome and policy_validation_outcome.get('status') != 'ok':
         return_message['policy_validation'] = policy_validation_outcome
