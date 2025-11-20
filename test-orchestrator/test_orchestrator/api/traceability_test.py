@@ -34,6 +34,7 @@ from test_orchestrator.checks.create_notification import (
     qualitynotification_update,
 )
 from test_orchestrator.checks.policy_validation import validate_policy
+from test_orchestrator.checks.catalog_version_validation import validate_catalog_version
 from test_orchestrator.checks.request_catalog import get_catalog
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.logging.log_manager import LoggingManager
@@ -156,42 +157,13 @@ async def traceability_test(
         try:
             logger.info(f"Validating catalog version for {asset['asset_id']}")
             catalog_json = catalog_response.get('response_json', {}) if isinstance(catalog_response, dict) else {}
-            datasets = catalog_json.get('dcat:dataset')
-            if datasets is None:
+            version_check = validate_catalog_version(catalog_json, asset['dct_type_id'], '2.0')
+            if version_check.get('status') != 'ok':
                 raise HTTPError(
                     Error.UNPROCESSABLE_ENTITY,
-                    message='Catalog response does not contain dcat:dataset.',
-                    details='The catalog response must include a dcat:dataset element.'
+                    message=version_check.get('message', 'Invalid API version in catalog dataset.'),
+                    details=version_check.get('details')
                 )
-            if not isinstance(datasets, list):
-                datasets = [datasets]
-
-            target_type_id = f"https://w3id.org/catenax/taxonomy#{asset['dct_type_id']}"
-            # Prefer dataset matching the requested dct:type; fallback to first dataset
-            target_dataset = None
-            for ds in datasets:
-                dct_type = ds.get('dct:type', {}) if isinstance(ds, dict) else {}
-                if isinstance(dct_type, dict) and dct_type.get('@id') == target_type_id:
-                    target_dataset = ds
-                    break
-            if target_dataset is None and datasets:
-                target_dataset = datasets[0] if isinstance(datasets[0], dict) else None
-
-            if not isinstance(target_dataset, dict):
-                raise HTTPError(
-                    Error.UNPROCESSABLE_ENTITY,
-                    message='Catalog dataset is malformed or missing.',
-                    details='Expected dataset object with dct:type and version fields.'
-                )
-
-            version = target_dataset.get('https://w3id.org/catenax/ontology/common#version')
-            if version != '2.0':
-                raise HTTPError(
-                    Error.UNPROCESSABLE_ENTITY,
-                    message='Invalid API version in catalog dataset.',
-                    details=f"Expected https://w3id.org/catenax/ontology/common#version to be '2.0' but got '{version}'."
-                )
-
             add_step('validate_catalog_version', 'success')
         except HTTPError as e:
             asset_result['status'] = 'failed'
