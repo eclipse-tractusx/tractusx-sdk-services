@@ -160,7 +160,7 @@ async def traceability_test(
             version_check = validate_catalog_version(catalog_json, asset['dct_type_id'], '2.0')
             if version_check.get('status') != 'ok':
                 raise HTTPError(
-                    Error.UNPROCESSABLE_ENTITY,
+                    Error.CATALOG_VERSION_VALIDATION_FAILED,
                     message=version_check.get('message', 'Invalid API version in catalog dataset.'),
                     details=version_check.get('details')
                 )

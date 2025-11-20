@@ -75,6 +75,7 @@ class Error(Enum):
     CONNECTOR_UNAVAILABLE = auto()
     FEEDBACK_COULD_NOT_BE_SENT = auto()
     TOO_MANY_ASSETS_FOUND = auto()
+    CATALOG_VERSION_VALIDATION_FAILED = auto()
 
 
 #: A dictionary of non-default error codes.
@@ -89,6 +90,7 @@ non_default_http_codes = {
     Error.SUBMODEL_DESCRIPTOR_MALFORMED: 422,
     Error.SUBMODEL_VALIDATION_FAILED: 422,
     Error.UNPROCESSABLE_ENTITY: 422,
+    Error.CATALOG_VERSION_VALIDATION_FAILED: 422,
     Error.NO_SHELLS_FOUND: 422,
     Error.INTERNAL_SERVER_ERROR: 500,
     Error.ASSET_ACCESS_FAILED: 502,
