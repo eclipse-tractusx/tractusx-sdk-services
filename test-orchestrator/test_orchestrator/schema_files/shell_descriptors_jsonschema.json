@@ -24,8 +24,8 @@
           },
           "id": {
             "type": "string",
-            "pattern": "^urn:uuid.*",
-            "description": "Must be a URL starting with 'https://' and ending with '/submodel'"
+            "pattern": "^(urn:uuid:)?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "description": "Must be a valid uuid either starting with 'urn:uuid:' or not."
           },
           "specificAssetIds": {
             "type": "array",
@@ -172,8 +172,8 @@
                 },
                 "id": {
                   "type": "string",
-                  "pattern": "^urn:uuid.*",
-                  "description": "Must be a URL starting with 'https://' and ending with '/submodel'"
+                  "pattern": "^(urn:uuid:)?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                  "description": "Must be a valid uuid either starting with 'urn:uuid:' or not."
                 },
                 "semanticId": {
                   "type": "object",
