@@ -42,6 +42,7 @@ license = { text = "Apache-2.0" }
 python-dotenv = "^1.0.1"
 tractusx-sdk = "^0.0.7"
 fastapi = "0.115.7"
+fastapi_cache2 = "0.2.2"
 httpx = "^0.28.1"
 jsonschema = "^4.23.0"
 python = "^3.12.2"
