@@ -1,5 +1,5 @@
 # *************************************************************
-# Eclipse Tractus-X - Test Orchestrator Service
+# Eclipse Tractus-X - Digital Twin Pull Service
 #
 # Copyright (c) 2025 BMW AG
 # Copyright (c) 2025 Contributors to the Eclipse Foundation
@@ -19,16 +19,35 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
+image:
+  repository: "ghcr.io/catenax-ev/dt-pull-service"
+  pullPolicy: Always
+  # -- Overrides the image tag whose default is the chart appVersion
+  tag: "latest"
 
-"""Application environment configuration
-"""
+imagePullSecrets:
+  - name: ghcr-secret
 
-import os
+ingress:
+    enabled: true
+    ingressClassName: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - host: testbed-dt-pull-service.stable.catena-x.net
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+       - secretName: "testbed-dt-pull-service.stable.catena-x.net-tls"
+         hosts:
+           - "testbed-dt-pull-service.stable.catena-x.net"
+auth:
+  apiKey: 
+    key: "X-Api-Key"
+    value: ""
 
-DT_PULL_SERVICE_ADDRESS = os.getenv('DT_PULL_SERVICE_ADDRESS')
-SCHEMA_PATH = 'test_orchestrator/schema_files'
-DT_PULL_SERVICE_API_KEY = os.getenv('DT_PULL_SERVICE_API_KEY')
-DT_PULL_SERVICE_API_KEY_HEADER = os.getenv('DT_PULL_SERVICE_API_KEY_HEADER')
-API_KEY_BACKEND = os.getenv('API_KEY_BACKEND')
-API_KEY_BACKEND_HEADER = os.getenv('API_KEY_BACKEND_HEADER')
-SENDER_BPN = os.getenv('SENDER_BPN')
+connector:
+  url: "https://cac-testbed-edc.int.catena-x.net"
+  apiKey: ""
+  edrContext: "/management"

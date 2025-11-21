@@ -30,8 +30,8 @@ from fastapi.testclient import TestClient
 from fastapi.responses import JSONResponse
 import pytest
 
-from orchestrator.api.cert_validation import router as cert_validation_router
-from orchestrator.errors import HTTPError, Error
+from test_orchestrator.api.cert_validation import router as cert_validation_router
+from test_orchestrator.errors import HTTPError, Error
 
 # Create a FastAPI app instance and include the router for testing
 app = FastAPI()
@@ -75,49 +75,49 @@ DUMMY_FEEDBACK_PAYLOAD = {
 @pytest.fixture
 def mock_get_ccmapi_access():
     """Fixture to mock get_ccmapi_access."""
-    with patch('orchestrator.api.cert_validation.get_ccmapi_access', new_callable=AsyncMock) as mock:
+    with patch('test_orchestrator.api.cert_validation.get_ccmapi_access', new_callable=AsyncMock) as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_send_feedback():
     """Fixture to mock send_feedback."""
-    with patch('orchestrator.api.cert_validation.send_feedback', new_callable=AsyncMock) as mock:
+    with patch('test_orchestrator.api.cert_validation.send_feedback', new_callable=AsyncMock) as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_validate_ccmapi_offer():
     """Fixture to mock validate_ccmapi_offer_setup."""
-    with patch('orchestrator.api.cert_validation.validate_ccmapi_offer_setup', new_callable=AsyncMock) as mock:
+    with patch('test_orchestrator.api.cert_validation.validate_ccmapi_offer_setup', new_callable=AsyncMock) as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_run_cert_checks():
     """Fixture to mock run_certificate_checks."""
-    with patch('orchestrator.api.cert_validation.run_certificate_checks') as mock:
+    with patch('test_orchestrator.api.cert_validation.run_certificate_checks') as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_read_asset_policy():
     """Fixture to mock read_asset_policy."""
-    with patch('orchestrator.api.cert_validation.read_asset_policy', new_callable=AsyncMock) as mock:
+    with patch('test_orchestrator.api.cert_validation.read_asset_policy', new_callable=AsyncMock) as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_validate_policy():
     """Fixture to mock validate_policy."""
-    with patch('orchestrator.api.cert_validation.validate_policy') as mock:
+    with patch('test_orchestrator.api.cert_validation.validate_policy') as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_run_feedback_check():
     """Fixture to mock run_feedback_check."""
-    with patch('orchestrator.api.cert_validation.run_feedback_check') as mock:
+    with patch('test_orchestrator.api.cert_validation.run_feedback_check') as mock:
         yield mock
 
 
