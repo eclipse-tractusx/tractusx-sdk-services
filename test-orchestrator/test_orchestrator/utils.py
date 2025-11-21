@@ -138,8 +138,8 @@ async def get_dtr_access(counter_party_address: str,
             raise HTTPError(
                 Error.POLICY_VALIDATION_FAILED,
                 message='The usage policy that is used within the asset is not accurate. ',
-                details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
-                        'software-development-view/policies for troubleshooting.')
+                details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/'
+                        'digital-twin-kit/software-development-view/#usage-policies for troubleshooting.')
 
     try:
         init_negotiation = await make_request('POST',
