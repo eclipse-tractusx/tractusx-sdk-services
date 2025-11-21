@@ -73,16 +73,18 @@ async def qualitynotification_receive(
     # Map jobId -> header.notificationId; map notificationType -> header.classification.
     payload = {
         "header": {
-            "notificationId": job_id,
-            "senderBPN": sender_bpn,
-            "senderAddress": "home",
-            "recipientBPN": receiver_bpn,
-            "classification": notification_type,
-            "severity": "CRITICAL",
-            "status": "SENT",
+            "messageId": job_id,
+            "senderBpn": sender_bpn,
+            "receiverBpn": receiver_bpn,
+            "context": notification_type,
+            "sentDateTime": "2025-12-31T16:47+00:00",
+            "version": "urn:samm:io.catenax.shared.message_header:3.0.0#MessageHeaderAspect",
         },
         "content": {
+            "notificationId": job_id,
             "information": "Automated test notification",
+            "severity": "CRITICAL",
+            "status": "SENT",
             "listOfAffectedItems": [asset_id],
         },
     }
@@ -99,7 +101,6 @@ async def qualitynotification_update(
         job_id: str,
         sender_bpn: str,
         receiver_bpn: str,
-        asset_id: str,
 ) -> Dict[str, Any]:
     """Send a Quality Notification update request.
 
@@ -115,17 +116,18 @@ async def qualitynotification_update(
 
     payload = {
         "header": {
-            "notificationId": job_id,
-            "senderBPN": sender_bpn,
-            "senderAddress": "home",
-            "recipientBPN": receiver_bpn,
-            "classification": notification_type,
-            "severity": "CRITICAL",
-            "status": "SENT",
+            "messageId": job_id,
+            "senderBpn": sender_bpn,
+            "receiverBpn": receiver_bpn,
+            "context": notification_type,
+            "sentDateTime": "2025-12-31T16:47+00:00",
+            "version": "urn:samm:io.catenax.shared.message_header:3.0.0#MessageHeaderAspect",
         },
         "content": {
+            "notificationId": job_id,
+            "severity": "CRITICAL",
+            "status": "SENT",
             "information": "Automated test notification",
-            "listOfAffectedItems": [asset_id],
         },
     }
 

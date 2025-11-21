@@ -61,7 +61,6 @@
           }
         },
         "required": [
-          "externalSubjectId",
           "name",
           "supplementalSemanticIds",
           "value"
@@ -231,7 +230,6 @@
     "description",
     "displayName",
     "id",
-    "specificAssetIds",
     "submodelDescriptors"
   ]
 }

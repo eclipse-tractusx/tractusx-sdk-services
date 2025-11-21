@@ -45,7 +45,7 @@ ingress:
 
 auth:
   apiKey: 
-    key: "api-key"
+    key: "X-Api-Key"
     value: ""
 
 dt_pull_service:

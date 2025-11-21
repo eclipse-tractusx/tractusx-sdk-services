@@ -23,6 +23,9 @@
 name: Build - Docker image (SemVer)
 
 on:
+  push:
+    # Trigger on pushes to any branch so the workflow also runs on the current branch
+    branches: [ "**" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
