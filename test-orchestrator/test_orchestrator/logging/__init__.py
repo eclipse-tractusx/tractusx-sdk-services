@@ -20,15 +20,4 @@
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
 
-"""Application environment configuration
-"""
-
-import os
-
-DT_PULL_SERVICE_ADDRESS = os.getenv('DT_PULL_SERVICE_ADDRESS')
-SCHEMA_PATH = 'test_orchestrator/schema_files'
-DT_PULL_SERVICE_API_KEY = os.getenv('DT_PULL_SERVICE_API_KEY')
-DT_PULL_SERVICE_API_KEY_HEADER = os.getenv('DT_PULL_SERVICE_API_KEY_HEADER')
-API_KEY_BACKEND = os.getenv('API_KEY_BACKEND')
-API_KEY_BACKEND_HEADER = os.getenv('API_KEY_BACKEND_HEADER')
-SENDER_BPN = os.getenv('SENDER_BPN')
+### configuration files for Test Orchestrator ###

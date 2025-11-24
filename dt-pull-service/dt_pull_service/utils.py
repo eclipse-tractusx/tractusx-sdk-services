@@ -22,7 +22,6 @@
 
 """Utility methods for the DT Pull Service
 """
-from fastapi import HTTPException, Request
 
 
 def policy_checker(policies, catalog):
