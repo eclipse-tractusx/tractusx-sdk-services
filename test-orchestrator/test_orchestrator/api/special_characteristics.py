@@ -21,20 +21,24 @@
 # *************************************************************
 
 """
-FastAPI router providing endpoints for notification validation and data transfer orchestration.
+Provides FastAPI endpoints for validating Catena-X notification payloads,
+Digital Twin availability, and submodel schema compliance.
 
-Endpoints
+This module defines API endpoints used to verify notification structures,
+validate Digital Twin presence in a partner’s Digital Twin Registry (DTR), and
+perform schema validation of referenced submodels. These endpoints support the
+test orchestration workflows required to ensure interoperability of event-driven
+processes within the Catena-X ecosystem.
 
-1. **POST /notification-validation/**
-   Validates the structure and content of a Catena-X notification payload.
-   Returns `{ "status": "ok" }` on success or raises `HTTPError` if invalid.
+The primary goal is to confirm that participants correctly implement
+notification formats, DTR integration, DT retrieval, and submodel provisioning
+according to Catena-X specifications. This ensures that event exchanges and
+Digital Twin interactions function reliably across the network.
 
-2. **POST /data-transfer/**
-   Validates the payload, resolves the partner EDC endpoint, queries the partner DTR
-   to check for the presence of the Digital Twin (DT) matching the notification’s Catena-X ID.
-   Returns DTR data if found or raises `HTTPError` otherwise.
-
-Both endpoints are protected by authentication (`verify_auth`).
+Endpoints:
+- POST /notification-validation/: Validates the structure and content of a notification payload.
+- POST /data-transfer/: Validates the payload and verifies Digital Twin availability in the partner DTR.
+- POST /schema-validation/: Validates the payload and checks partner submodels against semantic schemas.
 """
 
 import logging
@@ -59,6 +63,16 @@ async def notification_validation(payload: Dict,
                                   timeout: int = 80):
     """
     Endpoint to validate a notification payload.
+
+    Steps performed:
+    1. Validate the structure and fields of the incoming notification.
+    2. Ensure all required header and content fields are present.
+    3. Verify field formats such as UUIDs, BPNs, and timestamps.
+
+    - :payload (Dict): Notification payload containing header and content.
+    - :timeout (int, optional): Timeout for validation-related operations. Defaults to 80.
+
+    return: a json object containing `"status": "ok"` if validation succeeds.
     """
 
     return validate_notification_payload(payload)
@@ -73,8 +87,27 @@ async def data_transfer(payload: Dict,
                         timeout: int = 80,
                         max_events: int = 2):
     """
-    Orchestrates data transfer validation and Digital Twin verification.
+    Endpoint to validate a notification payload and verify Digital Twin presence
+    in the partner's Digital Twin Registry (DTR).
+
+    Steps performed:
+    1. Validate the incoming notification payload structure and event fields.
+    2. Resolve the partner's DTR endpoint and obtain access credentials.
+    3. For each event, retrieve the corresponding Digital Twin shell descriptor
+    via the DT Pull Service.
+    4. Raise an error if any Digital Twin cannot be retrieved.
+    5. Return a confirmation message if all lookups succeed.
+
+    - :payload (Dict): Notification payload containing header, content, and events.
+    - :param counter_party_address: Address of the partner's DSP endpoint
+                                    (must end with api/v1/dsp for DSP version 2024-01).
+    - :param counter_party_id: Identifier of the test subject operating the connector.
+    - :timeout (int, optional): Timeout for DTR and DT Pull Service requests. Defaults to 80.
+    - :max_events (int, optional): Maximum allowed number of events. Defaults to 2.
+
+    return: a json with a success message if Digital Twin resolution succeeds.
     """
+
     validate_notification_payload(payload)
 
     await process_notification_and_retrieve_dtr(payload=payload,

@@ -37,9 +37,21 @@ logger = logging.getLogger(__name__)
 
 def validate_notification_payload(payload: Dict):
     """
-    Validate the structure and fields of a notification payload.
-    Returns a dict with 'status' and optionally 'errors' or 'message'.
+    Validate the structure, required fields, and formatting of a Catena-X
+    notification payload.
+
+    Steps performed:
+    1. Ensure the presence of `header` and `content` sections.
+    2. Validate mandatory header fields such as UUIDs, timestamps, and BPNs.
+    3. Validate `listOfEvents` structure and required event fields.
+    4. Accumulate and report all validation errors.
+
+    - :payload (Dict): Raw notification payload provided by the calling service.
+
+    return: a dict containing `{ "status": "ok" }` if validation succeeds,
+            otherwise an HTTPError is raised.
     """
+
     errors: List[str] = []
 
     if 'header' not in payload or 'content' not in payload:
@@ -114,6 +126,21 @@ def validate_notification_payload(payload: Dict):
 
 
 async def validate_payload(payload: Dict, max_events: int):
+    """
+    Extract and validate event data from the notification payload and enforce
+    maximum allowed event count.
+
+    Steps performed:
+    1. Read receiver BPN from the notification header.
+    2. Extract listOfEvents from the payload content.
+    3. Validate that the number of events does not exceed the configured limit.
+
+    - :payload (Dict): Notification payload with header and content fields.
+    - :max_events (int): Maximum number of allowed events.
+
+    return: receiver BPN and the list of events if validation succeeds.
+    """
+
     header = payload['header']
     content = payload['content']
     receiver_bpn = header['receiverBpn']
@@ -130,6 +157,23 @@ async def validate_payload(payload: Dict, max_events: int):
 
 
 async def get_partner_dtr(counter_party_address: str, counter_party_id: str, timeout: int):
+    """
+    Resolve the partner's Digital Twin Registry (DTR) shell-descriptor endpoint
+    and obtain an access token through the DT Pull Service.
+
+    Steps performed:
+    1. Request DTR access information from the DT Pull Service.
+    2. Validate that the returned DTR endpoint is usable.
+    3. Return both the shell-descriptor URL and the access token.
+
+    - :param counter_party_address: DSP endpoint URL of the partner connector
+                                    (must end with api/v1/dsp).
+    - :param counter_party_id: Identifier of the partner system.
+    - :timeout (int): Timeout for DT Pull Service requests.
+
+    return: a tuple containing (dtr_url_shell, dtr_token).
+    """
+
     dtr_url_shell, dtr_token, _policy_validation = await get_dtr_access(
         counter_party_address=counter_party_address,
         counter_party_id=counter_party_id,
@@ -150,6 +194,24 @@ async def get_partner_dtr(counter_party_address: str, counter_party_id: str, tim
 
 
 async def validate_events_in_dtr(events: list, dtr_url_shell: str, dtr_token: str, timeout: int):
+    """
+    Validate that each event's Catena-X ID corresponds to an existing Digital Twin
+    in the partner's Digital Twin Registry.
+
+    Steps performed:
+    1. For each event, extract the Catena-X ID.
+    2. Query the DT Pull Service for a matching shell descriptor.
+    3. Collect retrieval errors for any IDs that cannot be resolved.
+    4. Return the list of shell-descriptor specifications if all queries succeed.
+
+    - :events (List): List of event objects from the notification payload.
+    - :dtr_url_shell (str): Shell descriptor endpoint of the partner’s DTR.
+    - :dtr_token (str): Authorization token for accessing the partner's DTR.
+    - :timeout (int): Timeout for Digital Twin lookup requests.
+
+    return: list of shell descriptors for the provided events.
+    """
+
     errors = []
     shell_descriptors = []
 
@@ -190,11 +252,24 @@ async def process_notification_and_retrieve_dtr(
     max_events: int = 2
 ):
     """
-    Process a notification payload:
-    - Validate payload
-    - Limit number of events to `max_events`
-    - Validate all Catena-X IDs exist via DT Pull Service
+    Process the notification payload and retrieve corresponding Digital Twin
+    shell descriptors from the partner's DTR.
+
+    Steps performed:
+    1. Validate the payload and ensure event count does not exceed the allowed limit.
+    2. Resolve the partner’s DTR endpoint and obtain an access token.
+    3. Retrieve shell descriptors for all Catena-X IDs listed in the notification.
+    4. Return all retrieved shell descriptors.
+
+    - :payload (Dict): Notification payload with metadata and event list.
+    - :param counter_party_address: Partner connector DSP endpoint.
+    - :param counter_party_id: Identifier of the test subject operating the connector.
+    - :timeout (int): Timeout for external requests.
+    - :max_events (int, optional): Maximum number of allowed events. Defaults to 2.
+
+    return: list of shell descriptor objects retrieved from the partner DTR.
     """
+
     receiver_bpn, events = await validate_payload(payload, max_events)
     dtr_url_shell, dtr_token = await get_partner_dtr(counter_party_address, counter_party_id, timeout)
     shell_descriptors = await validate_events_in_dtr(events, dtr_url_shell, dtr_token, timeout)
