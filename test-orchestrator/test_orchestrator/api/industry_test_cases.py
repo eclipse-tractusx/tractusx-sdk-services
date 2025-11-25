@@ -215,9 +215,9 @@ async def submodel_test(counter_party_address: str,
                     'software-development-view/digital-twins#edc-policies for troubleshooting.')
 
 
-    subm_validation_error = submodel_validation(counter_party_id,
-                                                shell_descriptors_spec,
-                                                semantic_id)
+    subm_validation_error = await submodel_validation(counter_party_id,
+                                                      shell_descriptors_spec,
+                                                      semantic_id)
 
     # Validating the smaller shell_descriptors output against a specific schema
     # to ensure the data we are using is accurate
