@@ -191,7 +191,7 @@ A dictionary containing the result of the submodel validation:
 or, in case of validation errors:
 
 ```json
-{"status": "nok", "validation_errors": [...]}
+{"status": "nok", "validation_errors": []}
 ```
 
 ### Error Handling
