@@ -42,7 +42,7 @@ A Catena-X notification payload containing:
 { "status": "ok" }
 ```
 
-## POST /data-transfer/
+## POST `/data-transfer/`
 
 Orchestrates validation steps and checks if the Digital Twin referenced in the notification exists in the partner’s DTR.
 
@@ -67,7 +67,7 @@ Orchestrates validation steps and checks if the Digital Twin referenced in the n
 
 Raises `HTTPError` if the DTR lookup fails or a referenced Digital Twin does not exist.
 
-## POST /schema-validation/
+## POST `/schema-validation/`
 
 Validates a notification payload and performs schema validation on the partner’s submodels.
 
