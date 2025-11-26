@@ -110,13 +110,14 @@ async def data_transfer(payload: Dict,
 
     validate_notification_payload(payload)
 
-    await process_notification_and_retrieve_dtr(payload=payload,
-                                                counter_party_address=counter_party_address,
-                                                counter_party_id=counter_party_id,
-                                                timeout=timeout,
-                                                max_events=max_events)
+    _, policy_validation = await process_notification_and_retrieve_dtr(payload=payload,
+                                                                       counter_party_address=counter_party_address,
+                                                                       counter_party_id=counter_party_id,
+                                                                       timeout=timeout,
+                                                                       max_events=max_events)
 
-    return {'message': 'DT linkage & data transfer test is completed succesfully.'}
+    return {'message': 'DT linkage & data transfer test is completed succesfully.',
+            'policy_validation_message': policy_validation}
 
 
 @router.post('/schema-validation/',
@@ -149,11 +150,12 @@ async def schema_validation(payload: Dict,
 
     validate_notification_payload(payload)
 
-    shell_descriptors = await process_notification_and_retrieve_dtr(payload=payload,
-                                                                    counter_party_address=counter_party_address,
-                                                                    counter_party_id=counter_party_id,
-                                                                    timeout=timeout,
-                                                                    max_events=max_events)
+    shell_descriptors, policy_validation = \
+            await process_notification_and_retrieve_dtr(payload=payload,
+                                                        counter_party_address=counter_party_address,
+                                                        counter_party_id=counter_party_id,
+                                                        timeout=timeout,
+                                                        max_events=max_events)
     semantic_ids = [sub["submodelSemanticId"] for sub in payload['content']['listOfEvents']]
     submodel_validations = []
 
@@ -161,4 +163,5 @@ async def schema_validation(payload: Dict,
         submodel_validations.append(await submodel_validation(counter_party_id, shell_descriptor, semantic_id))
 
     return {'message': 'Special Characteristics validation is completed.',
-            'submodel_validation_message': submodel_validations}
+            'submodel_validation_message': submodel_validations,
+            'policy_validation_message': policy_validation}

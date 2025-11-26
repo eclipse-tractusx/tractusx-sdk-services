@@ -122,7 +122,8 @@ def validate_notification_payload(payload: Dict):
             message='Notification validation failed',
             details=errors)
 
-    return {'status': 'ok'}
+    return {'status': 'ok',
+            'message': 'No errors found during validating the input json.'}
 
 
 async def validate_payload(payload: Dict, max_events: int):
@@ -174,7 +175,7 @@ async def get_partner_dtr(counter_party_address: str, counter_party_id: str, tim
     return: a tuple containing (dtr_url_shell, dtr_token).
     """
 
-    dtr_url_shell, dtr_token, _policy_validation = await get_dtr_access(
+    dtr_url_shell, dtr_token, policy_validation = await get_dtr_access(
         counter_party_address=counter_party_address,
         counter_party_id=counter_party_id,
         operand_left='http://purl.org/dc/terms/type',
@@ -190,7 +191,7 @@ async def get_partner_dtr(counter_party_address: str, counter_party_id: str, tim
             details='DT Pull Service did not return a DTR endpoint for the partner'
         )
 
-    return dtr_url_shell, dtr_token
+    return dtr_url_shell, dtr_token, policy_validation
 
 
 async def validate_events_in_dtr(events: list, dtr_url_shell: str, dtr_token: str, timeout: int):
@@ -271,7 +272,8 @@ async def process_notification_and_retrieve_dtr(
     """
 
     receiver_bpn, events = await validate_payload(payload, max_events)
-    dtr_url_shell, dtr_token = await get_partner_dtr(counter_party_address, counter_party_id, timeout)
+    dtr_url_shell, dtr_token, policy_validation = \
+        await get_partner_dtr(counter_party_address, counter_party_id, timeout)
     shell_descriptors = await validate_events_in_dtr(events, dtr_url_shell, dtr_token, timeout)
 
-    return shell_descriptors
+    return shell_descriptors, policy_validation
