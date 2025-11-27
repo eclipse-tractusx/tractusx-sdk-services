@@ -142,7 +142,34 @@ class EdrHandler:
                                     'and also check your VPN if you use one') from e
 
         if result.status_code == 200:
-            return result.json()
+            body = result.json()
+            # Attach the actual downstream HTTP request/response metadata from dt-pull-service
+            try:
+                sent_req = getattr(result, 'request', None)
+                request_info = {
+                    'method': getattr(sent_req, 'method', None),
+                    'url': str(getattr(sent_req, 'url', '')) if sent_req else '',
+                    'headers': dict(getattr(sent_req, 'headers', {})) if sent_req else {},
+                    'content': None
+                }
+                if sent_req is not None and getattr(sent_req, 'body', None) is not None:
+                    # requests.Request stores payload in .body
+                    try:
+                        request_info['content'] = sent_req.body.decode('utf-8') if isinstance(sent_req.body, (bytes, bytearray)) else str(sent_req.body)
+                    except Exception:
+                        request_info['content'] = None
+            except Exception:
+                request_info = None
+            response_info = {
+                'status_code': result.status_code,
+                'headers': dict(result.headers),
+                'text': result.text,
+            }
+            # Prefer non-intrusive keys; but expose plainly for convenience
+            if isinstance(body, dict):
+                body.setdefault('request', request_info)
+                body.setdefault('response', response_info)
+            return body
 
         if result.status_code == 403:
             raise HTTPError(Error.FORBIDDEN,
@@ -263,7 +290,35 @@ class EdrHandler:
 
         edr_response:requests.Response = self.edc_client.edrs.create(edr, proxies=self.proxies)
 
-        return edr_response.json()
+        # Augment response JSON with actual downstream HTTP metadata
+        try:
+            body = edr_response.json()
+        except Exception:
+            body = {}
+        try:
+            sent_req = getattr(edr_response, 'request', None)
+            request_info = {
+                'method': getattr(sent_req, 'method', None),
+                'url': str(getattr(sent_req, 'url', '')) if sent_req else '',
+                'headers': dict(getattr(sent_req, 'headers', {})) if sent_req else {},
+                'content': None
+            }
+            if sent_req is not None and getattr(sent_req, 'body', None) is not None:
+                try:
+                    request_info['content'] = sent_req.body.decode('utf-8') if isinstance(sent_req.body, (bytes, bytearray)) else str(sent_req.body)
+                except Exception:
+                    request_info['content'] = None
+        except Exception:
+            request_info = None
+        response_info = {
+            'status_code': edr_response.status_code,
+            'headers': dict(getattr(edr_response, 'headers', {})) if hasattr(edr_response, 'headers') else {},
+            'text': getattr(edr_response, 'text', None),
+        }
+        if isinstance(body, dict):
+            body.setdefault('request', request_info)
+            body.setdefault('response', response_info)
+        return body
 
 
     def check_edr_negotiate_state(self, edr_id_response: str):
@@ -272,28 +327,60 @@ class EdrHandler:
 
         :param edr_id_response: The ID response obtained from the EDR negotiation initiation.
         :raises EdrRequestError: Raised if the EDR contract negotiation fails.
-        :return: A JSON object containing the finalized negotiation state.
+        :return: A JSON object containing the finalized negotiation state, augmented with request/response metadata.
         """
 
         logger.info('Checking EDR negotiation state')
         retries = 0
+        last_body = None
 
         while retries < 10:
-            state_json:requests.Response = self.edc_client.contract_negotiations.get_state_by_id(
-                                    edr_id_response,
-                                    proxies=self.proxies)
-            state_json = state_json.json()
-            state = state_json['state']
+            resp: requests.Response = self.edc_client.contract_negotiations.get_state_by_id(
+                edr_id_response,
+                proxies=self.proxies
+            )
+            try:
+                body = resp.json()
+            except Exception:
+                body = {}
+
+            # Attach actual downstream HTTP request/response metadata
+            try:
+                sent_req = getattr(resp, 'request', None)
+                request_info = {
+                    'method': getattr(sent_req, 'method', None),
+                    'url': str(getattr(sent_req, 'url', '')) if sent_req else '',
+                    'headers': dict(getattr(sent_req, 'headers', {})) if sent_req else {},
+                    'content': None
+                }
+                if sent_req is not None and getattr(sent_req, 'body', None) is not None:
+                    try:
+                        request_info['content'] = sent_req.body.decode('utf-8') if isinstance(sent_req.body, (bytes, bytearray)) else str(sent_req.body)
+                    except Exception:
+                        request_info['content'] = None
+            except Exception:
+                request_info = None
+            response_info = {
+                'status_code': resp.status_code,
+                'headers': dict(getattr(resp, 'headers', {})) if hasattr(resp, 'headers') else {},
+                'text': getattr(resp, 'text', None),
+            }
+            if isinstance(body, dict):
+                body.setdefault('request', request_info)
+                body.setdefault('response', response_info)
+
+            last_body = body
+            state = body.get('state') if isinstance(body, dict) else None
 
             if state == 'FINALIZED':
-                return state_json
+                return body
 
             retries += 1
             time.sleep(2)
 
         logger.warning(f'EDR negotiation state {state}')
 
-        return state_json
+        return last_body if last_body is not None else {}
 
     def check_edr_negotiation_result(self, edr_id_response: str):
             """

@@ -36,12 +36,13 @@ from fastapi import APIRouter, Depends
 
 from test_orchestrator import config
 from test_orchestrator.errors import Error, HTTPError
+from test_orchestrator.logging.log_manager import LoggingManager
 from test_orchestrator.request_handler import make_request
 from test_orchestrator.utils import get_dtr_access
 from test_orchestrator.auth import get_dt_pull_service_headers, verify_auth
 
 router = APIRouter()
-logger = logging.getLogger(__name__)
+logger = LoggingManager.get_logger(__name__)
 
 
 @router.get('/ping-test/',
@@ -103,9 +104,9 @@ async def dtr_ping_test(counter_party_address: str,
 
      - :param counter_party_address: Address of the dsp endpoint of a connector
                                      (ends on api/v1/dsp for DSP version 2024-01).
-     - :param counter_party_id: The identifier of the test subject that operates the connector.
-                                Unitil at least Catena-X Release 25.09 that is the BPNL of the test subject.
      - :param policy_validation: Boolean (true/false) to toggle if the usage policy attached
+                                Until at least Catena-X Release 25.09 that is the BPNL of the test subject.
+     - :param strict_validation: Boolean (true/false) to toggle if the usage policy attached
                                  to the DTR offer is exactly as specified in the DTR KIT.
      - :return: A dictionary containing a success or an error message.
     """
