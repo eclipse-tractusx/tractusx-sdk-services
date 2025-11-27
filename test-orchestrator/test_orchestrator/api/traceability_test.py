@@ -25,7 +25,7 @@ Provide FastAPI endpoints for data asset checks.
 
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from test_orchestrator import config
 from test_orchestrator.auth import verify_auth
@@ -51,6 +51,7 @@ async def traceability_test(
         counter_party_id: str,
         job_id: str,
         asset_id: str,
+        optional_features: list[str] = Query(default=[]),
 ):
     """
     Execute data asset checks for all Quality Notification API data assets.
