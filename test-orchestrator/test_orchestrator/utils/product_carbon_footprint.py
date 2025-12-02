@@ -20,19 +20,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
 
-from datetime import datetime
 import logging
 import re
-from typing import Dict, List
 
 from test_orchestrator import config
 from test_orchestrator.request_handler import make_request
 from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
-from test_orchestrator.base_utils import get_dtr_access
 
-from test_orchestrator.cache import get_cache_provider, CacheProvider
-from test_orchestrator.utils import mo
+from test_orchestrator.cache import CacheProvider
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +78,30 @@ async def fetch_pcf_offer_from_catalog(manufacturerPartId: str, timeout: int = 1
     return offers[0]
 
 
-async def pcf_check(manufacturerPartId: str, requestId: str, edc_bpn_l: str, cache: CacheProvider):
+async def send_pcf_responses(counter_party_address: str, product_id: str, request_id: str, bpn: str, timeout: int = 80):
+    responses = {}
+
+    url = f"{counter_party_address}/productIds/{product_id}"
+
+    responses['with_requestId'] = await make_request(
+        method="GET",
+        url=url,
+        timeout=timeout,
+        params={"requestId": request_id},
+        headers={"Edc-BPN": bpn}
+    )
+
+    responses['without_requestId'] = await make_request(
+        method="GET",
+        url=url,
+        timeout=timeout,
+        headers={"Edc-BPN": bpn}
+    )
+
+    return responses
+
+
+async def pcf_check(manufacturerPartId: str, requestId: str, counter_party_address: str, pcf_version: str, timeout: str, edc_bpn_l: str, cache: CacheProvider):
     if not edc_bpn_l:
         raise HTTPError(
             Error.MISSING_REQUIRED_FIELD,
@@ -101,20 +120,36 @@ async def pcf_check(manufacturerPartId: str, requestId: str, edc_bpn_l: str, cac
 
     cached_entry = await cache.get(requestId)
     if cached_entry:
+        await send_pcf_responses(
+            counter_party_address=counter_party_address,
+            product_id=manufacturerPartId,
+            request_id=requestId,
+            timeout=timeout,
+            bpn=edc_bpn_l
+        )
+
         return {
             "status": "ok",
             "manufacturerPartId": cached_entry.manufacturerPartId,
             "requestId": requestId,
             "offer": cached_entry.offer
         }
-    
-    offer = await fetch_pcf_offer_from_catalog(manufacturerPartId)
+    else:
+        offer = await fetch_pcf_offer_from_catalog(manufacturerPartId)
 
-    await cache.set(requestId, {"manufacturerPartId": manufacturerPartId, "offer": offer}, expire=3600)
+        await cache.set(requestId, {"manufacturerPartId": manufacturerPartId, "offer": offer}, expire=3600)
 
-    return {
-        "status": "ok",
-        "manufacturerPartId": manufacturerPartId,
-        "requestId": requestId,
-        "offer": offer
-    }
+        await send_pcf_responses(
+            counter_party_address=counter_party_address,
+            product_id=manufacturerPartId,
+            request_id=requestId,
+            timeout=timeout,
+            bpn=edc_bpn_l
+        )
+
+        return {
+            "status": "ok",
+            "manufacturerPartId": manufacturerPartId,
+            "requestId": requestId,
+            "offer": offer
+        }
