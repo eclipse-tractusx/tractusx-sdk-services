@@ -89,6 +89,13 @@ async def pcf_check(manufacturerPartId: str, requestId: str, edc_bpn_l: str, cac
             message="Missing required header: Edc-BPN-L",
             detail="Missing required header: Edc-BPN-L")
     
+    bpn_pattern = re.compile(r'^BPN[LSA][A-Z0-9]{10}[A-Z0-9]{2}$')
+    if edc_bpn_l and not bpn_pattern.match(edc_bpn_l):
+        raise HTTPError(
+            Error.REGEX_VALIDATION_FAILED,
+            message=f'Invalid BPN format in header.: {edc_bpn_l} (expected e.g. BPNL000000000000)',
+            detail=f'Invalid BPN format in header.: {edc_bpn_l} (expected e.g. BPNL000000000000)')
+    
     validate_alphanumeric(manufacturerPartId, "manufacturerPartId")
     validate_alphanumeric(requestId, "requestId")
 
