@@ -21,7 +21,7 @@
 # *************************************************************
 
 import logging
-from typing import Dict
+from typing import Dict, Literal
 from fastapi import APIRouter, Depends, Query, Header, Path
 
 from test_orchestrator.auth import verify_auth
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 async def get_product_pcf(manufacturerPartId: str = Path(..., description="Manufacturer Part ID"),
                           requestId: str = Query(..., description="Unique request identifier"),
                           counter_party_address: str = Query(..., description="The DSP endpoint address of the supplier's connector"),
-                          pcf_version: str = Query(..., description="Schema version 7.0.0 or 8.0.0 supported"),
+                          pcf_version: Literal["7.0.0", "8.0.0"]  = Query(..., description="Schema version - 7.0.0 or 8.0.0 supported"),
                           edc_bpn_l: str = Header(..., alias="Edc-Bpn-L"),
                           timeout: int = 80,
                           cache: CacheProvider = Depends(get_cache_provider)):

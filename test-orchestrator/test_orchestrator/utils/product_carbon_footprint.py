@@ -27,7 +27,7 @@ from test_orchestrator import config
 from test_orchestrator.request_handler import make_request
 from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
-
+from test_orchestrator.validator import json_validator, schema_finder
 from test_orchestrator.cache import CacheProvider
 
 logger = logging.getLogger(__name__)
@@ -119,37 +119,39 @@ async def pcf_check(manufacturerPartId: str, requestId: str, counter_party_addre
     validate_alphanumeric(requestId, "requestId")
 
     cached_entry = await cache.get(requestId)
-    if cached_entry:
-        await send_pcf_responses(
-            counter_party_address=counter_party_address,
-            product_id=manufacturerPartId,
-            request_id=requestId,
-            timeout=timeout,
-            bpn=edc_bpn_l
-        )
+    offer = cached_entry.offer if cached_entry else await fetch_pcf_offer_from_catalog(manufacturerPartId)
 
-        return {
-            "status": "ok",
-            "manufacturerPartId": cached_entry.manufacturerPartId,
-            "requestId": requestId,
-            "offer": cached_entry.offer
-        }
-    else:
-        offer = await fetch_pcf_offer_from_catalog(manufacturerPartId)
-
+    if not cached_entry:
         await cache.set(requestId, {"manufacturerPartId": manufacturerPartId, "offer": offer}, expire=3600)
 
-        await send_pcf_responses(
-            counter_party_address=counter_party_address,
-            product_id=manufacturerPartId,
-            request_id=requestId,
-            timeout=timeout,
-            bpn=edc_bpn_l
+    await send_pcf_responses(
+        counter_party_address=counter_party_address,
+        product_id=manufacturerPartId,
+        request_id=requestId,
+        timeout=timeout,
+        bpn=edc_bpn_l
+    )
+
+    try:
+        schema = schema_finder(f'pcf/{pcf_version}/gen/Pcf-schema.json')
+        validation_result = json_validator(schema, offer)
+    except Exception:
+        raise HTTPError(
+            Error.UNKNOWN_ERROR,
+            message="An unknown error processing the shell descriptor occurred.",
+            details="Please contact the testbed administrator."
         )
 
-        return {
-            "status": "ok",
-            "manufacturerPartId": manufacturerPartId,
-            "requestId": requestId,
-            "offer": offer
-        }
+    if validation_result.get('status') == 'nok':
+        raise HTTPError(
+            Error.UNPROCESSABLE_ENTITY,
+            message='Validation error',
+            details={'validation_errors': validation_result}
+        )
+
+    return {
+        "status": "ok",
+        "manufacturerPartId": cached_entry.manufacturerPartId if cached_entry else manufacturerPartId,
+        "requestId": requestId,
+        "offer": offer
+    }
