@@ -27,8 +27,9 @@ from test_orchestrator import config
 from test_orchestrator.request_handler import make_request
 from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
-from test_orchestrator.validator import json_validator, schema_finder
+from test_orchestrator.validator import json_validator
 from test_orchestrator.cache import CacheProvider
+from test_orchestrator.base_utils import submodel_schema_finder
 
 logger = logging.getLogger(__name__)
 
@@ -133,8 +134,9 @@ async def pcf_check(manufacturerPartId: str, requestId: str, counter_party_addre
     )
 
     try:
-        schema = schema_finder(f'pcf/{pcf_version}/gen/Pcf-schema.json')
-        validation_result = json_validator(schema, offer)
+        semantic_id = f"urn:bamm:io.catenax.pcf:{pcf_version}#Pcf"
+        subm_schema_dict = submodel_schema_finder(semantic_id)
+        validation_result = json_validator(subm_schema_dict['schema'], offer)
     except Exception:
         raise HTTPError(
             Error.UNKNOWN_ERROR,
