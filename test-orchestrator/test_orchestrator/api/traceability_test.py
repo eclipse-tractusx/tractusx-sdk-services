@@ -154,7 +154,6 @@ async def traceability_test(
             except HTTPError as e:
                 asset_result['status'] = 'failed'
                 add_step('validate_policy', 'failed', str(e), getattr(e, 'details', None))
-                proceed = False
             except Exception as e:
                 asset_result['status'] = 'failed'
                 add_step('validate_policy', 'failed', f'Unexpected error: {e}')
