@@ -22,6 +22,9 @@
 
 import logging
 import re
+import uuid
+
+from typing import Dict
 
 from test_orchestrator import config
 from test_orchestrator.request_handler import make_request
@@ -32,14 +35,6 @@ from test_orchestrator.cache import CacheProvider
 from test_orchestrator.base_utils import submodel_schema_finder
 
 logger = logging.getLogger(__name__)
-
-
-def validate_alphanumeric(value: str, name: str):
-    if not re.match(r"^[A-Za-z0-9\-_]+$", value):
-        raise HTTPError(
-            Error.REGEX_VALIDATION_FAILED,
-            message=f"{name} contains invalid characters",
-            detail=f"{name} contains invalid characters")
 
 
 async def fetch_pcf_offer_from_catalog(manufacturerPartId: str, timeout: int = 10):
@@ -61,20 +56,20 @@ async def fetch_pcf_offer_from_catalog(manufacturerPartId: str, timeout: int = 1
         raise HTTPError(
             Error.CATALOG_FETCH_FAILED,
             message=f"Catalog fetch failed: {str(exc)}",
-            detail=exc)
+            details=exc)
 
     offers = response.get("dcat:dataset", [])
     if not offers:
         raise HTTPError(
             Error.NO_SHELLS_FOUND,
             message="PCF offer not found",
-            detail="PCF offer not found")
+            details="PCF offer not found")
 
     if len(offers) > 1:
         raise HTTPError(
             Error.TOO_MANY_ASSETS_FOUND,
             message="Multiple PCF offers found for this manufacturerPartId",
-            detail="Multiple PCF offers found for this manufacturerPartId")
+            details="Multiple PCF offers found for this manufacturerPartId")
 
     return offers[0]
 
@@ -102,28 +97,32 @@ async def send_pcf_responses(counter_party_address: str, product_id: str, reques
     return responses
 
 
-async def pcf_check(manufacturerPartId: str, requestId: str, counter_party_address: str, pcf_version: str, timeout: str, edc_bpn_l: str, cache: CacheProvider):
+async def pcf_check(manufacturerPartId: str, counter_party_address: str, pcf_version: str, timeout: str, edc_bpn_l: str, cache: CacheProvider):
     if not edc_bpn_l:
         raise HTTPError(
             Error.MISSING_REQUIRED_FIELD,
             message="Missing required header: Edc-BPN-L",
-            detail="Missing required header: Edc-BPN-L")
+            details="Missing required header: Edc-BPN-L")
     
     bpn_pattern = re.compile(r'^BPN[LSA][A-Z0-9]{10}[A-Z0-9]{2}$')
     if edc_bpn_l and not bpn_pattern.match(edc_bpn_l):
         raise HTTPError(
             Error.REGEX_VALIDATION_FAILED,
-            message=f'Invalid BPN format in header.: {edc_bpn_l} (expected e.g. BPNL000000000000)',
-            detail=f'Invalid BPN format in header.: {edc_bpn_l} (expected e.g. BPNL000000000000)')
+            message=f'Invalid BPN format in header.: {edc_bpn_l}',
+            details='Expected format like BPNL000000000000')
     
-    validate_alphanumeric(manufacturerPartId, "manufacturerPartId")
-    validate_alphanumeric(requestId, "requestId")
+    manufacturerPartId_pattern= re.compile(r"^[A-Za-z0-9\-_]+$")
+    if manufacturerPartId and not manufacturerPartId_pattern.match(manufacturerPartId):
+        raise HTTPError(
+            Error.REGEX_VALIDATION_FAILED,
+            message="manufacturerPartId contains invalid characters",
+            details="manufacturerPartId contains invalid characters")
 
-    cached_entry = await cache.get(requestId)
-    offer = cached_entry.offer if cached_entry else await fetch_pcf_offer_from_catalog(manufacturerPartId)
+    requestId = str(uuid.uuid4())
 
-    if not cached_entry:
-        await cache.set(requestId, {"manufacturerPartId": manufacturerPartId, "offer": offer}, expire=3600)
+    offer = await fetch_pcf_offer_from_catalog(manufacturerPartId)
+
+    await cache.set(requestId, {"manufacturerPartId": manufacturerPartId, "offer": offer}, expire=3600)
 
     await send_pcf_responses(
         counter_party_address=counter_party_address,
@@ -153,7 +152,65 @@ async def pcf_check(manufacturerPartId: str, requestId: str, counter_party_addre
 
     return {
         "status": "ok",
-        "manufacturerPartId": cached_entry.manufacturerPartId if cached_entry else manufacturerPartId,
+        "manufacturerPartId": manufacturerPartId,
         "requestId": requestId,
         "offer": offer
     }
+
+async def validate_pcf_update(manufacturerPartId: str, requestId: str, pcf_version: str, edc_bpn: str, request_body: Dict, cache: CacheProvider):
+    bpn_pattern = re.compile(r'^BPN[LSA][A-Z0-9]{10}[A-Z0-9]{2}$')
+    if not bpn_pattern.match(edc_bpn):
+        raise HTTPError(
+            Error.REGEX_VALIDATION_FAILED,
+            message=f'Invalid BPN format: {edc_bpn}',
+            details='Expected format like BPNL000000000000'
+        )
+    
+    cached_data = await cache.get(requestId)
+    if not cached_data:
+        raise HTTPError(
+            Error.NOT_FOUND,
+            message=f"No cached request found for requestId: {requestId}",
+            details="The requestId may have expired or is invalid"
+        )
+    
+    if cached_data.get("manufacturerPartId") != manufacturerPartId:
+        raise HTTPError(
+            Error.UNPROCESSABLE_ENTITY,
+            message="ManufacturerPartId mismatch",
+            details=f"Expected {cached_data.get('manufacturerPartId')}, got {manufacturerPartId}"
+        )
+    
+    cached_offer = cached_data.get("offer")
+    try:
+        semantic_id = f"urn:bamm:io.catenax.pcf:{pcf_version}#Pcf"
+        subm_schema_dict = submodel_schema_finder(semantic_id)
+        validation_result = json_validator(subm_schema_dict['schema'], cached_offer)
+    except Exception:
+        raise HTTPError(
+            Error.UNKNOWN_ERROR,
+            message="An unknown error processing the shell descriptor occurred.",
+            details="Please contact the testbed administrator."
+        )
+
+    if validation_result.get('status') == 'nok':
+        raise HTTPError(
+            Error.UNPROCESSABLE_ENTITY,
+            message='Validation error',
+            details={'validation_errors': validation_result}
+        )
+    
+    await delete_cache_entry(requestId, cache)
+
+    return {
+        "status": "ok",
+        "message": "PCF data validated successfully",
+        "requestId": requestId,
+        "manufacturerPartId": manufacturerPartId
+    }
+
+async def delete_cache_entry(requestId: str, cache: CacheProvider):
+    try:
+        await cache.delete(requestId)
+    except Exception as e:
+        logger.warning(f"Failed to delete cache for requestId {requestId}: {str(e)}")

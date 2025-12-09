@@ -22,12 +22,13 @@
 
 import logging
 from typing import Dict, Literal
-from fastapi import APIRouter, Depends, Query, Header, Path
+from fastapi import APIRouter, Depends, Query, Header, Path, Body
 
 from test_orchestrator.auth import verify_auth
 from test_orchestrator.cache import get_cache_provider, CacheProvider
 from test_orchestrator.utils.product_carbon_footprint import (
-    pcf_check
+    pcf_check,
+    validate_pcf_update
 )
 
 router = APIRouter()
@@ -37,16 +38,30 @@ logger = logging.getLogger(__name__)
             response_model=Dict,
             dependencies=[Depends(verify_auth)])
 async def get_product_pcf(manufacturerPartId: str = Path(..., description="Manufacturer Part ID"),
-                          requestId: str = Query(..., description="Unique request identifier"),
                           counter_party_address: str = Query(..., description="The DSP endpoint address of the supplier's connector"),
                           pcf_version: Literal["7.0.0", "8.0.0"]  = Query("8.0.0", description="Schema version - 7.0.0 or 8.0.0 supported"),
                           edc_bpn_l: str = Header(..., alias="Edc-Bpn-L"),
                           timeout: int = 80,
                           cache: CacheProvider = Depends(get_cache_provider)):
-    return pcf_check(manufacturerPartId=manufacturerPartId,
-                     requestId=requestId,
-                     counter_party_address=counter_party_address,
-                     pcf_version=pcf_version,
-                     edc_bpn_l=edc_bpn_l,
-                     timeout=timeout,
-                     cache=cache)
+    return await pcf_check(manufacturerPartId=manufacturerPartId,
+                           counter_party_address=counter_party_address,
+                           pcf_version=pcf_version,
+                           edc_bpn_l=edc_bpn_l,
+                           timeout=timeout,
+                           cache=cache)
+
+@router.put("/productIds/{manufacturerPartId}",
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
+async def update_product_pcf(manufacturerPartId: str = Path(..., description="Manufacturer Part ID"),
+                             requestId: str = Query(..., description="Request ID from previous GET call"),
+                             pcf_version: Literal["7.0.0", "8.0.0"]  = Query("8.0.0", description="Schema version - 7.0.0 or 8.0.0 supported"),
+                             edc_bpn: str = Header(..., alias="Edc-Bpn"),
+                             request_body: Dict = Body(...),
+                             cache: CacheProvider = Depends(get_cache_provider)):
+    return await validate_pcf_update(manufacturerPartId=manufacturerPartId,
+                                     requestId=requestId,
+                                     pcf_version=pcf_version,
+                                     edc_bpn=edc_bpn,
+                                     request_body=request_body,
+                                     cache=cache)

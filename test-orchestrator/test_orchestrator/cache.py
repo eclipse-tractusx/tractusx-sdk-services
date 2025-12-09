@@ -37,6 +37,10 @@ class CacheProvider(ABC):
             expire: Optional expiration time in seconds. If None, no TTL is applied.
         """
 
+    @abstractmethod
+    async def delete(self, key: str):
+        """Delete a cached value for the given key."""
+        pass
 
 class LocalCache(CacheProvider):
     """
@@ -56,6 +60,10 @@ class LocalCache(CacheProvider):
     async def set(self, key: str, value, expire: int = None):
         """See CacheProvider.set"""
         await FastAPICache.get_backend().set(key, value, expire)
+
+    async def delete(self, key: str):
+        """Delete cached value"""
+        await FastAPICache.get_backend().delete(key)
 
 
 def create_cache_provider() -> CacheProvider:
