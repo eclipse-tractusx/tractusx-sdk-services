@@ -55,13 +55,9 @@ async def get_product_pcf(manufacturerPartId: str = Path(..., description="Manuf
             dependencies=[Depends(verify_auth)])
 async def update_product_pcf(manufacturerPartId: str = Path(..., description="Manufacturer Part ID"),
                              requestId: str = Query(..., description="Request ID from previous GET call"),
-                             pcf_version: Literal["7.0.0", "8.0.0"]  = Query("8.0.0", description="Schema version - 7.0.0 or 8.0.0 supported"),
                              edc_bpn: str = Header(..., alias="Edc-Bpn"),
-                             request_body: Dict = Body(...),
                              cache: CacheProvider = Depends(get_cache_provider)):
     return await validate_pcf_update(manufacturerPartId=manufacturerPartId,
                                      requestId=requestId,
-                                     pcf_version=pcf_version,
                                      edc_bpn=edc_bpn,
-                                     request_body=request_body,
                                      cache=cache)

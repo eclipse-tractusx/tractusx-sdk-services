@@ -24,8 +24,6 @@ import logging
 import re
 import uuid
 
-from typing import Dict
-
 from test_orchestrator import config
 from test_orchestrator.request_handler import make_request
 from test_orchestrator.auth import get_dt_pull_service_headers
@@ -157,7 +155,7 @@ async def pcf_check(manufacturerPartId: str, counter_party_address: str, pcf_ver
         "offer": offer
     }
 
-async def validate_pcf_update(manufacturerPartId: str, requestId: str, pcf_version: str, edc_bpn: str, request_body: Dict, cache: CacheProvider):
+async def validate_pcf_update(manufacturerPartId: str, requestId: str, edc_bpn: str, cache: CacheProvider):
     bpn_pattern = re.compile(r'^BPN[LSA][A-Z0-9]{10}[A-Z0-9]{2}$')
     if not bpn_pattern.match(edc_bpn):
         raise HTTPError(
@@ -165,6 +163,13 @@ async def validate_pcf_update(manufacturerPartId: str, requestId: str, pcf_versi
             message=f'Invalid BPN format: {edc_bpn}',
             details='Expected format like BPNL000000000000'
         )
+    
+    manufacturerPartId_pattern= re.compile(r"^[A-Za-z0-9\-_]+$")
+    if manufacturerPartId and not manufacturerPartId_pattern.match(manufacturerPartId):
+        raise HTTPError(
+            Error.REGEX_VALIDATION_FAILED,
+            message="manufacturerPartId contains invalid characters",
+            details="manufacturerPartId contains invalid characters")
     
     cached_data = await cache.get(requestId)
     if not cached_data:
@@ -179,25 +184,6 @@ async def validate_pcf_update(manufacturerPartId: str, requestId: str, pcf_versi
             Error.UNPROCESSABLE_ENTITY,
             message="ManufacturerPartId mismatch",
             details=f"Expected {cached_data.get('manufacturerPartId')}, got {manufacturerPartId}"
-        )
-    
-    cached_offer = cached_data.get("offer")
-    try:
-        semantic_id = f"urn:bamm:io.catenax.pcf:{pcf_version}#Pcf"
-        subm_schema_dict = submodel_schema_finder(semantic_id)
-        validation_result = json_validator(subm_schema_dict['schema'], cached_offer)
-    except Exception:
-        raise HTTPError(
-            Error.UNKNOWN_ERROR,
-            message="An unknown error processing the shell descriptor occurred.",
-            details="Please contact the testbed administrator."
-        )
-
-    if validation_result.get('status') == 'nok':
-        raise HTTPError(
-            Error.UNPROCESSABLE_ENTITY,
-            message='Validation error',
-            details={'validation_errors': validation_result}
         )
     
     await delete_cache_entry(requestId, cache)
