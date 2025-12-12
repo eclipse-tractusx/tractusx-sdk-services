@@ -137,7 +137,7 @@ async def get_dtr_access(counter_party_address: str,
     :return: A tuple containing the endpoint URL and authorization credentials for DTR access.
     """
 
-    catalog_json = await get_catalog(
+    catalog_response = await get_catalog(
         counter_party_address=counter_party_address,
         counter_party_id=counter_party_id,
         operand_left=operand_left,
@@ -148,6 +148,7 @@ async def get_dtr_access(counter_party_address: str,
         timeout=timeout,
     )
 
+    catalog_json = catalog_response["response_json"]
     logger.debug(f'Catalog JSON: {catalog_json}')
 
     # Validate result of the policy from the catalog if required
