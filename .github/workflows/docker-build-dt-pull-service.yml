@@ -69,7 +69,7 @@ jobs:
           images:
             ${{ matrix.image }}
             # Automatically prepare image tags;
-            # semver patter will generate tags like these for example :1 :1.2
+          # semver patter will generate tags like these for example :1 :1.2
           tags: |
             type=raw,value=latest
             type=raw,value=${{ github.ref_name }}
