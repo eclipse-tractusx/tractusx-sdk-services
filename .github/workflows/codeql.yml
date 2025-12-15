@@ -22,16 +22,12 @@ name: "CodeQL"
 on:
   push:
     branches: ["main"]
-    paths:
-      - "services/**/*.py"
     paths-ignore:
       - "**/*.yml"
       - "**/*.yaml"
       - "**/*.md"
       - "**/*.txt"
   pull_request:
-    paths:
-      - "services/**/*.py"
     paths-ignore:
       - "**/*.yml"
       - "**/*.yaml"
