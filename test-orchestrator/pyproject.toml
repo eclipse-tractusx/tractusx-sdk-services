@@ -28,7 +28,7 @@ authors = ["Dénes Surman (dddenes) <surmandenes@yahoo.com>"]
 
 [project]
 name = "test_orchestrator"
-version = "0.1.0"
+version = "0.1.2"
 description = "Testbed for Catena-X boarding"
 authors = [
     {name = "Dénes Surman (dddenes)", email = "surmandenes@yahoo.com"},
