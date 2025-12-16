@@ -137,32 +137,19 @@ async def get_dtr_access(counter_party_address: str,
     :return: A tuple containing the endpoint URL and authorization credentials for DTR access.
     """
 
-    catalog_json = await make_request('GET',
-                                      f'{config.DT_PULL_SERVICE_ADDRESS}/edr/get-catalog/',
-                                      params={'operand_left': operand_left,
-                                              'operand_right': operand_right,
-                                              'operator': operator,
-                                              'counter_party_address': counter_party_address,
-                                              'counter_party_id': counter_party_id,
-                                              'offset': offset,
-                                              'limit': limit},
-                                      timeout=timeout,
-                                      headers=get_dt_pull_service_headers())
-    warnings = []
+    catalog_response = await get_catalog(
+        counter_party_address=counter_party_address,
+        counter_party_id=counter_party_id,
+        operand_left=operand_left,
+        operator=operator,
+        operand_right=operand_right,
+        offset=offset,
+        limit=limit,
+        timeout=timeout,
+    )
 
-    # Validate if there is an offer for the desired asset/type available. 
-    if len(catalog_json["dcat:dataset"]) == 0:
-        raise HTTPError(
-            Error.CONTRACT_NEGOTIATION_FAILED,
-            message='In case this is the Digital Twin Registry Asset please check ' + \
-                    'https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/' + \
-                    'software-development-view/#digital-twin-registry-as-edc-data-asset for troubleshooting.',
-            details=f'There were no offers of type/id {operand_right} found in the catalog of connector {counter_party_address}. ' + \
-                    'Either the properties or access policy of the asset are misconfigured. '+ \
-                    'Make sure to allow access to the asset for the Testbed BPNL.')
-
-    if len(catalog_json["dcat:dataset"]) > 1:
-        warnings.append('Multiple DTRs were returned. This is not an issue, but it may lead to unexpected behavior.')
+    catalog_json = catalog_response["response_json"]
+    logger.debug(f'Catalog JSON: {catalog_json}')
 
     # Validate result of the policy from the catalog if required
     policy_validation_outcome = validate_policy(catalog_json, "DigitalTwinRegistry", "DataExchangeGovernance:1.0")
