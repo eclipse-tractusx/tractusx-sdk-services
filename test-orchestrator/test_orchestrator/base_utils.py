@@ -527,3 +527,34 @@ async def submodel_validation(
                         'software-development-view/aspect-models for troubleshooting and samples.')
 
         return json_validator(subm_schema, submodels)
+
+async def pcf_dummy_dataloader(semantic_id: str, linkcore: Optional[str] = "https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/main") -> Dict:
+    splitstring = semantic_id.split('#')
+    if len(splitstring) != 2:
+        raise HTTPError(
+            Error.UNPROCESSABLE_ENTITY,
+            message="The semanticID provided does not follow the correct structure",
+            details={'subprotocolBody': semantic_id}
+        )
+    
+    version_part = splitstring[0].split(':')[-1]
+    dummy_link = f"{linkcore}/io.catenax.pcf/{version_part}/gen/Pcf.json"
+    
+    response = httpx.get(dummy_link)
+    if response.status_code != 200:
+        raise HTTPError(
+            Error.UNPROCESSABLE_ENTITY,
+            message="Failed to obtain the required dummy PCF data",
+            details=response
+            )
+    
+    try:
+        dummy_data = response.json()
+    except Exception as e:
+        raise HTTPError(
+            Error.UNPROCESSABLE_ENTITY,
+            message="The dummy PCF data obtained is not a valid json",
+            details=e
+        )
+    
+    return dummy_data

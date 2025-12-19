@@ -27,18 +27,20 @@ import uuid
 from typing import Dict, Optional
 
 from test_orchestrator import config
+
+from test_orchestrator import config
 from test_orchestrator.request_handler import make_request
 from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.validator import json_validator
 from test_orchestrator.cache import CacheProvider
-from test_orchestrator.base_utils import submodel_schema_finder
+from test_orchestrator.base_utils import submodel_schema_finder, pcf_dummy_dataloader
 
 logger = logging.getLogger(__name__)
 
 def validate_inputs(edc_bpn: str, manufacturer_part_id: str):
     if not edc_bpn:
-        raise HTTPError(Error.MISSING_REQUIRED_FIELD, message="Missing required header: Edc-BPN", details="Missing header")
+        raise HTTPError(Error.MISSING_REQUIRED_FIELD, message="Missing required header: Edc-Bpn", details="Missing header")
     
     bpn_pattern = re.compile(r'^BPN[LSA][A-Z0-9]{10}[A-Z0-9]{2}$')
     if not bpn_pattern.match(edc_bpn):
@@ -95,14 +97,14 @@ async def send_pcf_responses(counter_party_address: str, product_id: str, reques
         url=url,
         timeout=timeout,
         params={"requestId": request_id},
-        headers={"Edc-BPN": bpn}
+        headers={"Edc-Bpn": bpn}
     )
 
     responses['without_requestId'] = await make_request(
         method="GET",
         url=url,
         timeout=timeout,
-        headers={"Edc-BPN": bpn}
+        headers={"Edc-Bpn": bpn}
     )
 
     return responses
@@ -115,7 +117,7 @@ async def send_pcf_put_request(counter_party_address: str, product_id: str, requ
         url=url,
         timeout=timeout,
         params={"requestId": request_id},
-        headers={"Edc-BPN": bpn},
+        headers={"Edc-Bpn": bpn},
         json=payload
     )
     return response
@@ -152,18 +154,19 @@ async def pcf_check(manufacturer_part_id: str, counter_party_address: str, pcf_v
         
     if request_id:
         url = f"{counter_party_address}/productIds/{manufacturer_part_id}"
-        dummy_payload = {
-            "id": "urn:uuid:dummy-pcf", 
-            "productIds": [manufacturer_part_id], 
-            "comment": "Testbed dummy payload"
-        }
+
+        semanticid = f"urn:bamm:io.catenax.pcf:{pcf_version}#Pcf"
+        dummy_pcf = await pcf_dummy_dataloader(semanticid)
+        dummy_pcf['productIds'] = [f"urn:mycompany.com:product-id:{manufacturer_part_id}"]
+        dummy_pcf['id'] = f"{uuid.uuid4()}"
+
         await make_request(
             method="PUT",
             url=url,
             timeout=timeout,
             params={"requestId": requestId},
-            headers={"Edc-BPN": edc_bpn_l},
-            json=dummy_payload
+            headers={"Edc-Bpn": config.CONNECTOR_BPNL},
+            json=dummy_pcf
         )
     else:
         await send_pcf_responses(
