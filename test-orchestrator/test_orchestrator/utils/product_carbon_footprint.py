@@ -127,11 +127,9 @@ async def pcf_check(manufacturer_part_id: str, counter_party_address: str, pcf_v
 
     requestId = request_id if request_id else str(uuid.uuid4())
 
-    offer = None
+    offer = await fetch_pcf_offer_from_catalog(manufacturer_part_id)
 
     if not request_id:
-        offer = await fetch_pcf_offer_from_catalog(manufacturer_part_id)
-
         await cache.set(requestId, {"manufacturerPartId": manufacturer_part_id, "offer": offer}, expire=3600)
 
         try:
