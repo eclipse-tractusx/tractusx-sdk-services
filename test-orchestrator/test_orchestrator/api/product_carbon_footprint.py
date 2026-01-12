@@ -34,17 +34,18 @@ from test_orchestrator.utils.product_carbon_footprint import (
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-@router.get("/productIds/{manufacturerPartId}",
+
+@router.get('/productIds/{manufacturer_part_id}',
             response_model=Dict,
             dependencies=[Depends(verify_auth)])
-async def get_product_pcf(manufacturerPartId: str = Path(..., description="Manufacturer Part ID"),
+async def get_product_pcf(manufacturer_part_id: str = Path(..., description='Manufacturer Part ID'),
                           counter_party_address: str = Query(..., description="The DSP endpoint address of the supplier's connector"),
-                          pcf_version: Literal["7.0.0", "8.0.0"]  = Query("8.0.0", description="Schema version - 7.0.0 or 8.0.0 supported"),
-                          edc_bpn_l: str = Header(..., alias="Edc-Bpn-L"),
-                          request_id: Optional[str] = Query(None, description="Optional Request ID"),
+                          pcf_version: Literal['7.0.0', '8.0.0']  = Query('8.0.0', description='Schema version - 7.0.0 or 8.0.0 supported'),
+                          edc_bpn_l: str = Header(..., alias='Edc-Bpn-L'),
+                          request_id: Optional[str] = Query(None, description='Optional Request ID'),
                           timeout: int = 80,
                           cache: CacheProvider = Depends(get_cache_provider)):
-    return await pcf_check(manufacturerPartId=manufacturerPartId,
+    return await pcf_check(manufacturer_part_id=manufacturer_part_id,
                            counter_party_address=counter_party_address,
                            pcf_version=pcf_version,
                            edc_bpn_l=edc_bpn_l,
@@ -52,14 +53,15 @@ async def get_product_pcf(manufacturerPartId: str = Path(..., description="Manuf
                            timeout=timeout,
                            cache=cache)
 
-@router.put("/productIds/{manufacturerPartId}",
+
+@router.put('/productIds/{manufacturer_part_id}',
             response_model=Dict,
             dependencies=[Depends(verify_auth)])
-async def update_product_pcf(manufacturerPartId: str = Path(..., description="Manufacturer Part ID"),
-                             requestId: str = Query(..., description="Request ID from previous GET call"),
-                             edc_bpn: str = Header(..., alias="Edc-Bpn"),
+async def update_product_pcf(manufacturer_part_id: str = Path(..., description='Manufacturer Part ID'),
+                             requestId: str = Query(..., description='Request ID from previous GET call'),
+                             edc_bpn: str = Header(..., alias='Edc-Bpn'),
                              cache: CacheProvider = Depends(get_cache_provider)):
-    return await validate_pcf_update(manufacturerPartId=manufacturerPartId,
+    return await validate_pcf_update(manufacturer_part_id=manufacturer_part_id,
                                      requestId=requestId,
                                      edc_bpn=edc_bpn,
                                      cache=cache)
