@@ -16,8 +16,30 @@ The service performs several validation and orchestration tasks:
 - Digital Twin existence checks via the DT Pull Service.
 - Schema validation of submodels based on semantic IDs.
 
-All endpoints require authentication (`verify_auth`).
-
+All endpoints require authentication (`verify_auth`) and all endpoints needs the notification payload in this format as a the request body:
+```json
+{
+  "header": {
+    "messageId": "UUID",
+    "context": "IndustryCore-DigitalTwinEvent-Create:3.0.0",
+    "sentDateTime": "ISO8601 date",
+    "senderBpn": "Partner BPN",
+    "receiverBpn": "Receiver BPN",
+    "expectedResponseBy": "ISO8601 date",
+    "relatedMessageId": "UUID",
+    "version": "3.0.0"
+  },
+  "content": {
+    "information": "Description of the events",
+    "listOfEvents": [
+      {
+        "eventType": "CreateSubmodel",
+        "catenaXId": "URN of the Digital Twin",
+        "submodelSemanticId": "URN of the submodel"
+      }
+    ]
+  }
+}
 
 # Endpoints
 
