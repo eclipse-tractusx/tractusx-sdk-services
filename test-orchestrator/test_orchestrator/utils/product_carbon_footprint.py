@@ -50,41 +50,80 @@ def validate_inputs(edc_bpn: str, manufacturer_part_id: str):
     if manufacturer_part_id and not part_id_pattern.match(manufacturer_part_id):
         raise HTTPError(Error.REGEX_VALIDATION_FAILED, message="Invalid manufacturerPartId", details="Invalid chars")
 
-async def fetch_pcf_offer_from_catalog(manufacturerPartId: str, timeout: int = 10):
-    params = {
-        "aas_id": manufacturerPartId,
-        "limit": 2,  # detect multiple offers
-        "type": "cx-taxo:PcfExchange"
-    }
-
+async def fetch_pcf_offer_from_edc_catalog(manufacturerPartId: str, counter_party_address: str, timeout: int = 10):
     try:
+        catalog_request_body = {
+            "@context": {
+                "edc": "https://w3id.org/edc/v0.0.1/ns/",
+                "dcat": "http://www.w3.org/ns/dcat#",
+                "dct": "http://purl.org/dc/terms/",
+                "odrl": "http://www.w3.org/ns/odrl/2/"
+            },
+            "@type": "CatalogRequest",
+            "counterPartyAddress": counter_party_address,
+            "protocol": "dataspace-protocol-http",
+            "querySpec": {
+                "filterExpression": [
+                    {
+                        "operandLeft": "https://w3id.org/edc/v0.0.1/ns/type",
+                        "operator": "=",
+                        "operandRight": "PcfExchange"
+                    },
+                    {
+                        "operandLeft": "https://w3id.org/catenax/ontology/common#manufacturerPartId",
+                        "operator": "=",
+                        "operandRight": manufacturerPartId
+                    }
+                ]
+            }
+        }
+        
         response = await make_request(
-            "GET",
-            f"{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/",
-            params=params,
-            headers=get_dt_pull_service_headers(),
+            method="POST",
+            url=f"{counter_party_address}/v2/catalog/request",
+            json=catalog_request_body,
+            headers={"Content-Type": "application/json", "X-Api-Key": config.API_KEY_BACKEND},
             timeout=timeout
         )
+        
+        datasets = response.get("dcat:dataset", [])
+        
+        if not datasets:
+            raise HTTPError(
+                Error.NO_SHELLS_FOUND,
+                message="PCF offer not found in EDC catalog",
+                details=f"No offer with type PcfExchange for manufacturerPartId: {manufacturerPartId}"
+            )
+        
+        pcf_offers = []
+        for dataset in datasets:
+            dct_type = dataset.get("dct:type", {}).get("@id", "")
+            if "PcfExchange" in dct_type or "cx-taxo:PcfExchange" in dct_type:
+                pcf_offers.append(dataset)
+        
+        if not pcf_offers:
+            raise HTTPError(
+                Error.NO_SHELLS_FOUND,
+                message="No PCF exchange offer found",
+                details="Catalog has datasets but none with type PcfExchange"
+            )
+        
+        if len(pcf_offers) > 1:
+            raise HTTPError(
+                Error.TOO_MANY_ASSETS_FOUND,
+                message="Multiple PCF offers found",
+                details=f"Found {len(pcf_offers)} PCF offers for this manufacturerPartId"
+            )
+        
+        return pcf_offers[0]
+        
+    except HTTPError:
+        raise
     except Exception as exc:
         raise HTTPError(
             Error.CATALOG_FETCH_FAILED,
-            message=f"Catalog fetch failed: {str(exc)}",
-            details=exc)
-
-    offers = response.get("dcat:dataset", [])
-    if not offers:
-        raise HTTPError(
-            Error.NO_SHELLS_FOUND,
-            message="PCF offer not found",
-            details="PCF offer not found")
-
-    if len(offers) > 1:
-        raise HTTPError(
-            Error.TOO_MANY_ASSETS_FOUND,
-            message="Multiple PCF offers found for this manufacturerPartId",
-            details="Multiple PCF offers found for this manufacturerPartId")
-
-    return offers[0]
+            message=f"EDC catalog fetch failed: {str(exc)}",
+            details=str(exc))
 
 
 async def send_pcf_responses(counter_party_address: str, product_id: str, request_id: str, bpn: str, timeout: int = 80):
@@ -122,42 +161,43 @@ async def send_pcf_put_request(counter_party_address: str, product_id: str, requ
     )
     return response
 
-async def pcf_check(manufacturer_part_id: str, counter_party_address: str, pcf_version: str, edc_bpn_l: str, timeout: str, request_id: Optional[str] = None, cache: Optional[CacheProvider] = None, payload: Optional[Dict] = None):
+async def pcf_check(manufacturer_part_id: str, counter_party_address: str, pcf_version: str, edc_bpn_l: str, timeout: int, request_id: Optional[str] = None, cache: Optional[CacheProvider] = None, payload: Optional[Dict] = None):
     validate_inputs(edc_bpn_l, manufacturer_part_id)
 
     requestId = request_id if request_id else str(uuid.uuid4())
-
-    offer = await fetch_pcf_offer_from_catalog(manufacturer_part_id)
+    offer = await fetch_pcf_offer_from_edc_catalog(manufacturer_part_id, counter_party_address, timeout)
 
     if not request_id:
-        await cache.set(requestId, {"manufacturerPartId": manufacturer_part_id, "offer": offer}, expire=3600)
+        await cache.set(requestId, {"manufacturerPartId": manufacturer_part_id, "offer": offer, "counter_party_address": counter_party_address}, expire=3600)
 
         try:
-            semantic_id = f"urn:bamm:io.catenax.pcf:{pcf_version}#Pcf"
-            subm_schema_dict = submodel_schema_finder(semantic_id)
-            validation_result = json_validator(subm_schema_dict['schema'], offer)
-        except Exception:
+            if not offer.get("dct:type"):
+                raise HTTPError(
+                    Error.UNPROCESSABLE_ENTITY,
+                    message='Invalid offer structure',
+                    details='Missing dct:type in offer'
+                )
+        except Exception as e:
             raise HTTPError(
                 Error.UNKNOWN_ERROR,
-                message="An unknown error processing the shell descriptor occurred.",
-                details="Please contact the testbed administrator."
+                message="Offer validation failed",
+                details=str(e)
             )
 
-        if validation_result.get('status') == 'nok':
-            raise HTTPError(
-                Error.UNPROCESSABLE_ENTITY,
-                message='Validation error',
-                details={'validation_errors': validation_result}
-            )
-        
-    if request_id:
-        url = f"{counter_party_address}/productIds/{manufacturer_part_id}"
-
+        await send_pcf_responses(
+            counter_party_address=counter_party_address,
+            product_id=manufacturer_part_id,
+            request_id=requestId,
+            timeout=timeout,
+            bpn=edc_bpn_l
+        )
+    else:
         semanticid = f"urn:bamm:io.catenax.pcf:{pcf_version}#Pcf"
         dummy_pcf = await pcf_dummy_dataloader(semanticid)
         dummy_pcf['productIds'] = [f"urn:mycompany.com:product-id:{manufacturer_part_id}"]
-        dummy_pcf['id'] = f"{uuid.uuid4()}"
+        dummy_pcf['id'] = uuid.uuid4()
 
+        url = f"{counter_party_address}/productIds/{manufacturer_part_id}"
         await make_request(
             method="PUT",
             url=url,
@@ -165,14 +205,6 @@ async def pcf_check(manufacturer_part_id: str, counter_party_address: str, pcf_v
             params={"requestId": requestId},
             headers={"Edc-Bpn": config.CONNECTOR_BPNL},
             json=dummy_pcf
-        )
-    else:
-        await send_pcf_responses(
-            counter_party_address=counter_party_address,
-            product_id=manufacturer_part_id,
-            request_id=requestId,
-            timeout=timeout,
-            bpn=edc_bpn_l
         )
 
     return {
