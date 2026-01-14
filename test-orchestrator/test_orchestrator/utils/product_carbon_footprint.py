@@ -23,6 +23,7 @@
 import logging
 import re
 import uuid
+import urllib.parse
 
 from typing import Dict, Optional
 
@@ -34,7 +35,7 @@ from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.validator import json_validator
 from test_orchestrator.cache import CacheProvider
-from test_orchestrator.base_utils import submodel_schema_finder, pcf_dummy_dataloader
+from test_orchestrator.base_utils import submodel_schema_finder, pcf_dummy_dataloader, get_dtr_access
 
 logger = logging.getLogger(__name__)
 
@@ -50,79 +51,107 @@ def validate_inputs(edc_bpn: str, manufacturer_part_id: str):
     if manufacturer_part_id and not part_id_pattern.match(manufacturer_part_id):
         raise HTTPError(Error.REGEX_VALIDATION_FAILED, message="Invalid manufacturerPartId", details="Invalid chars")
 
-async def fetch_pcf_offer_from_edc_catalog(manufacturerPartId: str, counter_party_address: str, timeout: int = 10):
+async def fetch_pcf_offer_via_dtr(manufacturerPartId: str, counter_party_id: str, counter_party_address: str, timeout: int = 10):
     try:
-        catalog_request_body = {
-            "@context": {
-                "edc": "https://w3id.org/edc/v0.0.1/ns/",
-                "dcat": "http://www.w3.org/ns/dcat#",
-                "dct": "http://purl.org/dc/terms/",
-                "odrl": "http://www.w3.org/ns/odrl/2/"
-            },
-            "@type": "CatalogRequest",
-            "counterPartyAddress": counter_party_address,
-            "protocol": "dataspace-protocol-http",
-            "querySpec": {
-                "filterExpression": [
-                    {
-                        "operandLeft": "https://w3id.org/edc/v0.0.1/ns/type",
-                        "operator": "=",
-                        "operandRight": "PcfExchange"
-                    },
-                    {
-                        "operandLeft": "https://w3id.org/catenax/ontology/common#manufacturerPartId",
-                        "operator": "=",
-                        "operandRight": manufacturerPartId
-                    }
-                ]
-            }
-        }
+        dataplane_url, dtr_key, _ = await get_dtr_access(
+            counter_party_address,
+            counter_party_id,
+            operand_left='http://purl.org/dc/terms/type',
+            operand_right='%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%',
+            limit=1,
+            timeout=timeout
+        )
+
+        if not dataplane_url or not dtr_key:
+            raise HTTPError(
+                Error.CATALOG_FETCH_FAILED,
+                message="DTR access negotiation failed",
+                details="No dataplane URL or DTR key received"
+            )
         
-        response = await make_request(
+        asset_link_body = [
+            {
+                "name": "manufacturerPartId",
+                "value": manufacturerPartId
+            }
+        ]
+
+        lookup_response = await make_request(
             method="POST",
-            url=f"{counter_party_address}/v2/catalog/request",
-            json=catalog_request_body,
-            headers={"Content-Type": "application/json", "X-Api-Key": config.API_KEY_BACKEND},
+            url=f"{dataplane_url}/lookup/shellsByAssetLink",
+            json=asset_link_body,
+            headers={
+                "Authorization": dtr_key,
+                "Content-Type": "application/json"
+            },
             timeout=timeout
         )
         
-        datasets = response.get("dcat:dataset", [])
+        shell_ids = lookup_response if isinstance(lookup_response, list) else lookup_response.get("result", [])
         
-        if not datasets:
+        if not shell_ids:
             raise HTTPError(
                 Error.NO_SHELLS_FOUND,
-                message="PCF offer not found in EDC catalog",
-                details=f"No offer with type PcfExchange for manufacturerPartId: {manufacturerPartId}"
+                message="No shells found in DTR",
+                details=f"No shell for manufacturerPartId: {manufacturerPartId}"
             )
         
-        pcf_offers = []
-        for dataset in datasets:
-            dct_type = dataset.get("dct:type", {}).get("@id", "")
-            if "PcfExchange" in dct_type or "cx-taxo:PcfExchange" in dct_type:
-                pcf_offers.append(dataset)
-        
-        if not pcf_offers:
-            raise HTTPError(
-                Error.NO_SHELLS_FOUND,
-                message="No PCF exchange offer found",
-                details="Catalog has datasets but none with type PcfExchange"
-            )
-        
-        if len(pcf_offers) > 1:
+        if len(shell_ids) > 1:
             raise HTTPError(
                 Error.TOO_MANY_ASSETS_FOUND,
-                message="Multiple PCF offers found",
-                details=f"Found {len(pcf_offers)} PCF offers for this manufacturerPartId"
+                message="Multiple shells found",
+                details=f"Found {len(shell_ids)} shells for manufacturerPartId"
             )
         
-        return pcf_offers[0]
+        shell_id = shell_ids[0] if isinstance(shell_ids[0], str) else shell_ids[0].get("id")
+        shell_id_encoded = urllib.parse.quote(shell_id, safe='')
+        
+        logger.info(f"Fetching shell descriptor: {shell_id}")
+        shell_response = await make_request(
+            method="GET",
+            url=f"{dataplane_url}/shell-descriptors/{shell_id_encoded}",
+            headers={
+                "Authorization": dtr_key,
+                "Content-Type": "application/json"
+            },
+            timeout=timeout
+        )
+        
+        pcf_submodel = None
+        for submodel_desc in shell_response.get("submodelDescriptors", []):
+            semantic_id = submodel_desc.get("semanticId", {})
+            keys = semantic_id.get("keys", [])
+            
+            for key in keys:
+                value = key.get("value", "")
+                if "pcf" in value.lower() or "ProductCarbonFootprint" in value:
+                    pcf_submodel = submodel_desc
+                    break
+            
+            if pcf_submodel:
+                break
+        
+        if not pcf_submodel:
+            raise HTTPError(
+                Error.NO_SHELLS_FOUND,
+                message="No PCF submodel found",
+                details="Shell exists but no PCF submodel descriptor"
+            )
+        
+        return {
+            "shell": shell_response,
+            "pcf_submodel": pcf_submodel,
+            "dataplane_url": dataplane_url,
+            "dtr_key": dtr_key,
+            "dct:type": {"@id": "cx-taxo:PcfExchange"}
+        }
         
     except HTTPError:
         raise
     except Exception as exc:
         raise HTTPError(
             Error.CATALOG_FETCH_FAILED,
-            message=f"EDC catalog fetch failed: {str(exc)}",
+            message=f"DTR access or lookup failed: {str(exc)}",
             details=str(exc))
 
 
@@ -161,21 +190,21 @@ async def send_pcf_put_request(counter_party_address: str, product_id: str, requ
     )
     return response
 
-async def pcf_check(manufacturer_part_id: str, counter_party_address: str, pcf_version: str, edc_bpn_l: str, timeout: int, request_id: Optional[str] = None, cache: Optional[CacheProvider] = None, payload: Optional[Dict] = None):
+async def pcf_check(manufacturer_part_id: str, counter_party_id: str, counter_party_address: str, pcf_version: str, edc_bpn_l: str, timeout: int, request_id: Optional[str] = None, cache: Optional[CacheProvider] = None, payload: Optional[Dict] = None):
     validate_inputs(edc_bpn_l, manufacturer_part_id)
 
     requestId = request_id if request_id else str(uuid.uuid4())
-    offer = await fetch_pcf_offer_from_edc_catalog(manufacturer_part_id, counter_party_address, timeout)
+    offer = await fetch_pcf_offer_via_dtr(manufacturer_part_id, counter_party_id, counter_party_address, timeout)
 
     if not request_id:
         await cache.set(requestId, {"manufacturerPartId": manufacturer_part_id, "offer": offer, "counter_party_address": counter_party_address}, expire=3600)
 
         try:
-            if not offer.get("dct:type"):
+            if not offer.get("pcf_submodel"):
                 raise HTTPError(
                     Error.UNPROCESSABLE_ENTITY,
-                    message='Invalid offer structure',
-                    details='Missing dct:type in offer'
+                    message='No PCF submodel found',
+                    details='PCF submodel not found in shell'
                 )
         except Exception as e:
             raise HTTPError(
@@ -195,7 +224,7 @@ async def pcf_check(manufacturer_part_id: str, counter_party_address: str, pcf_v
         semanticid = f"urn:bamm:io.catenax.pcf:{pcf_version}#Pcf"
         dummy_pcf = await pcf_dummy_dataloader(semanticid)
         dummy_pcf['productIds'] = [f"urn:mycompany.com:product-id:{manufacturer_part_id}"]
-        dummy_pcf['id'] = uuid.uuid4()
+        dummy_pcf['id'] = str(uuid.uuid4())  
 
         url = f"{counter_party_address}/productIds/{manufacturer_part_id}"
         await make_request(

@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
             response_model=Dict,
             dependencies=[Depends(verify_auth)])
 async def get_product_pcf(manufacturer_part_id: str = Path(..., description='Manufacturer Part ID'),
+                          counter_party_id: str = Query(..., description="Counter party ID"),
                           counter_party_address: str = Query(..., description="The DSP endpoint address of the supplier's connector"),
                           pcf_version: Literal['7.0.0', '8.0.0']  = Query('8.0.0', description='Schema version - 7.0.0 or 8.0.0 supported'),
                           edc_bpn_l: str = Header(..., alias='Edc-Bpn-L'),
@@ -46,6 +47,7 @@ async def get_product_pcf(manufacturer_part_id: str = Path(..., description='Man
                           timeout: int = 80,
                           cache: CacheProvider = Depends(get_cache_provider)):
     return await pcf_check(manufacturer_part_id=manufacturer_part_id,
+                           counter_party_id=counter_party_id,
                            counter_party_address=counter_party_address,
                            pcf_version=pcf_version,
                            edc_bpn_l=edc_bpn_l,
