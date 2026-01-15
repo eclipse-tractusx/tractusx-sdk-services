@@ -40,6 +40,7 @@ All endpoints require authentication (`verify_auth`) and all endpoints needs the
     ]
   }
 }
+```
 
 # Endpoints
 
