@@ -115,18 +115,15 @@ async def fetch_pcf_offer_via_dtr(manufacturerPartId: str,
             )
 
         shell_id = shell_ids[0] if isinstance(shell_ids[0], str) else shell_ids[0].get("id")
-        shell_id_encoded = urllib.parse.quote(shell_id, safe='')
 
         logger.info(f"Fetching shell descriptor: {shell_id}")
+
         shell_response = await make_request(
-            method="GET",
-            url=f"{dataplane_url}/shell-descriptors/{shell_id_encoded}",
-            headers={
-                "Authorization": dtr_key,
-                "Content-Type": "application/json"
-            },
-            timeout=timeout
-        )
+            'GET',
+            f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
+            params={'dataplane_url': dataplane_url, 'aas_id': shell_id, 'limit': 1},
+            headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key}),
+            timeout=timeout)
 
         pcf_submodel = None
 
@@ -220,6 +217,7 @@ async def pcf_check(manufacturer_part_id: str,
     validate_inputs(edc_bpn_l, manufacturer_part_id)
 
     requestId = request_id if request_id else str(uuid.uuid4())
+
     offer = await fetch_pcf_offer_via_dtr(manufacturer_part_id, counter_party_id, counter_party_address, timeout)
 
     if not request_id:
