@@ -56,7 +56,9 @@ def validate_inputs(edc_bpn: str, manufacturer_part_id: str):
     part_id_pattern = re.compile(r"^[A-Za-z0-9\-_]+$")
 
     if manufacturer_part_id and not part_id_pattern.match(manufacturer_part_id):
-        raise HTTPError(Error.REGEX_VALIDATION_FAILED, message="Invalid manufacturerPartId", details="Invalid chars")
+        raise HTTPError(Error.REGEX_VALIDATION_FAILED,
+                        message="Invalid manufacturerPartId",
+                        details="Invalid chars")
 
 
 async def fetch_pcf_offer_via_dtr(manufacturerPartId: str,
@@ -171,27 +173,52 @@ async def send_pcf_responses(counter_party_address: str,
                              timeout: int = 80):
     responses = {}
 
-    url = f"{counter_party_address}/productIds/{product_id}"
-
-    responses['with_requestId'] = await make_request(
-        method="GET",
-        url=url,
-        timeout=timeout,
-        params={"requestId": request_id},
-        headers={"Edc-Bpn": bpn}
+    #TODO: reorganize, so we won't negotiate for DTR twice.. also needs counter_party_id!!!
+    dataplane_url, dtr_key, _ = await get_dtr_access(
+        counter_party_address,
+        'BPNL000000000ISY', # counter_party_id
+        operand_left='http://purl.org/dc/terms/type',
+        operand_right='%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%',
+        limit=1,
+        timeout=timeout
     )
+    url = f"{dataplane_url}/productIds/{product_id}"
 
-    responses['without_requestId'] = await make_request(
-        method="GET",
-        url=url,
-        timeout=timeout,
-        headers={"Edc-Bpn": bpn}
-    )
+    try:
+        responses['with_requestId'] = await make_request(
+            method="GET",
+            url=url,
+            timeout=10,
+            params={"requestId": request_id},
+            headers={"Edc-Bpn": bpn,
+                     "Authorization": f"Bearer {dtr_key}"}
+        )
+
+        responses['without_requestId'] = await make_request(
+            method="GET",
+            url=url,
+            timeout=10,
+            headers={"Edc-Bpn": bpn,
+                     "Authorization": f"Bearer {dtr_key}"}
+        )
+    except HTTPError as e:
+        logger.error('Were not able to send PCF response.')
+
+        raise HTTPError(
+            Error.UNPROCESSABLE_ENTITY,
+            message="Were not able to send PCF response.",
+            details=str(e)
+        )
 
     return responses
 
 
-async def send_pcf_put_request(counter_party_address: str, product_id: str, request_id: str, bpn: str, payload: Dict, timeout: int = 80):
+async def send_pcf_put_request(counter_party_address: str,
+                               product_id: str,
+                               request_id: str,
+                               bpn: str,
+                               payload: Dict,
+                               timeout: int = 80):
     url = f"{counter_party_address}/productIds/{product_id}"
 
     response = await make_request(
@@ -202,6 +229,7 @@ async def send_pcf_put_request(counter_party_address: str, product_id: str, requ
         headers={"Edc-Bpn": bpn},
         json=payload
     )
+
     return response
 
 
@@ -221,7 +249,11 @@ async def pcf_check(manufacturer_part_id: str,
     offer = await fetch_pcf_offer_via_dtr(manufacturer_part_id, counter_party_id, counter_party_address, timeout)
 
     if not request_id:
-        await cache.set(requestId, {"manufacturerPartId": manufacturer_part_id, "offer": offer, "counter_party_address": counter_party_address}, expire=3600)
+        await cache.set(requestId,
+                        {"manufacturerPartId": manufacturer_part_id,
+                         "offer": offer,
+                         "counter_party_address": counter_party_address},
+                        expire=3600)
 
         try:
             if not offer.get("pcf_submodel"):
