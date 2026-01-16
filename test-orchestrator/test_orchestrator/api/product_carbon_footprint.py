@@ -46,6 +46,24 @@ async def get_product_pcf(manufacturer_part_id: str = Path(..., description='Man
                           request_id: Optional[str] = Query(None, description='Optional Request ID'),
                           timeout: int = 80,
                           cache: CacheProvider = Depends(get_cache_provider)):
+    """Retrieve Product Carbon Footprint offer from supplier's Digital Twin Registry.
+    
+    This endpoint initiates the PCF exchange by negotiating access to the supplier's DTR,
+    fetching the PCF submodel offer, and verifying data retrieval capabilities.
+    
+    Args:
+        manufacturer_part_id: Manufacturer part identifier
+        counter_party_id: Supplier's Business Partner Number
+        counter_party_address: Supplier's EDC DSP endpoint
+        pcf_version: PCF schema version (7.0.0 or 8.0.0)
+        edc_bpn_l: Requester's Business Partner Number (from header)
+        request_id: Optional request ID for tracking
+        timeout: Request timeout in seconds
+        cache: Cache provider dependency
+    
+    Returns:
+        Dict with status, manufacturerPartId, requestId, and offer information
+    """
     return await pcf_check(manufacturer_part_id=manufacturer_part_id,
                            counter_party_id=counter_party_id,
                            counter_party_address=counter_party_address,
@@ -63,6 +81,20 @@ async def update_product_pcf(manufacturer_part_id: str = Path(..., description='
                              requestId: str = Query(..., description='Request ID from previous GET call'),
                              edc_bpn: str = Header(..., alias='Edc-Bpn'),
                              cache: CacheProvider = Depends(get_cache_provider)):
+    """Validate incoming PCF data update from supplier.
+    
+    This endpoint receives PCF data from the supplier and validates it against
+    the previously cached request information from the GET call.
+    
+    Args:
+        manufacturer_part_id: Manufacturer part identifier
+        requestId: Request ID from the initial GET request
+        edc_bpn: Supplier's Business Partner Number (from header)
+        cache: Cache provider dependency
+    
+    Returns:
+        Dict with validation status, message, requestId, and manufacturerPartId
+    """
     return await validate_pcf_update(manufacturer_part_id=manufacturer_part_id,
                                      requestId=requestId,
                                      edc_bpn=edc_bpn,

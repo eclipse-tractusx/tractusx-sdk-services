@@ -23,7 +23,6 @@
 import logging
 import re
 import uuid
-import urllib.parse
 
 from typing import Dict, Optional
 
@@ -33,14 +32,22 @@ from test_orchestrator import config
 from test_orchestrator.request_handler import make_request
 from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
-from test_orchestrator.validator import json_validator
 from test_orchestrator.cache import CacheProvider
-from test_orchestrator.base_utils import submodel_schema_finder, pcf_dummy_dataloader, get_dtr_access
+from test_orchestrator.base_utils import pcf_dummy_dataloader, get_dtr_access
 
 logger = logging.getLogger(__name__)
 
 
 def validate_inputs(edc_bpn: str, manufacturer_part_id: str):
+    """Validate BPN and manufacturer part ID format.
+    
+    Args:
+        edc_bpn: Business Partner Number in BPN format
+        manufacturer_part_id: Manufacturer part identifier containing only alphanumeric, dash, and underscore
+    
+    Raises:
+        HTTPError: If edc_bpn is missing, has invalid format, or manufacturer_part_id contains invalid characters
+    """
     if not edc_bpn:
         raise HTTPError(Error.MISSING_REQUIRED_FIELD,
                         message="Missing required header: Edc-Bpn",
@@ -65,6 +72,23 @@ async def fetch_pcf_offer_via_dtr(manufacturerPartId: str,
                                   dataplane_url: str,
                                   dtr_key: str,
                                   timeout: int = 10):
+    """Fetch PCF submodel offer from Digital Twin Registry.
+    
+    Performs a lookup for the manufacturerPartId in DTR, retrieves the shell descriptor,
+    and extracts the PCF submodel information.
+    
+    Args:
+        manufacturerPartId: The manufacturer part identifier to look up
+        dataplane_url: DTR dataplane endpoint URL
+        dtr_key: Authorization key for DTR access
+        timeout: Request timeout in seconds (default: 10)
+    
+    Returns:
+        Dict containing shell descriptor, pcf_submodel, dataplane_url, dtr_key, and dct:type
+    
+    Raises:
+        HTTPError: If no shells found, multiple shells found, or no PCF submodel exists in shell
+    """
     try:
         asset_link_body = [
             {
@@ -156,6 +180,24 @@ async def send_pcf_responses(dataplane_url: str,
                              request_id: str,
                              bpn: str,
                              timeout: int = 80):
+    """Send PCF response requests with and without requestId parameter.
+    
+    Makes two GET requests to verify PCF data retrieval with optional requestId.
+    
+    Args:
+        dataplane_url: Counterparty dataplane endpoint URL
+        dtr_key: Authorization bearer token
+        product_id: Product identifier (manufacturer part ID)
+        request_id: Request identifier for tracking
+        bpn: Business Partner Number for Edc-Bpn header
+        timeout: Request timeout in seconds (default: 80)
+    
+    Returns:
+        Dict with 'with_requestId' and 'without_requestId' response keys
+    
+    Raises:
+        HTTPError: If PCF response cannot be sent
+    """
     responses = {}
 
     url = f"{dataplane_url}/productIds/{product_id}"
@@ -195,6 +237,19 @@ async def send_pcf_put_request(counter_party_address: str,
                                bpn: str,
                                payload: Dict,
                                timeout: int = 80):
+    """Send PCF data via PUT request to counterparty.
+    
+    Args:
+        counter_party_address: Counterparty endpoint address
+        product_id: Product identifier (manufacturer part ID)
+        request_id: Request identifier for tracking
+        bpn: Business Partner Number for Edc-Bpn header
+        payload: PCF data payload to send
+        timeout: Request timeout in seconds (default: 80)
+    
+    Returns:
+        Response from the PUT request
+    """
     url = f"{counter_party_address}/productIds/{product_id}"
 
     response = await make_request(
@@ -218,6 +273,32 @@ async def pcf_check(manufacturer_part_id: str,
                     request_id: Optional[str] = None,
                     cache: Optional[CacheProvider] = None,
                     payload: Optional[Dict] = None):
+    """Execute PCF exchange validation by retrieving offer and sending PCF data.
+    
+    This function orchestrates the complete PCF check workflow:
+    - Validates inputs (BPN and manufacturer part ID)
+    - Negotiates DTR access via EDC
+    - Fetches PCF offer from Digital Twin Registry
+    - If request_id is None: caches offer and sends GET requests to verify retrieval
+    - If request_id exists: sends dummy PCF data via PUT request
+    
+    Args:
+        manufacturer_part_id: Manufacturer part identifier
+        counter_party_id: Business Partner Number of the counterparty
+        counter_party_address: DSP endpoint address of counterparty's connector
+        pcf_version: PCF schema version (e.g., '7.0.0' or '8.0.0')
+        edc_bpn_l: Business Partner Number from request header
+        timeout: Request timeout in seconds
+        request_id: Optional request identifier for tracking existing requests
+        cache: Cache provider instance for storing request data
+        payload: Optional PCF payload
+    
+    Returns:
+        Dict containing status, manufacturerPartId, requestId, and offer details
+    
+    Raises:
+        HTTPError: If validation fails, DTR access fails, or PCF submodel is not found
+    """
     validate_inputs(edc_bpn_l, manufacturer_part_id)
 
     requestId = request_id if request_id else str(uuid.uuid4())
@@ -302,6 +383,25 @@ async def validate_pcf_update(manufacturer_part_id: str,
                               requestId: str,
                               edc_bpn: str,
                               cache: CacheProvider):
+    """Validate incoming PCF update request against cached data.
+    
+    Validates that the PCF PUT request contains correct BPN format,
+    manufacturer part ID format, and matches cached request data.
+    After successful validation, deletes the cache entry.
+    
+    Args:
+        manufacturer_part_id: Manufacturer part identifier from request path
+        requestId: Request identifier from query parameter
+        edc_bpn: Business Partner Number from request header
+        cache: Cache provider instance for retrieving cached data
+    
+    Returns:
+        Dict containing status, message, requestId, and manufacturerPartId
+    
+    Raises:
+        HTTPError: If BPN format is invalid, manufacturer part ID contains invalid characters,
+                  requestId not found in cache, or manufacturerPartId mismatch
+    """
     bpn_pattern = re.compile(r'^BPN[LSA][A-Z0-9]{10}[A-Z0-9]{2}$')
 
     if not bpn_pattern.match(edc_bpn):
@@ -346,6 +446,15 @@ async def validate_pcf_update(manufacturer_part_id: str,
 
 
 async def delete_cache_entry(requestId: str, cache: CacheProvider):
+    """Delete cache entry for the given request ID.
+    
+    Attempts to delete cache entry and logs warning if deletion fails.
+    Does not raise exception on failure.
+    
+    Args:
+        requestId: Request identifier to delete from cache
+        cache: Cache provider instance
+    """
     try:
         await cache.delete(requestId)
     except Exception as e:
