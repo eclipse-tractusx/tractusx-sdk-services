@@ -97,13 +97,11 @@ async def fetch_pcf_offer_via_dtr(manufacturerPartId: str,
         ]
 
         lookup_response = await make_request(
-            method="POST",
-            url=f"{dataplane_url}/lookup/shellsByAssetLink",
+            "POST",
+            f"{config.DT_PULL_SERVICE_ADDRESS}/dtr/lookup/",
+            params={'dataplane_url': dataplane_url},
             json=asset_link_body,
-            headers={
-                "Authorization": dtr_key,
-                "Content-Type": "application/json"
-            },
+            headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key}),
             timeout=timeout
         )
 
