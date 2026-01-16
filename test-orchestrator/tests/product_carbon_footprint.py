@@ -21,7 +21,7 @@
 # *************************************************************
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 from test_orchestrator.utils.product_carbon_footprint import (
     validate_inputs,
     fetch_pcf_offer_via_dtr,
@@ -32,13 +32,10 @@ from test_orchestrator.utils.product_carbon_footprint import (
     delete_cache_entry
 )
 from test_orchestrator.errors import HTTPError, Error
-from unittest.mock import AsyncMock, patch
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from fastapi.responses import JSONResponse
-import pytest
 from test_orchestrator.api.product_carbon_footprint import router as pcf_router
-from test_orchestrator.errors import HTTPError, Error
 
 """Tests for Product Carbon Footprint validation functions
 """
@@ -83,7 +80,7 @@ def test_validate_inputs_success():
 async def test_fetch_pcf_offer_no_shells_found(mock_make_request):
     """Should raise error when no shells found in DTR."""
     mock_make_request.return_value = []
-    
+
     with pytest.raises(HTTPError) as exc:
         await fetch_pcf_offer_via_dtr(
             manufacturerPartId="PART123",
@@ -100,7 +97,7 @@ async def test_fetch_pcf_offer_no_shells_found(mock_make_request):
 async def test_fetch_pcf_offer_multiple_shells(mock_make_request):
     """Should raise error when multiple shells found."""
     mock_make_request.return_value = ["shell1", "shell2", "shell3"]
-    
+
     with pytest.raises(HTTPError) as exc:
         await fetch_pcf_offer_via_dtr(
             manufacturerPartId="PART123",
@@ -131,7 +128,7 @@ async def test_fetch_pcf_offer_no_pcf_submodel(mock_make_request, mock_headers):
         }
     ]
     mock_headers.return_value = {"Authorization": "Bearer token"}
-    
+
     with pytest.raises(HTTPError) as exc:
         await fetch_pcf_offer_via_dtr(
             manufacturerPartId="PART123",
@@ -153,7 +150,7 @@ async def test_fetch_pcf_offer_success(mock_make_request, mock_headers):
         },
         "endpoints": [{"interface": "SUBMODEL-3.0"}]
     }
-    
+
     mock_make_request.side_effect = [
         ["urn:uuid:shell-123"],
         {
@@ -162,13 +159,13 @@ async def test_fetch_pcf_offer_success(mock_make_request, mock_headers):
         }
     ]
     mock_headers.return_value = {"Authorization": "Bearer token"}
-    
+
     result = await fetch_pcf_offer_via_dtr(
         manufacturerPartId="PART123",
         dataplane_url="https://dataplane.example.com",
         dtr_key="api-key"
     )
-    
+
     assert result["pcf_submodel"] == pcf_submodel
     assert result["dataplane_url"] == "https://dataplane.example.com"
     assert result["dtr_key"] == "api-key"
@@ -186,7 +183,7 @@ async def test_send_pcf_responses_success(mock_make_request):
         {"data": "with_requestId"},
         {"data": "without_requestId"}
     ]
-    
+
     result = await send_pcf_responses(
         dataplane_url="https://dataplane.example.com",
         dtr_key="api-key",
@@ -195,7 +192,7 @@ async def test_send_pcf_responses_success(mock_make_request):
         bpn="BPNL000000000000",
         timeout=80
     )
-    
+
     assert result["with_requestId"] == {"data": "with_requestId"}
     assert result["without_requestId"] == {"data": "without_requestId"}
     assert mock_make_request.call_count == 2
@@ -210,7 +207,7 @@ async def test_send_pcf_responses_failure(mock_make_request):
         "Connection failed",
         "Network error"
     )
-    
+
     with pytest.raises(HTTPError) as exc:
         await send_pcf_responses(
             dataplane_url="https://dataplane.example.com",
@@ -230,7 +227,7 @@ async def test_send_pcf_responses_failure(mock_make_request):
 async def test_send_pcf_put_request_success(mock_make_request):
     """Should successfully send PCF PUT request."""
     mock_make_request.return_value = {"status": "accepted"}
-    
+
     payload = {"id": "pcf-123", "pcfData": {}}
     result = await send_pcf_put_request(
         counter_party_address="https://supplier.example.com",
@@ -240,7 +237,7 @@ async def test_send_pcf_put_request_success(mock_make_request):
         payload=payload,
         timeout=80
     )
-    
+
     assert result == {"status": "accepted"}
     mock_make_request.assert_awaited_once()
     call_args = mock_make_request.call_args
@@ -264,9 +261,9 @@ async def test_pcf_check_without_request_id(mock_get_dtr, mock_fetch_offer, mock
         "dtr_key": "api-key"
     }
     mock_send_responses.return_value = {"with_requestId": {}, "without_requestId": {}}
-    
+
     mock_cache = AsyncMock()
-    
+
     result = await pcf_check(
         manufacturer_part_id="PART123",
         counter_party_id="BPNL111111111111",
@@ -277,7 +274,7 @@ async def test_pcf_check_without_request_id(mock_get_dtr, mock_fetch_offer, mock
         request_id=None,
         cache=mock_cache
     )
-    
+
     assert result["status"] == "ok"
     assert result["manufacturerPartId"] == "PART123"
     assert "requestId" in result
@@ -305,7 +302,7 @@ async def test_pcf_check_with_request_id(mock_get_dtr, mock_fetch_offer, mock_du
         "pcfData": {}
     }
     mock_make_request.return_value = {"status": "ok"}
-    
+
     result = await pcf_check(
         manufacturer_part_id="PART123",
         counter_party_id="BPNL111111111111",
@@ -316,7 +313,7 @@ async def test_pcf_check_with_request_id(mock_get_dtr, mock_fetch_offer, mock_du
         request_id="req-existing-123",
         cache=None
     )
-    
+
     assert result["status"] == "ok"
     assert result["requestId"] == "req-existing-123"
     mock_dummy_loader.assert_awaited_once()
@@ -328,7 +325,7 @@ async def test_pcf_check_with_request_id(mock_get_dtr, mock_fetch_offer, mock_du
 async def test_pcf_check_dtr_access_failed(mock_get_dtr):
     """Should raise error when DTR access negotiation fails."""
     mock_get_dtr.return_value = (None, None, None)
-    
+
     with pytest.raises(HTTPError) as exc:
         await pcf_check(
             manufacturer_part_id="PART123",
@@ -365,7 +362,7 @@ async def test_pcf_check_invalid_bpn():
 async def test_validate_pcf_update_invalid_bpn():
     """Should raise error when BPN format is invalid."""
     mock_cache = AsyncMock()
-    
+
     with pytest.raises(HTTPError) as exc:
         await validate_pcf_update(
             manufacturer_part_id="PART123",
@@ -381,7 +378,7 @@ async def test_validate_pcf_update_invalid_bpn():
 async def test_validate_pcf_update_invalid_part_id():
     """Should raise error when manufacturer_part_id contains invalid characters."""
     mock_cache = AsyncMock()
-    
+
     with pytest.raises(HTTPError) as exc:
         await validate_pcf_update(
             manufacturer_part_id="PART@#$",
@@ -398,7 +395,7 @@ async def test_validate_pcf_update_request_not_found():
     """Should raise error when requestId not found in cache."""
     mock_cache = AsyncMock()
     mock_cache.get.return_value = None
-    
+
     with pytest.raises(HTTPError) as exc:
         await validate_pcf_update(
             manufacturer_part_id="PART123",
@@ -415,7 +412,7 @@ async def test_validate_pcf_update_part_id_mismatch():
     """Should raise error when manufacturerPartId doesn't match cached data."""
     mock_cache = AsyncMock()
     mock_cache.get.return_value = {"manufacturerPartId": "PART999"}
-    
+
     with pytest.raises(HTTPError) as exc:
         await validate_pcf_update(
             manufacturer_part_id="PART123",
@@ -436,14 +433,14 @@ async def test_validate_pcf_update_success(mock_delete_cache):
         "manufacturerPartId": "PART123",
         "offer": {}
     }
-    
+
     result = await validate_pcf_update(
         manufacturer_part_id="PART123",
         requestId="req-456",
         edc_bpn="BPNL000000000000",
         cache=mock_cache
     )
-    
+
     assert result["status"] == "ok"
     assert result["requestId"] == "req-456"
     assert result["manufacturerPartId"] == "PART123"
@@ -456,9 +453,9 @@ async def test_validate_pcf_update_success(mock_delete_cache):
 async def test_delete_cache_entry_success():
     """Should successfully delete cache entry."""
     mock_cache = AsyncMock()
-    
+
     await delete_cache_entry("req-456", mock_cache)
-    
+
     mock_cache.delete.assert_awaited_once_with("req-456")
 
 
@@ -467,10 +464,10 @@ async def test_delete_cache_entry_failure_no_exception():
     """Should log warning but not raise exception when deletion fails."""
     mock_cache = AsyncMock()
     mock_cache.delete.side_effect = Exception("Cache error")
-    
+
     # Should not raise exception
     await delete_cache_entry("req-456", mock_cache)
-    
+
     mock_cache.delete.assert_awaited_once()
 
 
@@ -556,7 +553,7 @@ def test_get_product_pcf_success(mock_verify_auth, mock_cache_provider, mock_pcf
         "requestId": DUMMY_REQUEST_ID,
         "offer": DUMMY_PCF_OFFER
     }
-    
+
     response = client.get(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
         params={
@@ -566,13 +563,13 @@ def test_get_product_pcf_success(mock_verify_auth, mock_cache_provider, mock_pcf
         },
         headers={"Edc-Bpn-L": DUMMY_EDC_BPN_L}
     )
-    
+
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
     assert response.json()["manufacturerPartId"] == DUMMY_MANUFACTURER_PART_ID
     assert "requestId" in response.json()
     assert "offer" in response.json()
-    
+
     mock_pcf_check.assert_awaited_once()
     call_kwargs = mock_pcf_check.call_args.kwargs
     assert call_kwargs["manufacturer_part_id"] == DUMMY_MANUFACTURER_PART_ID
@@ -592,7 +589,7 @@ def test_get_product_pcf_with_request_id(mock_verify_auth, mock_cache_provider, 
         "requestId": DUMMY_REQUEST_ID,
         "offer": DUMMY_PCF_OFFER
     }
-    
+
     response = client.get(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
         params={
@@ -603,10 +600,10 @@ def test_get_product_pcf_with_request_id(mock_verify_auth, mock_cache_provider, 
         },
         headers={"Edc-Bpn-L": DUMMY_EDC_BPN_L}
     )
-    
+
     assert response.status_code == 200
     assert response.json()["requestId"] == DUMMY_REQUEST_ID
-    
+
     call_kwargs = mock_pcf_check.call_args.kwargs
     assert call_kwargs["request_id"] == DUMMY_REQUEST_ID
 
@@ -621,7 +618,7 @@ def test_get_product_pcf_version_7(mock_verify_auth, mock_cache_provider, mock_p
         "requestId": DUMMY_REQUEST_ID,
         "offer": DUMMY_PCF_OFFER
     }
-    
+
     response = client.get(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
         params={
@@ -631,7 +628,7 @@ def test_get_product_pcf_version_7(mock_verify_auth, mock_cache_provider, mock_p
         },
         headers={"Edc-Bpn-L": DUMMY_EDC_BPN_L}
     )
-    
+
     assert response.status_code == 200
     call_kwargs = mock_pcf_check.call_args.kwargs
     assert call_kwargs["pcf_version"] == "7.0.0"
@@ -647,7 +644,7 @@ def test_get_product_pcf_custom_timeout(mock_verify_auth, mock_cache_provider, m
         "requestId": DUMMY_REQUEST_ID,
         "offer": DUMMY_PCF_OFFER
     }
-    
+
     response = client.get(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
         params={
@@ -657,7 +654,7 @@ def test_get_product_pcf_custom_timeout(mock_verify_auth, mock_cache_provider, m
         },
         headers={"Edc-Bpn-L": DUMMY_EDC_BPN_L}
     )
-    
+
     assert response.status_code == 200
     call_kwargs = mock_pcf_check.call_args.kwargs
     assert call_kwargs["timeout"] == 120
@@ -674,7 +671,7 @@ def test_get_product_pcf_missing_header(mock_verify_auth, mock_cache_provider, m
             "counter_party_address": DUMMY_COUNTER_PARTY_ADDRESS
         }
     )
-    
+
     assert response.status_code == 422  # Validation error from FastAPI
 
 
@@ -686,7 +683,7 @@ def test_get_product_pcf_missing_query_params(mock_verify_auth, mock_cache_provi
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
         headers={"Edc-Bpn-L": DUMMY_EDC_BPN_L}
     )
-    
+
     assert response.status_code == 422  # Validation error
 
 
@@ -700,7 +697,7 @@ def test_get_product_pcf_invalid_bpn(mock_verify_auth, mock_cache_provider, mock
         "Invalid format"
     )
     mock_pcf_check.side_effect = error
-    
+
     response = client.get(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
         params={
@@ -709,7 +706,7 @@ def test_get_product_pcf_invalid_bpn(mock_verify_auth, mock_cache_provider, mock
         },
         headers={"Edc-Bpn-L": "INVALID"}
     )
-    
+
     assert response.status_code == error.status_code
     assert response.json() == error.json
 
@@ -724,7 +721,7 @@ def test_get_product_pcf_dtr_access_failed(mock_verify_auth, mock_cache_provider
         "No dataplane URL or DTR key received"
     )
     mock_pcf_check.side_effect = error
-    
+
     response = client.get(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
         params={
@@ -733,7 +730,7 @@ def test_get_product_pcf_dtr_access_failed(mock_verify_auth, mock_cache_provider
         },
         headers={"Edc-Bpn-L": DUMMY_EDC_BPN_L}
     )
-    
+
     assert response.status_code == error.status_code
     assert response.json() == error.json
 
@@ -748,7 +745,7 @@ def test_get_product_pcf_no_shells_found(mock_verify_auth, mock_cache_provider, 
         f"No shell for manufacturerPartId: {DUMMY_MANUFACTURER_PART_ID}"
     )
     mock_pcf_check.side_effect = error
-    
+
     response = client.get(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
         params={
@@ -757,7 +754,7 @@ def test_get_product_pcf_no_shells_found(mock_verify_auth, mock_cache_provider, 
         },
         headers={"Edc-Bpn-L": DUMMY_EDC_BPN_L}
     )
-    
+
     assert response.status_code == error.status_code
     assert response.json()["error"] == "NO_SHELLS_FOUND"
 
@@ -772,7 +769,7 @@ def test_get_product_pcf_no_pcf_submodel(mock_verify_auth, mock_cache_provider, 
         "Shell exists but no PCF submodel descriptor"
     )
     mock_pcf_check.side_effect = error
-    
+
     response = client.get(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
         params={
@@ -781,7 +778,7 @@ def test_get_product_pcf_no_pcf_submodel(mock_verify_auth, mock_cache_provider, 
         },
         headers={"Edc-Bpn-L": DUMMY_EDC_BPN_L}
     )
-    
+
     assert response.status_code == error.status_code
     assert "No PCF submodel found" in response.json()["message"]
 
@@ -798,18 +795,18 @@ def test_update_product_pcf_success(mock_verify_auth, mock_cache_provider, mock_
         "requestId": DUMMY_REQUEST_ID,
         "manufacturerPartId": DUMMY_MANUFACTURER_PART_ID
     }
-    
+
     response = client.put(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
         params={"requestId": DUMMY_REQUEST_ID},
         headers={"Edc-Bpn": DUMMY_COUNTER_PARTY_ID}
     )
-    
+
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
     assert response.json()["requestId"] == DUMMY_REQUEST_ID
     assert response.json()["manufacturerPartId"] == DUMMY_MANUFACTURER_PART_ID
-    
+
     mock_validate_pcf_update.assert_awaited_once()
     call_kwargs = mock_validate_pcf_update.call_args.kwargs
     assert call_kwargs["manufacturer_part_id"] == DUMMY_MANUFACTURER_PART_ID
@@ -825,7 +822,7 @@ def test_update_product_pcf_missing_request_id(mock_verify_auth, mock_cache_prov
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
         headers={"Edc-Bpn": DUMMY_COUNTER_PARTY_ID}
     )
-    
+
     assert response.status_code == 422  # Validation error
 
 
@@ -837,7 +834,7 @@ def test_update_product_pcf_missing_header(mock_verify_auth, mock_cache_provider
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
         params={"requestId": DUMMY_REQUEST_ID}
     )
-    
+
     assert response.status_code == 422  # Validation error
 
 
@@ -851,13 +848,13 @@ def test_update_product_pcf_invalid_bpn(mock_verify_auth, mock_cache_provider, m
         "Expected format like BPNL000000000000"
     )
     mock_validate_pcf_update.side_effect = error
-    
+
     response = client.put(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
         params={"requestId": DUMMY_REQUEST_ID},
         headers={"Edc-Bpn": "INVALID"}
     )
-    
+
     assert response.status_code == error.status_code
     assert response.json() == error.json
 
@@ -872,13 +869,13 @@ def test_update_product_pcf_request_not_found(mock_verify_auth, mock_cache_provi
         "The requestId may have expired or is invalid"
     )
     mock_validate_pcf_update.side_effect = error
-    
+
     response = client.put(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
         params={"requestId": DUMMY_REQUEST_ID},
         headers={"Edc-Bpn": DUMMY_COUNTER_PARTY_ID}
     )
-    
+
     assert response.status_code == error.status_code
     assert response.json()["error"] == "NOT_FOUND"
     assert "No cached request found" in response.json()["message"]
@@ -894,13 +891,13 @@ def test_update_product_pcf_part_id_mismatch(mock_verify_auth, mock_cache_provid
         f"Expected PART-999, got {DUMMY_MANUFACTURER_PART_ID}"
     )
     mock_validate_pcf_update.side_effect = error
-    
+
     response = client.put(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
         params={"requestId": DUMMY_REQUEST_ID},
         headers={"Edc-Bpn": DUMMY_COUNTER_PARTY_ID}
     )
-    
+
     assert response.status_code == error.status_code
     assert response.json()["error"] == "UNPROCESSABLE_ENTITY"
     assert "ManufacturerPartId mismatch" in response.json()["message"]
@@ -916,14 +913,14 @@ def test_update_product_pcf_invalid_part_id_chars(mock_verify_auth, mock_cache_p
         "manufacturerPartId contains invalid characters"
     )
     mock_validate_pcf_update.side_effect = error
-    
+
     invalid_part_id = "PART@#$%"
     response = client.put(
         f"/productIds/{invalid_part_id}",
         params={"requestId": DUMMY_REQUEST_ID},
         headers={"Edc-Bpn": DUMMY_COUNTER_PARTY_ID}
     )
-    
+
     assert response.status_code == error.status_code
     assert "invalid characters" in response.json()["message"]
 
@@ -941,7 +938,7 @@ def test_get_then_put_workflow(mock_verify_auth, mock_cache_provider, mock_pcf_c
         "requestId": DUMMY_REQUEST_ID,
         "offer": DUMMY_PCF_OFFER
     }
-    
+
     get_response = client.get(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
         params={
@@ -950,10 +947,10 @@ def test_get_then_put_workflow(mock_verify_auth, mock_cache_provider, mock_pcf_c
         },
         headers={"Edc-Bpn-L": DUMMY_EDC_BPN_L}
     )
-    
+
     assert get_response.status_code == 200
     request_id = get_response.json()["requestId"]
-    
+
     # Step 2: PUT request with received requestId
     mock_validate_pcf_update.return_value = {
         "status": "ok",
@@ -961,13 +958,13 @@ def test_get_then_put_workflow(mock_verify_auth, mock_cache_provider, mock_pcf_c
         "requestId": request_id,
         "manufacturerPartId": DUMMY_MANUFACTURER_PART_ID
     }
-    
+
     put_response = client.put(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
         params={"requestId": request_id},
         headers={"Edc-Bpn": DUMMY_COUNTER_PARTY_ID}
     )
-    
+
     assert put_response.status_code == 200
     assert put_response.json()["status"] == "ok"
     assert put_response.json()["requestId"] == request_id

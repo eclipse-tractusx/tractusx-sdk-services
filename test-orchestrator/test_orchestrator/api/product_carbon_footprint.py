@@ -22,7 +22,7 @@
 
 import logging
 from typing import Dict, Literal, Optional
-from fastapi import APIRouter, Depends, Query, Header, Path, Body
+from fastapi import APIRouter, Depends, Query, Header, Path
 
 from test_orchestrator.auth import verify_auth
 from test_orchestrator.cache import get_cache_provider, CacheProvider
