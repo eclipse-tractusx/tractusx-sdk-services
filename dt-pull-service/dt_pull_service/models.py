@@ -628,3 +628,37 @@ class DtrHandler:
                                     f'Original error: {result.status_code}, {result.text}')
 
         return result.json()
+
+
+    def lookup(self, payload: Dict):
+        """
+        Performs a shell lookup in the partner's Digital Twin Registry (DTR) using asset link information.
+        This method sends a POST request to the `lookup/shellsByAssetLink` endpoint of the partner DTR,
+        using the provided payload to identify the relevant shell descriptor.
+
+        :param payload: A dictionary containing asset link information used for the lookup.
+        :return: A JSON object representing the shell descriptor retrieved from the partner DTR.
+        :raises HTTPError: Raised if the request encounters errors such as authentication issues,
+                           server unavailability, or unknown errors.
+        """
+
+        headers = {
+            'Authorization': self.partner_dtr_secret
+        }
+
+        result = requests.request(
+            method="POST",
+            url=f"{self.partner_dtr_addr}/lookup/shellsByAssetLink",
+            json=payload,
+            headers=headers,
+            timeout=15
+        )
+
+        if result.status_code != 200:
+            logger.error(f'Lookup based on the given payload failed: {result.status_code}, {result.text}')
+
+            raise HTTPError(Error.INTERNAL_SERVER_ERROR,
+                            message='Lookup based on the given payload failed',
+                            details=f'Original error: {result.status_code}, {result.text}')
+
+        return result.json()
