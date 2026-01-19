@@ -75,12 +75,17 @@ def validate_notification_payload(payload: Dict):
 
     uuid_pattern = re.compile(r'^(urn:uuid:)?[0-9a-fA-F-]{36}$')
     bpn_pattern = re.compile(r'^BPN[LSA][A-Z0-9]{10}[A-Z0-9]{2}$')
+    context_pattern = re.compile(r'^IndustryCore-DigitalTwinEvent-Create:\d+\.\d+\.\d+$')
 
     for key in ['messageId', 'relatedMessageId']:
         value = header.get(key)
 
         if value and not uuid_pattern.match(value):
             errors.append(f'Invalid UUID format in header.{key}: {value}')
+
+    context_value = header.get('context')
+    if context_value and not context_pattern.match(context_value):
+        errors.append(f'Invalid context format in header: {context_value} (expected format: IndustryCore-DigitalTwinEvent-Create:X.Y.Z)')
 
     for key in ['sentDateTime', 'expectedResponseBy']:
         value = header.get(key)

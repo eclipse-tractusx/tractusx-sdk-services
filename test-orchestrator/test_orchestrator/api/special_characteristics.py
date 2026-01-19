@@ -45,6 +45,7 @@ import logging
 from typing import Dict
 from fastapi import APIRouter, Depends
 
+from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.auth import verify_auth
 from test_orchestrator.base_utils import submodel_validation
 from test_orchestrator.utils.special_characteristics import (
@@ -76,48 +77,6 @@ async def notification_validation(payload: Dict,
     """
 
     return validate_notification_payload(payload)
-
-
-@router.post('/data-transfer/',
-             response_model=Dict,
-             dependencies=[Depends(verify_auth)])
-async def data_transfer(payload: Dict,
-                        counter_party_address: str,
-                        counter_party_id: str,
-                        timeout: int = 80,
-                        max_events: int = 2):
-    """
-    Endpoint to validate a notification payload and verify Digital Twin presence
-    in the partner's Digital Twin Registry (DTR).
-
-    Steps performed:
-    1. Validate the incoming notification payload structure and event fields.
-    2. Resolve the partner's DTR endpoint and obtain access credentials.
-    3. For each event, retrieve the corresponding Digital Twin shell descriptor
-    via the DT Pull Service.
-    4. Raise an error if any Digital Twin cannot be retrieved.
-    5. Return a confirmation message if all lookups succeed.
-
-    - :payload (Dict): Notification payload containing header, content, and events.
-    - :param counter_party_address: Address of the partner's DSP endpoint
-                                    (must end with api/v1/dsp for DSP version 2024-01).
-    - :param counter_party_id: Identifier of the test subject operating the connector.
-    - :timeout (int, optional): Timeout for DTR and DT Pull Service requests. Defaults to 80.
-    - :max_events (int, optional): Maximum allowed number of events. Defaults to 2.
-
-    return: a json with a success message if Digital Twin resolution succeeds.
-    """
-
-    validate_notification_payload(payload)
-
-    _, policy_validation = await process_notification_and_retrieve_dtr(payload=payload,
-                                                                       counter_party_address=counter_party_address,
-                                                                       counter_party_id=counter_party_id,
-                                                                       timeout=timeout,
-                                                                       max_events=max_events)
-
-    return {'message': 'DT linkage & data transfer test is completed succesfully.',
-            'policy_validation_message': policy_validation}
 
 
 @router.post('/schema-validation/',
@@ -160,7 +119,18 @@ async def schema_validation(payload: Dict,
     submodel_validations = []
 
     for semantic_id, shell_descriptor in zip(semantic_ids, shell_descriptors):
-        submodel_validations.append(await submodel_validation(counter_party_id, shell_descriptor, semantic_id))
+        try:
+            result = await submodel_validation(counter_party_id, shell_descriptor, semantic_id)
+            submodel_validations.append(result)
+        except HTTPError as e:
+            if e.error_code == Error.SUBMODEL_DESCRIPTOR_NOT_FOUND:
+                raise HTTPError(
+                    Error.SUBMODEL_DESCRIPTOR_NOT_FOUND,
+                    message=f"The submodel descriptor for semanticID {semantic_id} could not be found in the DTR.",
+                    details="Make sure the submodel is registered accordingly and visible for the testbed BPNL."
+                )
+            else:
+                raise
 
     return {'message': 'Special Characteristics validation is completed.',
             'submodel_validation_message': submodel_validations,

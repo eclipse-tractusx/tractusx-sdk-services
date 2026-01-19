@@ -1,6 +1,6 @@
 # Special Characteristics Service Documentation
 
-The Special Characteristics service provides a set of API endpoints for validating Catena-X notification payloads, orchestrating data-transfer checks, and performing schema-based validation against Digital Twin Registry (DTR) data.
+The Special Characteristics service provides a set of API endpoints for validating Catena-X notification payloads and performing schema-based validation against Digital Twin Registry (DTR) data.
 
 All endpoints are exposed under the following base prefix: `/test-cases/special-characteristics/v1`
 
@@ -64,31 +64,6 @@ A Catena-X notification payload containing:
 ```json
 { "status": "ok" }
 ```
-
-## POST `/data-transfer/`
-
-Orchestrates validation steps and checks if the Digital Twin referenced in the notification exists in the partner’s DTR.
-
-### Functionality
-
-1. Validates the notification payload structure.
-2. Resolves the partner's DTR URL and token.
-3. Fetches the Digital Twin shell descriptor for each event’s catenaXId.
-4. Ensures all referenced Digital Twins exist.
-
-### Parameters
-
-- `counter_party_address`: Partner connector DSP address.
-- `counter_party_id`: Partner identifier.
-- `timeout`: External request timeout (default 80).
-- `max_events`: Maximum allowed number of events (default 2).
-
-### Response
-```json
-{ "message": "DT linkage & data transfer test is completed succesfully." }
-```
-
-Raises `HTTPError` if the DTR lookup fails or a referenced Digital Twin does not exist.
 
 ## POST `/schema-validation/`
 
