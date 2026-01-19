@@ -26,6 +26,10 @@ version = "0.1.0"
 description = "Testbed for Catena-X boarding"
 authors = ["Dénes Surman (dddenes) <surmandenes@yahoo.com>"]
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.2"
+pytest-asyncio = "^1.3.0"
+
 [project]
 name = "test_orchestrator"
 version = "0.1.2"
