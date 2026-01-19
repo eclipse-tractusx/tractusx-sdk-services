@@ -186,7 +186,7 @@ async def get_partner_dtr(counter_party_address: str, counter_party_id: str, tim
 
     if not dtr_url_shell:
         raise HTTPError(
-            Error.NOT_FOUND,
+            Error.ASSET_NOT_FOUND,
             message='Partner DTR endpoint not found',
             details='DT Pull Service did not return a DTR endpoint for the partner'
         )
@@ -218,6 +218,7 @@ async def validate_events_in_dtr(events: list, dtr_url_shell: str, dtr_token: st
 
     for event in events:
         aas_id = event.get('catenaXId')
+        shell_descriptors_spec = None
         try:
             shell_descriptors_spec = await make_request(
                 'GET',
@@ -232,7 +233,7 @@ async def validate_events_in_dtr(events: list, dtr_url_shell: str, dtr_token: st
         except Exception as exc:  # W: Catching too general exception Exception
             errors.append(f'Unexpected error for {aas_id}: {str(exc)}')
 
-        if 'errors' in shell_descriptors_spec:
+        if shell_descriptors_spec and 'errors' in shell_descriptors_spec:
             errors.append(f'The AAS ID {aas_id} could not be found in the DTR')
 
     if errors:
