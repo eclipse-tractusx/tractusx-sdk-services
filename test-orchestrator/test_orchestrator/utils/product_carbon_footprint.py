@@ -88,14 +88,15 @@ async def fetch_pcf_offer_via_dtr(manufacturerPartId: str,
     Raises:
         HTTPError: If no shells found, multiple shells found, or no PCF submodel exists in shell
     """
-    try:
-        asset_link_body = [
-            {
-                "name": "manufacturerPartId",
-                "value": manufacturerPartId
-            }
-        ]
 
+    asset_link_body = [
+        {
+            "name": "manufacturerPartId",
+            "value": manufacturerPartId
+        }
+    ]
+
+    try:
         lookup_response = await make_request(
             "POST",
             f"{config.DT_PULL_SERVICE_ADDRESS}/dtr/lookup/",
@@ -203,18 +204,18 @@ async def send_pcf_responses(dataplane_url: str,
         responses['with_requestId'] = await make_request(
             method="GET",
             url=url,
-            timeout=10,
+            timeout=20,
             params={"requestId": request_id},
             headers={"Edc-Bpn": bpn,
-                     "Authorization": f"Bearer {dtr_key}"}
+                     "Authorization": dtr_key}
         )
 
         responses['without_requestId'] = await make_request(
             method="GET",
             url=url,
-            timeout=10,
+            timeout=20,
             headers={"Edc-Bpn": bpn,
-                     "Authorization": f"Bearer {dtr_key}"}
+                     "Authorization": dtr_key}
         )
     except HTTPError as e:
         logger.error('Were not able to send PCF response.')
@@ -299,30 +300,32 @@ async def pcf_check(manufacturer_part_id: str,
     validate_inputs(edc_bpn_l, manufacturer_part_id)
 
     requestId = request_id if request_id else str(uuid.uuid4())
-
-    dataplane_url, dtr_key, _ = await get_dtr_access(
-            counter_party_address,
-            counter_party_id,
-            operand_left='http://purl.org/dc/terms/type',
-            operand_right='%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%',
-            limit=1,
-            timeout=timeout
-        )
-
-    if not dataplane_url or not dtr_key:
-        raise HTTPError(
-            Error.CATALOG_FETCH_FAILED,
-            message="DTR access negotiation failed",
-            details="No dataplane URL or DTR key received"
-        )
-
-    offer = await fetch_pcf_offer_via_dtr(
-        manufacturerPartId=manufacturer_part_id,
-        dataplane_url=dataplane_url,
-        dtr_key=dtr_key,
-        timeout=timeout)
+    offer = None
 
     if not request_id:
+        dataplane_url, dtr_key, _ = await get_dtr_access(
+                counter_party_address,
+                counter_party_id,
+                operand_left='http://purl.org/dc/terms/type',
+                operand_right='%https://w3id.org/catenax/taxonomy#PcfExchange%',
+                limit=1,
+                timeout=timeout
+            )
+
+        await send_pcf_responses(
+            dataplane_url=dataplane_url,
+            dtr_key=dtr_key,
+            product_id=manufacturer_part_id,
+            request_id=requestId,
+            timeout=timeout,
+            bpn=edc_bpn_l
+        )
+    else:
+        offer = await fetch_pcf_offer_via_dtr(
+            manufacturerPartId=manufacturer_part_id,
+            dataplane_url=dataplane_url,
+            dtr_key=dtr_key,
+            timeout=timeout)
         await cache.set(requestId,
                         {"manufacturerPartId": manufacturer_part_id,
                          "offer": offer,
@@ -343,15 +346,22 @@ async def pcf_check(manufacturer_part_id: str,
                 details=str(e)
             )
 
-        await send_pcf_responses(
-            dataplane_url=dataplane_url,
-            dtr_key=dtr_key,
-            product_id=manufacturer_part_id,
-            request_id=requestId,
-            timeout=timeout,
-            bpn=edc_bpn_l
-        )
-    else:
+        dataplane_url, dtr_key, _ = await get_dtr_access(
+                counter_party_address,
+                counter_party_id,
+                operand_left='http://purl.org/dc/terms/type',
+                operand_right='%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%',
+                limit=1,
+                timeout=timeout
+            )
+
+        if not dataplane_url or not dtr_key:
+            raise HTTPError(
+                Error.CATALOG_FETCH_FAILED,
+                message="DTR access negotiation failed",
+                details="No dataplane URL or DTR key received"
+            )
+
         semanticid = f"urn:bamm:io.catenax.pcf:{pcf_version}#Pcf"
         dummy_pcf = await pcf_dummy_dataloader(semanticid)
         dummy_pcf['productIds'] = [f"urn:mycompany.com:product-id:{manufacturer_part_id}"]
