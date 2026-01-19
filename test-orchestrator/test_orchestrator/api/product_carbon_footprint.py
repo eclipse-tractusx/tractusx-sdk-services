@@ -40,8 +40,10 @@ logger = logging.getLogger(__name__)
             dependencies=[Depends(verify_auth)])
 async def get_product_pcf(manufacturer_part_id: str = Path(..., description='Manufacturer Part ID'),
                           counter_party_id: str = Query(..., description="Counter party ID"),
-                          counter_party_address: str = Query(..., description="The DSP endpoint address of the supplier's connector"),
-                          pcf_version: Literal['7.0.0', '8.0.0']  = Query('8.0.0', description='Schema version - 7.0.0 or 8.0.0 supported'),
+                          counter_party_address: str =
+                            Query(..., description="The DSP endpoint address of the supplier's connector"),
+                          pcf_version: Literal['7.0.0', '8.0.0', '9.0.0']  =
+                            Query('8.0.0', description='Schema version - 7.0.0 or 8.0.0 supported'),
                           edc_bpn_l: str = Header(..., alias='Edc-Bpn-L'),
                           request_id: Optional[str] = Query(None, description='Optional Request ID'),
                           timeout: int = 80,
@@ -78,7 +80,7 @@ async def get_product_pcf(manufacturer_part_id: str = Path(..., description='Man
             response_model=Dict,
             dependencies=[Depends(verify_auth)])
 async def update_product_pcf(manufacturer_part_id: str = Path(..., description='Manufacturer Part ID'),
-                             requestId: str = Query(..., description='Request ID from previous GET call'),
+                             request_id: str = Query(..., description='Request ID from previous GET call'),
                              edc_bpn: str = Header(..., alias='Edc-Bpn'),
                              cache: CacheProvider = Depends(get_cache_provider)):
     """Validate incoming PCF data update from supplier.
@@ -96,6 +98,6 @@ async def update_product_pcf(manufacturer_part_id: str = Path(..., description='
         Dict with validation status, message, requestId, and manufacturerPartId
     """
     return await validate_pcf_update(manufacturer_part_id=manufacturer_part_id,
-                                     requestId=requestId,
+                                     requestId=request_id,
                                      edc_bpn=edc_bpn,
                                      cache=cache)
