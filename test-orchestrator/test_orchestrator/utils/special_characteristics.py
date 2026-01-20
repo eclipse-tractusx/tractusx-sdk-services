@@ -34,6 +34,18 @@ from test_orchestrator.base_utils import get_dtr_access
 
 logger = logging.getLogger(__name__)
 
+def normalize_catena_x_id(catena_x_id: str) -> str:
+    """
+    Normalize Catena-X ID to ensure it has the urn:uuid: prefix.
+    
+    - :catena_x_id (str): The Catena-X ID which may or may not have the urn:uuid: prefix.
+    
+    return: Normalized Catena-X ID with urn:uuid: prefix.
+    """
+    if not catena_x_id.startswith('urn:uuid:'):
+        return f'urn:uuid:{catena_x_id}'
+    return catena_x_id
+
 
 def validate_notification_payload(payload: Dict):
     """
@@ -115,10 +127,11 @@ def validate_notification_payload(payload: Dict):
                     if key not in event:
                         errors.append(f"Missing field '{key}' in listOfEvents[{i}]")
 
-                catena_id = event.get('catenaXId')
+                normalized_id = normalize_catena_x_id(event.get('catenaXId'))
+                event['catenaXId'] = normalized_id
                 
-                if catena_id and not uuid_pattern.match(catena_id):
-                    errors.append(f'Invalid UUID format in listOfEvents[{i}].catenaXId: {catena_id}')
+                if normalized_id and not uuid_pattern.match(normalized_id):
+                    errors.append(f'Invalid UUID format in listOfEvents[{i}].catenaXId: {normalized_id}')
 
     if errors:
         logger.error(f'Notification validation failed: {errors}')
