@@ -337,7 +337,7 @@ async def pcf_check(
             counter_party_address,
             counter_party_id,
             operand_left="http://purl.org/dc/terms/type",
-            operand_right="%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%",
+            operand_right="%https://w3id.org/catenax/taxonomy#PcfExchange%",
             limit=1,
             timeout=timeout,
         )
@@ -348,7 +348,7 @@ async def pcf_check(
                 message="DTR access negotiation failed",
                 details="No dataplane URL or DTR key received",
             )
-        
+
         offer = await fetch_pcf_offer_via_dtr(
             manufacturerPartId=manufacturer_part_id,
             dataplane_url=dataplane_url,
@@ -391,7 +391,8 @@ async def pcf_check(
             url=url,
             timeout=timeout,
             params={"requestId": requestId},
-            headers={"Edc-Bpn": config.CONNECTOR_BPNL},
+            headers={"Edc-Bpn": config.CONNECTOR_BPNL,
+                     "Authorization": dtr_key},
             json=dummy_pcf,
         )
 
