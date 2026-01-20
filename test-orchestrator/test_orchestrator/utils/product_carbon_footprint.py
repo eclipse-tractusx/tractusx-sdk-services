@@ -333,6 +333,22 @@ async def pcf_check(
             bpn=edc_bpn_l,
         )
     else:
+        dataplane_url, dtr_key, _ = await get_dataplane_access(
+            counter_party_address,
+            counter_party_id,
+            operand_left="http://purl.org/dc/terms/type",
+            operand_right="%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%",
+            limit=1,
+            timeout=timeout,
+        )
+
+        if not dataplane_url or not dtr_key:
+            raise HTTPError(
+                Error.CATALOG_FETCH_FAILED,
+                message="DTR access negotiation failed",
+                details="No dataplane URL or DTR key received",
+            )
+        
         offer = await fetch_pcf_offer_via_dtr(
             manufacturerPartId=manufacturer_part_id,
             dataplane_url=dataplane_url,
@@ -359,22 +375,6 @@ async def pcf_check(
         except Exception as e:
             raise HTTPError(
                 Error.UNKNOWN_ERROR, message="Offer validation failed", details=str(e)
-            )
-
-        dataplane_url, dtr_key, _ = await get_dataplane_access(
-            counter_party_address,
-            counter_party_id,
-            operand_left="http://purl.org/dc/terms/type",
-            operand_right="%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%",
-            limit=1,
-            timeout=timeout,
-        )
-
-        if not dataplane_url or not dtr_key:
-            raise HTTPError(
-                Error.CATALOG_FETCH_FAILED,
-                message="DTR access negotiation failed",
-                details="No dataplane URL or DTR key received",
             )
 
         semanticid = f"urn:bamm:io.catenax.pcf:{pcf_version}#Pcf"
