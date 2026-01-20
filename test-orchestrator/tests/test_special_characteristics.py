@@ -270,10 +270,10 @@ async def test_validate_payload_too_many_events():
 # =============================================================================
 
 @pytest.mark.asyncio
-@patch('test_orchestrator.utils.special_characteristics.get_dtr_access')
-async def test_get_partner_dtr_success(mock_get_dtr_access):
+@patch('test_orchestrator.utils.special_characteristics.get_dataplane_access')
+async def test_get_partner_dtr_success(mock_get_dataplane_access):
     """Should successfully retrieve partner DTR endpoint."""
-    mock_get_dtr_access.return_value = (
+    mock_get_dataplane_access.return_value = (
         "https://dtr.partner.example.com/shell-descriptors",
         "Bearer token-123",
         "Policy validation passed"
@@ -289,14 +289,14 @@ async def test_get_partner_dtr_success(mock_get_dtr_access):
     assert dtr_token == "Bearer token-123"
     assert policy == "Policy validation passed"
     
-    mock_get_dtr_access.assert_awaited_once()
+    mock_get_dataplane_access.assert_awaited_once()
 
 
 @pytest.mark.asyncio
-@patch('test_orchestrator.utils.special_characteristics.get_dtr_access')
-async def test_get_partner_dtr_not_found(mock_get_dtr_access):
+@patch('test_orchestrator.utils.special_characteristics.get_dataplane_access')
+async def test_get_partner_dtr_not_found(mock_get_dataplane_access):
     """Should raise error when DTR endpoint is not found."""
-    mock_get_dtr_access.return_value = (None, None, None)
+    mock_get_dataplane_access.return_value = (None, None, None)
     
     with pytest.raises(HTTPError) as exc:
         await get_partner_dtr(

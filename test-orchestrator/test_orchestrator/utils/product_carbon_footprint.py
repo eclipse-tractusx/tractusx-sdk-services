@@ -32,7 +32,7 @@ from test_orchestrator.request_handler import make_request
 from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.cache import CacheProvider
-from test_orchestrator.base_utils import pcf_dummy_dataloader, get_dtr_access
+from test_orchestrator.base_utils import pcf_dummy_dataloader, get_dataplane_access
 
 logger = logging.getLogger(__name__)
 
@@ -315,7 +315,7 @@ async def pcf_check(
     offer = None
 
     if not request_id:
-        dataplane_url, dtr_key, _ = await get_dtr_access(
+        dataplane_url, dtr_key, _ = await get_dataplane_access(
             counter_party_address,
             counter_party_id,
             operand_left="http://purl.org/dc/terms/type",
@@ -361,7 +361,7 @@ async def pcf_check(
                 Error.UNKNOWN_ERROR, message="Offer validation failed", details=str(e)
             )
 
-        dataplane_url, dtr_key, _ = await get_dtr_access(
+        dataplane_url, dtr_key, _ = await get_dataplane_access(
             counter_party_address,
             counter_party_id,
             operand_left="http://purl.org/dc/terms/type",

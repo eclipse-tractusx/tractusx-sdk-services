@@ -250,7 +250,7 @@ async def test_send_pcf_put_request_success(mock_make_request):
 @pytest.mark.asyncio
 @patch('test_orchestrator.utils.product_carbon_footprint.send_pcf_responses')
 @patch('test_orchestrator.utils.product_carbon_footprint.fetch_pcf_offer_via_dtr')
-@patch('test_orchestrator.utils.product_carbon_footprint.get_dtr_access')
+@patch('test_orchestrator.utils.product_carbon_footprint.get_dataplane_access')
 async def test_pcf_check_without_request_id(mock_get_dtr, mock_fetch_offer, mock_send_responses):
     """Should execute PCF check workflow without request_id - cache and verify retrieval."""
     mock_get_dtr.return_value = ("https://dataplane.example.com", "api-key", None)
@@ -287,7 +287,7 @@ async def test_pcf_check_without_request_id(mock_get_dtr, mock_fetch_offer, mock
 @patch('test_orchestrator.utils.product_carbon_footprint.make_request')
 @patch('test_orchestrator.utils.product_carbon_footprint.pcf_dummy_dataloader')
 @patch('test_orchestrator.utils.product_carbon_footprint.fetch_pcf_offer_via_dtr')
-@patch('test_orchestrator.utils.product_carbon_footprint.get_dtr_access')
+@patch('test_orchestrator.utils.product_carbon_footprint.get_dataplane_access')
 async def test_pcf_check_with_request_id(mock_get_dtr, mock_fetch_offer, mock_dummy_loader, mock_make_request):
     """Should execute PCF check workflow with request_id - send dummy PCF data."""
     mock_get_dtr.return_value = ("https://dataplane.example.com", "api-key", None)
@@ -321,7 +321,7 @@ async def test_pcf_check_with_request_id(mock_get_dtr, mock_fetch_offer, mock_du
 
 
 @pytest.mark.asyncio
-@patch('test_orchestrator.utils.product_carbon_footprint.get_dtr_access')
+@patch('test_orchestrator.utils.product_carbon_footprint.get_dataplane_access')
 async def test_pcf_check_dtr_access_failed(mock_get_dtr):
     """Should raise error when DTR access negotiation fails."""
     mock_get_dtr.return_value = (None, None, None)

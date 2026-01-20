@@ -30,7 +30,7 @@ from test_orchestrator import config
 from test_orchestrator.request_handler import make_request
 from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
-from test_orchestrator.base_utils import get_dtr_access
+from test_orchestrator.base_utils import get_dataplane_access
 
 logger = logging.getLogger(__name__)
 
@@ -195,7 +195,7 @@ async def get_partner_dtr(counter_party_address: str, counter_party_id: str, tim
     return: a tuple containing (dtr_url_shell, dtr_token).
     """
 
-    dtr_url_shell, dtr_token, policy_validation = await get_dtr_access(
+    dtr_url_shell, dtr_token, policy_validation = await get_dataplane_access(
         counter_party_address=counter_party_address,
         counter_party_id=counter_party_id,
         operand_left='http://purl.org/dc/terms/type',

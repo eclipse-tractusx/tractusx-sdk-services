@@ -40,7 +40,7 @@ from test_orchestrator.auth import verify_auth
 from test_orchestrator.request_handler import make_request
 from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
-from test_orchestrator.base_utils import get_dtr_access, fetch_submodel_info, submodel_schema_finder, submodel_validation
+from test_orchestrator.base_utils import get_dataplane_access, fetch_submodel_info, submodel_schema_finder, submodel_validation
 from test_orchestrator.validator import json_validator, schema_finder
 
 router = APIRouter()
@@ -83,7 +83,7 @@ async def shell_descriptors_test(
      - :return: A dictionary containing validation errors, if any.
     """
 
-    (dtr_url, dtr_key, policy_validation_outcome, warnings) = await get_dtr_access(
+    (dtr_url, dtr_key, policy_validation_outcome, warnings) = await get_dataplane_access(
         counter_party_address,
         counter_party_id,
         operand_left=operand_left,
@@ -179,7 +179,7 @@ async def submodel_test(counter_party_address: str,
     """
 
     # Gain access to the shell descriptors specific output
-    (dtr_url_shell, dtr_key_shell, policy_validation_outcome, _) = await get_dtr_access(
+    (dtr_url_shell, dtr_key_shell, policy_validation_outcome, _) = await get_dataplane_access(
         counter_party_address,
         counter_party_id,
         operand_left=operand_left,
@@ -255,7 +255,7 @@ async def submodel_test(counter_party_address: str,
         submodel_info = fetch_submodel_info(correct_element, semantic_id)
 
         # Gain access to the submodel link
-        (dtr_url_subm, dtr_key_subm, policy_validation_outcome_not_used, _) = await get_dtr_access(
+        (dtr_url_subm, dtr_key_subm, policy_validation_outcome_not_used, _) = await get_dataplane_access(
             counter_party_address=submodel_info['subm_counterparty'],
             counter_party_id=counter_party_id,
             operand_left=submodel_info['subm_operandleft'],
