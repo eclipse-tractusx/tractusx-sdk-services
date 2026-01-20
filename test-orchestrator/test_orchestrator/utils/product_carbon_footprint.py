@@ -315,7 +315,7 @@ async def pcf_check(
     offer = None
 
     if not request_id:
-        dataplane_url, dtr_key, _ = await get_dataplane_access(
+        dataplane_url, pcf_key, _ = await get_dataplane_access(
             counter_party_address,
             counter_party_id,
             operand_left="http://purl.org/dc/terms/type",
@@ -326,7 +326,7 @@ async def pcf_check(
 
         await send_pcf_responses(
             dataplane_url=dataplane_url,
-            dtr_key=dtr_key,
+            dtr_key=pcf_key,
             product_id=manufacturer_part_id,
             request_id=requestId,
             timeout=timeout,
