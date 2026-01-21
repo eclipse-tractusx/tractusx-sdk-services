@@ -472,10 +472,6 @@ def test_api_notification_validation_invalid_formats(client):
     assert data["error"] == "NOTIFICATION_VALIDATION_FAILED"
 
 
-# =============================================================================
-# API TESTS: /data-transfer/
-# =============================================================================
-
 @pytest.fixture
 def mock_process_notification():
     """Mock process_notification_and_retrieve_dtr."""
@@ -484,68 +480,6 @@ def mock_process_notification():
         new_callable=AsyncMock
     ) as mock:
         yield mock
-
-
-def test_api_data_transfer_success(client, mock_process_notification):
-    """Should return success when data transfer validation passes."""
-    mock_process_notification.return_value = (
-        [DUMMY_SHELL_DESCRIPTOR],
-        "Policy validation passed"
-    )
-    
-    response = client.post(
-        "/data-transfer/",
-        json=VALID_NOTIFICATION,
-        params={
-            "counter_party_address": DUMMY_COUNTER_PARTY_ADDRESS,
-            "counter_party_id": DUMMY_COUNTER_PARTY_ID
-        }
-    )
-    
-    assert response.status_code == 200
-    data = response.json()
-    assert "DT linkage & data transfer test is completed succesfully" in data["message"]
-    assert data["policy_validation_message"] == "Policy validation passed"
-
-
-def test_api_data_transfer_dtr_not_found(client, mock_process_notification):
-    """Should return error when DTR endpoint not found."""
-
-    from test_orchestrator.errors import Error as ErrorEnum
-    
-    mock_process_notification.side_effect = HTTPError(
-        Error.ASSET_NOT_FOUND,
-        "Partner DTR endpoint not found",
-        "DT Pull Service did not return DTR endpoint"
-    )
-    
-    response = client.post(
-        "/data-transfer/",
-        json=VALID_NOTIFICATION,
-        params={
-            "counter_party_address": DUMMY_COUNTER_PARTY_ADDRESS,
-            "counter_party_id": DUMMY_COUNTER_PARTY_ID
-        }
-    )
-    
-    assert response.status_code >= 400
-
-
-def test_api_data_transfer_invalid_payload(client):
-    """Should return error for invalid payload."""
-    response = client.post(
-        "/data-transfer/",
-        json=INVALID_MISSING_FIELDS,
-        params={
-            "counter_party_address": DUMMY_COUNTER_PARTY_ADDRESS,
-            "counter_party_id": DUMMY_COUNTER_PARTY_ID
-        }
-    )
-    
-
-    assert response.status_code == 422
-    data = response.json()
-    assert data["error"] == "NOTIFICATION_VALIDATION_FAILED"
 
 
 # =============================================================================

@@ -42,6 +42,8 @@ def normalize_catena_x_id(catena_x_id: str) -> str:
     
     return: Normalized Catena-X ID with urn:uuid: prefix.
     """
+    if not catena_x_id:
+        return None
     if not catena_x_id.startswith('urn:uuid:'):
         return f'urn:uuid:{catena_x_id}'
     return catena_x_id
