@@ -182,7 +182,7 @@ async def fetch_pcf_offer_via_dtr(
 
 async def send_pcf_responses(
     dataplane_url: str,
-    dtr_key: str,
+    key: str,
     product_id: str,
     request_id: str,
     bpn: str,
@@ -194,7 +194,7 @@ async def send_pcf_responses(
 
     Args:
         dataplane_url: Counterparty dataplane endpoint URL
-        dtr_key: Authorization bearer token
+        key: Authorization bearer token
         product_id: Product identifier (manufacturer part ID)
         request_id: Request identifier for tracking
         bpn: Business Partner Number for Edc-Bpn header
@@ -214,16 +214,16 @@ async def send_pcf_responses(
         responses["with_requestId"] = await make_request(
             method="GET",
             url=url,
-            timeout=20,
+            timeout=timeout,
             params={"requestId": request_id},
-            headers={"Edc-Bpn": bpn, "Authorization": dtr_key},
+            headers={"Edc-Bpn": bpn, "Authorization": key},
         )
 
         responses["without_requestId"] = await make_request(
             method="GET",
             url=url,
-            timeout=20,
-            headers={"Edc-Bpn": bpn, "Authorization": dtr_key},
+            timeout=timeout,
+            headers={"Edc-Bpn": bpn, "Authorization": key},
         )
     except HTTPError as e:
         logger.error("Were not able to send PCF response.")
@@ -312,16 +312,50 @@ async def pcf_check(
     validate_inputs(edc_bpn_l, manufacturer_part_id)
 
     requestId = request_id if request_id else str(uuid.uuid4())
-    offer = None
 
-    if not request_id:
-        dataplane_url, pcf_key, _ = await get_dataplane_access(
+    dataplane_url, pcf_key, _ = await get_dataplane_access(
             counter_party_address,
             counter_party_id,
             operand_left="http://purl.org/dc/terms/type",
             operand_right="%https://w3id.org/catenax/taxonomy#PcfExchange%",
             limit=1,
             timeout=timeout,
+        )
+
+    if not dataplane_url or not pcf_key:
+        raise HTTPError(
+            Error.CATALOG_FETCH_FAILED,
+            message="DTR access negotiation failed",
+            details="No dataplane URL or DTR key received",
+        )
+
+    offer = await fetch_pcf_offer_via_dtr(
+            manufacturerPartId=manufacturer_part_id,
+            dataplane_url=dataplane_url,
+            dtr_key=pcf_key,
+            timeout=timeout,
+        )
+    
+    try:
+        if not offer.get("pcf_submodel"):
+            raise HTTPError(
+                Error.UNPROCESSABLE_ENTITY,
+                message="No PCF submodel found",
+                details="PCF submodel not found in shell",
+            )
+    except Exception as e:
+        raise HTTPError(
+            Error.UNKNOWN_ERROR, message="Offer validation failed", details=str(e)
+        )
+
+    if not request_id:
+        await cache.set(
+            requestId,
+            {
+                "manufacturerPartId": manufacturer_part_id,
+                "counter_party_address": counter_party_address,
+            },
+            expire=3600,
         )
 
         await send_pcf_responses(
@@ -333,50 +367,6 @@ async def pcf_check(
             bpn=edc_bpn_l,
         )
     else:
-        dataplane_url, dtr_key, _ = await get_dataplane_access(
-            counter_party_address,
-            counter_party_id,
-            operand_left="http://purl.org/dc/terms/type",
-            operand_right="%https://w3id.org/catenax/taxonomy#PcfExchange%",
-            limit=1,
-            timeout=timeout,
-        )
-
-        if not dataplane_url or not dtr_key:
-            raise HTTPError(
-                Error.CATALOG_FETCH_FAILED,
-                message="DTR access negotiation failed",
-                details="No dataplane URL or DTR key received",
-            )
-
-        offer = await fetch_pcf_offer_via_dtr(
-            manufacturerPartId=manufacturer_part_id,
-            dataplane_url=dataplane_url,
-            dtr_key=dtr_key,
-            timeout=timeout,
-        )
-        await cache.set(
-            requestId,
-            {
-                "manufacturerPartId": manufacturer_part_id,
-                "offer": offer,
-                "counter_party_address": counter_party_address,
-            },
-            expire=3600,
-        )
-
-        try:
-            if not offer.get("pcf_submodel"):
-                raise HTTPError(
-                    Error.UNPROCESSABLE_ENTITY,
-                    message="No PCF submodel found",
-                    details="PCF submodel not found in shell",
-                )
-        except Exception as e:
-            raise HTTPError(
-                Error.UNKNOWN_ERROR, message="Offer validation failed", details=str(e)
-            )
-
         semanticid = f"urn:bamm:io.catenax.pcf:{pcf_version}#Pcf"
         dummy_pcf = await pcf_dummy_dataloader(semanticid)
         dummy_pcf["productIds"] = [
@@ -392,7 +382,7 @@ async def pcf_check(
             timeout=timeout,
             params={"requestId": requestId},
             headers={"Edc-Bpn": config.CONNECTOR_BPNL,
-                     "Authorization": dtr_key},
+                     "Authorization": pcf_key},
             json=dummy_pcf,
         )
 
