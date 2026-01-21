@@ -222,3 +222,12 @@ The service ensures that:
 - Submodels follow Catena-X schema requirements.
 
 This documentation covers all endpoints and underlying logic required for integration and testing.
+
+## NOTICE
+
+This work is licensed under the [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/legalcode).
+
+- SPDX-License-Identifier: CC-BY-4.0
+- SPDX-FileCopyrightText: 2025 BMW AG
+- SPDX-FileCopyrightText: 2025 Contributors to the Eclipse Foundation
+- Source URL: https://github.com/eclipse-tractusx/tractusx-sdk-services
