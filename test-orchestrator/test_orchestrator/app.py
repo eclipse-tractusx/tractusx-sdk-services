@@ -30,6 +30,7 @@ from fastapi import FastAPI, Depends
 from fastapi.security import APIKeyHeader
 
 from test_orchestrator.api import (
+    asset,
     base_test_cases,
     cert_validation,
     industry_test_cases,
@@ -90,6 +91,10 @@ def create_app():
 
     app.add_exception_handler(HTTPError, http_error_handler)
     app.add_exception_handler(ValidationException, validation_exception_handler)
+
+    app.include_router(asset.router,
+                       prefix='/test-cases/asset/v1',
+                       tags=['Asset Tests'])
 
     app.include_router(base_test_cases.router,
                        prefix='/test-cases/base/v1',
