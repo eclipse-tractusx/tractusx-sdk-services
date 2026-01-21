@@ -186,7 +186,7 @@ async def test_send_pcf_responses_success(mock_make_request):
     
     result = await send_pcf_responses(
         dataplane_url="https://dataplane.example.com",
-        dtr_key="api-key",
+        key="api-key",
         product_id="PART123",
         request_id="req-456",
         bpn="BPNL000000000000",
@@ -211,7 +211,7 @@ async def test_send_pcf_responses_failure(mock_make_request):
     with pytest.raises(HTTPError) as exc:
         await send_pcf_responses(
             dataplane_url="https://dataplane.example.com",
-            dtr_key="api-key",
+            key="api-key",
             product_id="PART123",
             request_id="req-456",
             bpn="BPNL000000000000"
@@ -366,7 +366,7 @@ async def test_validate_pcf_update_invalid_bpn():
     with pytest.raises(HTTPError) as exc:
         await validate_pcf_update(
             manufacturer_part_id="PART123",
-            requestId="req-456",
+            request_id="req-456",
             edc_bpn="INVALID_BPN",
             cache=mock_cache
         )
@@ -382,7 +382,7 @@ async def test_validate_pcf_update_invalid_part_id():
     with pytest.raises(HTTPError) as exc:
         await validate_pcf_update(
             manufacturer_part_id="PART@#$",
-            requestId="req-456",
+            request_id="req-456",
             edc_bpn="BPNL000000000000",
             cache=mock_cache
         )
@@ -399,7 +399,7 @@ async def test_validate_pcf_update_request_not_found():
     with pytest.raises(HTTPError) as exc:
         await validate_pcf_update(
             manufacturer_part_id="PART123",
-            requestId="req-456",
+            request_id="req-456",
             edc_bpn="BPNL000000000000",
             cache=mock_cache
         )
@@ -416,7 +416,7 @@ async def test_validate_pcf_update_part_id_mismatch():
     with pytest.raises(HTTPError) as exc:
         await validate_pcf_update(
             manufacturer_part_id="PART123",
-            requestId="req-456",
+            request_id="req-456",
             edc_bpn="BPNL000000000000",
             cache=mock_cache
         )
@@ -436,7 +436,7 @@ async def test_validate_pcf_update_success(mock_delete_cache):
     
     result = await validate_pcf_update(
         manufacturer_part_id="PART123",
-        requestId="req-456",
+        request_id="req-456",
         edc_bpn="BPNL000000000000",
         cache=mock_cache
     )
@@ -816,7 +816,7 @@ def test_update_product_pcf_success(client, mock_validate_pcf_update):
     
     response = client.put(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
-        params={"requestId": DUMMY_REQUEST_ID},
+        params={"request_id": DUMMY_REQUEST_ID},
         headers={"Edc-Bpn": DUMMY_COUNTER_PARTY_ID}
     )
     
@@ -828,7 +828,7 @@ def test_update_product_pcf_success(client, mock_validate_pcf_update):
     mock_validate_pcf_update.assert_awaited_once()
     call_kwargs = mock_validate_pcf_update.call_args.kwargs
     assert call_kwargs["manufacturer_part_id"] == DUMMY_MANUFACTURER_PART_ID
-    assert call_kwargs["requestId"] == DUMMY_REQUEST_ID
+    assert call_kwargs["request_id"] == DUMMY_REQUEST_ID
     assert call_kwargs["edc_bpn"] == DUMMY_COUNTER_PARTY_ID
 
 
@@ -869,7 +869,7 @@ def test_update_product_pcf_invalid_bpn(client, mock_validate_pcf_update):
     
     response = client.put(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
-        params={"requestId": DUMMY_REQUEST_ID},
+        params={"request_id": DUMMY_REQUEST_ID},
         headers={"Edc-Bpn": "INVALID"}
     )
     
@@ -890,7 +890,7 @@ def test_update_product_pcf_request_not_found(client, mock_validate_pcf_update):
     
     response = client.put(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
-        params={"requestId": DUMMY_REQUEST_ID},
+        params={"request_id": DUMMY_REQUEST_ID},
         headers={"Edc-Bpn": DUMMY_COUNTER_PARTY_ID}
     )
     
@@ -912,7 +912,7 @@ def test_update_product_pcf_part_id_mismatch(client, mock_validate_pcf_update):
     
     response = client.put(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
-        params={"requestId": DUMMY_REQUEST_ID},
+        params={"request_id": DUMMY_REQUEST_ID},
         headers={"Edc-Bpn": DUMMY_COUNTER_PARTY_ID}
     )
     
@@ -935,7 +935,7 @@ def test_update_product_pcf_invalid_part_id_chars(client, mock_validate_pcf_upda
     invalid_part_id = "PART@#$%"
     response = client.put(
         f"/productIds/{invalid_part_id}",
-        params={"requestId": DUMMY_REQUEST_ID},
+        params={"request_id": DUMMY_REQUEST_ID},
         headers={"Edc-Bpn": DUMMY_COUNTER_PARTY_ID}
     )
     
@@ -979,7 +979,7 @@ def test_get_then_put_workflow(client, mock_pcf_check, mock_validate_pcf_update)
     
     put_response = client.put(
         f"/productIds/{DUMMY_MANUFACTURER_PART_ID}",
-        params={"requestId": request_id},
+        params={"request_id": request_id},
         headers={"Edc-Bpn": DUMMY_COUNTER_PARTY_ID}
     )
     

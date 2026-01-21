@@ -98,6 +98,6 @@ async def update_product_pcf(manufacturer_part_id: str = Path(..., description='
         Dict with validation status, message, requestId, and manufacturerPartId
     """
     return await validate_pcf_update(manufacturer_part_id=manufacturer_part_id,
-                                     requestId=request_id,
+                                     request_id=request_id,
                                      edc_bpn=edc_bpn,
                                      cache=cache)

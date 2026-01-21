@@ -360,7 +360,7 @@ async def pcf_check(
 
         await send_pcf_responses(
             dataplane_url=dataplane_url,
-            dtr_key=pcf_key,
+            key=pcf_key,
             product_id=manufacturer_part_id,
             request_id=requestId,
             timeout=timeout,
@@ -395,7 +395,7 @@ async def pcf_check(
 
 
 async def validate_pcf_update(
-    manufacturer_part_id: str, requestId: str, edc_bpn: str, cache: CacheProvider
+    manufacturer_part_id: str, request_id: str, edc_bpn: str, cache: CacheProvider
 ):
     """Validate incoming PCF update request against cached data.
 
@@ -436,12 +436,12 @@ async def validate_pcf_update(
             details="manufacturerPartId contains invalid characters",
         )
 
-    cached_data = await cache.get(requestId)
+    cached_data = await cache.get(request_id)
 
     if not cached_data:
         raise HTTPError(
             Error.NOT_FOUND,
-            message=f"No cached request found for requestId: {requestId}",
+            message=f"No cached request found for requestId: {request_id}",
             details="The requestId may have expired or is invalid",
         )
 
@@ -452,17 +452,17 @@ async def validate_pcf_update(
             details=f"Expected {cached_data.get('manufacturerPartId')}, got {manufacturer_part_id}",
         )
 
-    await delete_cache_entry(requestId, cache)
+    await delete_cache_entry(request_id, cache)
 
     return {
         "status": "ok",
         "message": "PCF data validated successfully",
-        "requestId": requestId,
+        "requestId": request_id,
         "manufacturerPartId": manufacturer_part_id,
     }
 
 
-async def delete_cache_entry(requestId: str, cache: CacheProvider):
+async def delete_cache_entry(request_id: str, cache: CacheProvider):
     """Delete cache entry for the given request ID.
 
     Attempts to delete cache entry and logs warning if deletion fails.
@@ -473,6 +473,6 @@ async def delete_cache_entry(requestId: str, cache: CacheProvider):
         cache: Cache provider instance
     """
     try:
-        await cache.delete(requestId)
+        await cache.delete(request_id)
     except Exception as e:
-        logger.warning(f"Failed to delete cache for requestId {requestId}: {str(e)}")
+        logger.warning(f"Failed to delete cache for requestId {request_id}: {str(e)}")
