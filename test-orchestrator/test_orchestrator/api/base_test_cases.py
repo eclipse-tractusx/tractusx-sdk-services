@@ -91,7 +91,8 @@ async def ping_test(counter_party_address: str,
             dependencies=[Depends(verify_auth)])
 async def dtr_ping_test(counter_party_address: str,
                         counter_party_id: str,
-                        timeout: int = 80):
+                        timeout: int = 80,
+                        policy_validation: bool = False):
     """
     This test case checks if the digital twin registry (DTR) of the test subject is reachable.
     The test is successful if the test-agent was able to perform the following steps:
@@ -103,27 +104,27 @@ async def dtr_ping_test(counter_party_address: str,
 
      - :param counter_party_address: Address of the dsp endpoint of a connector
                                      (ends on api/v1/dsp for DSP version 2024-01).
-     - :param counter_party_id: The identifier of the test subject that operates the connector.
+     - :param policy_validation: Boolean (true/false) to toggle if the usage policy attached
                                 Until at least Catena-X Release 25.09 that is the BPNL of the test subject.
      - :param strict_validation: Boolean (true/false) to toggle if the usage policy attached
                                  to the DTR offer is exactly as specified in the DTR KIT.
      - :return: A dictionary containing a success or an error message.
     """
 
-    dataplane_url, dtr_key, _ = await get_dtr_access(
+    dataplane_url, dtr_key, policy_validation_outcome, warnings = await get_dtr_access(
                 counter_party_address,
                 counter_party_id,
                 operand_left='http://purl.org/dc/terms/type',
                 operand_right='%https://w3id.org/catenax/taxonomy#DigitalTwinRegistry%',
                 limit=1,
-                timeout=timeout)
+                timeout=timeout,
+                policy_validation=policy_validation)
     try:
-
-        shell_descriptors = await make_request('GET',
-                                               f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
-                                               params={'dataplane_url': dataplane_url, 'limit': 1},
+        _shell_descriptors = await make_request('GET',
+                                                f'{config.DT_PULL_SERVICE_ADDRESS}/dtr/shell-descriptors/',
+                                                params={'dataplane_url': dataplane_url, 'limit': 1},
                                                 headers=get_dt_pull_service_headers(headers={'Authorization': dtr_key}),
-                                               timeout=timeout)
+                                                timeout=timeout)
 
     except HTTPError:
         raise HTTPError(
@@ -133,5 +134,13 @@ async def dtr_ping_test(counter_party_address: str,
                     'https://github.com/eclipse-tractusx/sldt-digital-twin-registry/blob/main/INSTALL.md ' +\
                     'for troubleshooting.')
 
-    return {'status': 'ok',
-            'message': 'No errors found, the DTR is reachable'}
+    return_message = {'status': 'ok',
+                      'message': 'No errors found, the DTR is reachable'}
+
+    if warnings:
+        return_message['warnings'] = warnings
+
+    if policy_validation_outcome and policy_validation_outcome.get('status') != 'ok':
+        return_message['policy_validation'] = policy_validation_outcome
+
+    return return_message

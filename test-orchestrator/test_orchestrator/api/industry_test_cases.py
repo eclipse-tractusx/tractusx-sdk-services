@@ -83,7 +83,7 @@ async def shell_descriptors_test(
      - :return: A dictionary containing validation errors, if any.
     """
 
-    (dtr_url, dtr_key, policy_validation_outcome) = await get_dtr_access(
+    (dtr_url, dtr_key, policy_validation_outcome, warnings) = await get_dtr_access(
         counter_party_address,
         counter_party_id,
         operand_left=operand_left,
@@ -114,7 +114,7 @@ async def shell_descriptors_test(
             details="Please check https://eclipse-tractusx.github.io/docs-kits/kits/digital-twin-kit/" +\
                 " software-development-view/#registering-a-new-twin for troubleshooting")
 
-    try: 
+    try:
         shelldesc_schema = schema_finder('shell_descriptors')
         shelldesc_validation_error = json_validator(shelldesc_schema, shell_descriptors)
 
@@ -124,9 +124,14 @@ async def shell_descriptors_test(
                     message="An unknown error processing the shell descriptor occured.",
                     details="Please contact the testbed administrator.")
 
-    return {'message': 'Shell descriptors validation completed.',
-            'shell_validation_message': shelldesc_validation_error,
-            'policy_validation_message': policy_validation_outcome}
+    return_message = {'message': 'Shell descriptors validation completed.',
+                      'shell_validation_message': shelldesc_validation_error,
+                      'policy_validation_message': policy_validation_outcome}
+
+    if warnings:
+        return_message['warnings'] = warnings
+
+    return return_message
 
 
 @router.get('/submodel-test/',
@@ -174,7 +179,7 @@ async def submodel_test(counter_party_address: str,
     """
 
     # Gain access to the shell descriptors specific output
-    (dtr_url_shell, dtr_key_shell, policy_validation_outcome) = await get_dtr_access(
+    (dtr_url_shell, dtr_key_shell, policy_validation_outcome, _) = await get_dtr_access(
         counter_party_address,
         counter_party_id,
         operand_left=operand_left,
@@ -227,7 +232,7 @@ async def submodel_test(counter_party_address: str,
     # Validating the smaller shell_descriptors output against a specific schema
     # to ensure the data we are using is accurate
     
-    try: 
+    try:
         shelldesc_schema = schema_finder('shell_descriptors_spec')
         shelldesc_validation_error = json_validator(shelldesc_schema, shell_descriptors_spec)
     except Exception:
@@ -253,7 +258,7 @@ async def submodel_test(counter_party_address: str,
         if not correct_element:
             raise HTTPError(
                 Error.SUBMODEL_DESCRIPTOR_NOT_FOUND,
-                message=f'The submodel descriptor for semanticID {semantic_id} could not be found in the DTR. ' +\
+                message=f'The submodel descriptor for semanticID {semantic_id} could not be found in the DTR. ' + \
                         'Make sure the submodel is registered accordingly and visible for the testbed BPNL',
                 details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
                         'software-development-view/digital-twins#edc-policies for troubleshooting.')
@@ -261,7 +266,7 @@ async def submodel_test(counter_party_address: str,
         submodel_info = fetch_submodel_info(correct_element, semantic_id)
 
         # Gain access to the submodel link
-        (dtr_url_subm, dtr_key_subm, policy_validation_outcome_not_used) = await get_dtr_access(
+        (dtr_url_subm, dtr_key_subm, policy_validation_outcome_not_used, _) = await get_dtr_access(
             counter_party_address=submodel_info['subm_counterparty'],
             counter_party_id=counter_party_id,
             operand_left=submodel_info['subm_operandleft'],
@@ -274,7 +279,7 @@ async def submodel_test(counter_party_address: str,
 
         if response.status_code != 200:
             raise HTTPError(Error.UNPROCESSABLE_ENTITY,
-                            message=f'Make sure your dataplane can resolve the request and that the href above ' +\
+                            message='Make sure your dataplane can resolve the request and that the href above ' + \
                                     'is according to the industry core specification, ending in /submodel.',
                             details=f'Failed to obtain the required submodel data for({submodel_info['href']}).')
 

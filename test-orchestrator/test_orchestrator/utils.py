@@ -23,8 +23,8 @@
 """Utility methods
 """
 import asyncio
+from typing import Any, Dict, Optional, List
 import json
-from typing import Optional
 
 import httpx
 
@@ -159,8 +159,8 @@ async def get_dtr_access(counter_party_address: str,
             raise HTTPError(
                 Error.POLICY_VALIDATION_FAILED,
                 message='The usage policy that is used within the asset is not accurate. ',
-                details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
-                        'software-development-view/policies for troubleshooting.')
+                details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/'
+                        'digital-twin-kit/software-development-view/#usage-policies for troubleshooting.')
 
     negotiation = await init_negotiation(
         counter_party_address=counter_party_address,
@@ -201,18 +201,19 @@ async def obtain_negotiation_state(counter_party_address: str,
     Returns the negotiation state response when finalized; raises HTTPError for failures or non-finalized states.
     """
     try:
-        response = await make_request('GET',
-                                      f'{config.DT_PULL_SERVICE_ADDRESS}/edr/negotiation-state/',
-                                      params={'counter_party_address': counter_party_address,
-                                              'counter_party_id': counter_party_id,
-                                              'state_id': edr_state_id},
-                                      headers=get_dt_pull_service_headers(),
-                                      timeout=timeout)
-
-    except Exception:
+        response = await make_request(
+                        'GET',
+                        f'{config.DT_PULL_SERVICE_ADDRESS}/edr/negotiation-state/',
+                        params={'counter_party_address': counter_party_address,
+                                'counter_party_id': counter_party_id,
+                                'state_id': edr_state_id},
+                        headers=get_dt_pull_service_headers(),
+                        timeout=timeout
+        )
+    except:
         raise HTTPError(
             Error.CONTRACT_NEGOTIATION_FAILED,
-            message=f'Unknown Error - Check your connector logs for details.',
+            message='Unknown Error - Check your connector logs for details.',
             details=f'Contract negotiation for asset of type/id {operand_right} failed.')
 
     # In case negotiation was not successful
@@ -229,16 +230,14 @@ async def obtain_negotiation_state(counter_party_address: str,
             message=f'Error Message: {json.dumps(error_message["errorDetail"])}',
             details=f'Contract negotiation for asset of type/id {operand_right} failed.')
 
-    # Any other case
-    elif response["state"] != "FINALIZED":
+    if response["state"] != "FINALIZED":
         raise HTTPError(
             Error.CONTRACT_NEGOTIATION_FAILED,
             message=f'Contract negotiation stuck in state {response["state"]}',
             details=f'Contract negotiation for asset of type/id {operand_right} could not be completed.')
-
+    
     return response
-
-
+  
 async def get_data_address(counter_party_address: str,
                            counter_party_id: str,
                            edr_state_id: str,
@@ -277,7 +276,11 @@ async def get_data_address(counter_party_address: str,
                                                   'transfer_process_id': transfer_process_id},
                                           headers=get_dt_pull_service_headers(),
                                           timeout=timeout)
-    return edr_data_address
+
+    return (edr_data_address.get('endpoint'),
+            edr_data_address.get('authorization'),
+            policy_validation_outcome,
+            warnings)
 
 
 def submodel_schema_finder(
@@ -359,3 +362,96 @@ def fetch_submodel_info(correct_element, semantic_id):
          'subm_operandleft': subm_operandleft,
          'subm_operandright': subm_operandright
          })
+
+
+def validate_policy(
+    catalog_json: Dict[str, Any],
+    data_exchange_policy: Optional[Dict[str, Any]] = None,
+    dtr_policy: Optional[Dict[str, Any]] = None
+) -> Dict[str, str]:
+    """Validates the usage policy in a catalog entry.
+    """
+
+    # Default policies if not passed in param
+    data_exchange_policy = data_exchange_policy or {
+        'odrl:leftOperand': {'@id': 'cx-policy:FrameworkAgreement'},
+        'odrl:operator': {'@id': 'odrl:eq'},
+        'odrl:rightOperand': 'DataExchangeGovernance:1.0'
+    }
+
+    dtr_policy = dtr_policy or {
+        'odrl:leftOperand': {'@id': 'cx-policy:UsagePurpose'},
+        'odrl:operator': {'@id': 'odrl:eq'},
+        'odrl:rightOperand': 'cx.core.digitalTwinRegistry:1'
+    }
+
+    policy_warning =  {
+        "status": "Warning",
+        "message": (
+            "The usage policy that is used within the asset is not accurate. "
+        ),
+        "details": (
+            "Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/"
+            "software-development-view/policies for troubleshooting."
+        )
+    }
+
+    datasets = catalog_json.get("dcat:dataset", [])
+
+    if not isinstance(datasets, list):
+        return policy_warning
+
+    for element in datasets:
+        dct_type = element.get("dct:type", {})
+
+        if dct_type.get("@id") != "https://w3id.org/catenax/taxonomy#DigitalTwinRegistry":
+            continue
+
+        has_policy = _find_case_insensitive(element, "odrl:hasPolicy")
+
+        if not isinstance(has_policy, dict):
+            continue
+
+        permission = _find_case_insensitive(has_policy, "odrl:permission")
+
+        if not isinstance(permission, dict):
+            continue
+
+        constraint = _find_case_insensitive(permission, "odrl:constraint")
+
+        if constraint is None:
+            continue
+
+        # odrl:constraint is a list
+        if isinstance(constraint, list):
+            and_constraints: Optional[List[Any]] = constraint
+        # odrl:constraint is an object with and list
+        elif isinstance(constraint, dict):
+            and_constraints = _find_case_insensitive(constraint, "odrl:and")
+        else:
+            continue
+
+        if not isinstance(and_constraints, list):
+            continue
+
+        if data_exchange_policy in and_constraints and dtr_policy in and_constraints:
+            return {
+                "status": "ok",
+                "message": "The usage policy that is used within the asset was successfully validated.",
+                "details": "No further policy checks necessary"
+            }
+
+    return policy_warning
+
+
+def _find_case_insensitive(container: Dict[str, Any], key: str) -> Any:
+    """Returns value from container where the key matches case-insensitively.
+    """
+
+    target = key.lower()
+
+    for k, v in container.items():
+        if k.lower() == target:
+            return v
+
+    return None
