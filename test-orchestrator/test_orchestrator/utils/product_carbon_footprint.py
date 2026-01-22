@@ -23,16 +23,16 @@
 import logging
 import re
 import uuid
-
 from typing import Dict, Optional
 
-from test_orchestrator import config
+import httpx
 
+from test_orchestrator import config
 from test_orchestrator.request_handler import make_request
 from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.cache import CacheProvider
-from test_orchestrator.base_utils import pcf_dummy_dataloader, get_dataplane_access
+from test_orchestrator.base_utils import get_dataplane_access
 
 logger = logging.getLogger(__name__)
 
@@ -237,41 +237,6 @@ async def send_pcf_responses(
     return responses
 
 
-async def send_pcf_put_request(
-    counter_party_address: str,
-    product_id: str,
-    request_id: str,
-    bpn: str,
-    payload: Dict,
-    timeout: int = 80,
-):
-    """Send PCF data via PUT request to counterparty.
-
-    Args:
-        counter_party_address: Counterparty endpoint address
-        product_id: Product identifier (manufacturer part ID)
-        request_id: Request identifier for tracking
-        bpn: Business Partner Number for Edc-Bpn header
-        payload: PCF data payload to send
-        timeout: Request timeout in seconds (default: 80)
-
-    Returns:
-        Response from the PUT request
-    """
-    url = f"{counter_party_address}/productIds/{product_id}"
-
-    response = await make_request(
-        method="PUT",
-        url=url,
-        timeout=timeout,
-        params={"requestId": request_id},
-        headers={"Edc-Bpn": bpn},
-        json=payload,
-    )
-
-    return response
-
-
 async def pcf_check(
     manufacturer_part_id: str,
     counter_party_id: str,
@@ -296,7 +261,7 @@ async def pcf_check(
         manufacturer_part_id: Manufacturer part identifier
         counter_party_id: Business Partner Number of the counterparty
         counter_party_address: DSP endpoint address of counterparty's connector
-        pcf_version: PCF schema version (e.g., '7.0.0' or '8.0.0')
+        pcf_version: PCF schema version (e.g., '7.0.0' or '9.0.0')
         edc_bpn_l: Business Partner Number from request header
         timeout: Request timeout in seconds
         request_id: Optional request identifier for tracking existing requests
@@ -304,7 +269,7 @@ async def pcf_check(
         payload: Optional PCF payload
 
     Returns:
-        Dict containing status, manufacturerPartId, requestId, and offer details
+        Dict containing status, manufacturerPartId, requestId details
 
     Raises:
         HTTPError: If validation fails, DTR access fails, or PCF submodel is not found
@@ -329,25 +294,6 @@ async def pcf_check(
             details="No dataplane URL or DTR key received",
         )
 
-    offer = await fetch_pcf_offer_via_dtr(
-            manufacturerPartId=manufacturer_part_id,
-            dataplane_url=dataplane_url,
-            dtr_key=pcf_key,
-            timeout=timeout,
-        )
-    
-    try:
-        if not offer.get("pcf_submodel"):
-            raise HTTPError(
-                Error.UNPROCESSABLE_ENTITY,
-                message="No PCF submodel found",
-                details="PCF submodel not found in shell",
-            )
-    except Exception as e:
-        raise HTTPError(
-            Error.UNKNOWN_ERROR, message="Offer validation failed", details=str(e)
-        )
-
     if not request_id:
         await cache.set(
             requestId,
@@ -369,12 +315,13 @@ async def pcf_check(
     else:
         semanticid = f"urn:bamm:io.catenax.pcf:{pcf_version}#Pcf"
         dummy_pcf = await pcf_dummy_dataloader(semanticid)
+
         dummy_pcf["productIds"] = [
             f"urn:mycompany.com:product-id:{manufacturer_part_id}"
         ]
         dummy_pcf["id"] = str(uuid.uuid4())
 
-        url = f"{counter_party_address}/productIds/{manufacturer_part_id}"
+        url = f"{dataplane_url}/productIds/{manufacturer_part_id}"
 
         await make_request(
             method="PUT",
@@ -390,7 +337,6 @@ async def pcf_check(
         "status": "ok",
         "manufacturerPartId": manufacturer_part_id,
         "requestId": requestId,
-        "offer": offer,
     }
 
 
@@ -476,3 +422,57 @@ async def delete_cache_entry(request_id: str, cache: CacheProvider):
         await cache.delete(request_id)
     except Exception as e:
         logger.warning(f"Failed to delete cache for requestId {request_id}: {str(e)}")
+
+
+async def pcf_dummy_dataloader(
+    semantic_id: str,
+    linkcore: Optional[str] = "https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/main") -> Dict:
+    """
+    Load a dummy PCF JSON template based on the provided semantic ID.
+
+    Extracts the version component from the semantic ID and constructs a URL
+    pointing to the corresponding generated PCF JSON file in the Catena‑X
+    semantic model repository. Downloads the file and returns it as parsed JSON.
+
+    Args:
+        semantic_id: Semantic ID of the PCF model (expected format: <urn>#<SubmodelName>).
+        linkcore: Base URL of the semantic model repository containing generated PCF files.
+
+    Returns:
+        Dict containing the dummy PCF JSON structure.
+
+    Raises:
+        HTTPError: If the semantic ID format is invalid, the remote file cannot be fetched,
+                   or the downloaded content is not valid JSON.
+    """
+    splitstring = semantic_id.split('#')
+
+    if len(splitstring) != 2:
+        raise HTTPError(
+            Error.UNPROCESSABLE_ENTITY,
+            message="The semanticID provided does not follow the correct structure",
+            details={'subprotocolBody': semantic_id}
+        )
+
+    version_part = splitstring[0].split(':')[-1]
+    dummy_link = f"{linkcore}/io.catenax.pcf/{version_part}/gen/Pcf.json"
+
+    response = httpx.get(dummy_link)
+
+    if response.status_code != 200:
+        raise HTTPError(
+            Error.UNPROCESSABLE_ENTITY,
+            message="Failed to obtain the required dummy PCF data",
+            details=response
+        )
+
+    try:
+        dummy_data = response.json()
+    except Exception as e:
+        raise HTTPError(
+            Error.UNPROCESSABLE_ENTITY,
+            message="The dummy PCF data obtained is not a valid json",
+            details=e
+        )
+
+    return dummy_data

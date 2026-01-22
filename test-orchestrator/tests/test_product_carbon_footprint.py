@@ -27,7 +27,6 @@ from test_orchestrator.utils.product_carbon_footprint import (
     validate_inputs,
     fetch_pcf_offer_via_dtr,
     send_pcf_responses,
-    send_pcf_put_request,
     pcf_check,
     validate_pcf_update,
     delete_cache_entry
@@ -220,31 +219,6 @@ async def test_send_pcf_responses_failure(mock_make_request):
     assert "Were not able to send PCF response" in exc.value.message
 
 
-# --- Tests for send_pcf_put_request ---
-
-@pytest.mark.asyncio
-@patch('test_orchestrator.utils.product_carbon_footprint.make_request')
-async def test_send_pcf_put_request_success(mock_make_request):
-    """Should successfully send PCF PUT request."""
-    mock_make_request.return_value = {"status": "accepted"}
-    
-    payload = {"id": "pcf-123", "pcfData": {}}
-    result = await send_pcf_put_request(
-        counter_party_address="https://supplier.example.com",
-        product_id="PART123",
-        request_id="req-456",
-        bpn="BPNL000000000000",
-        payload=payload,
-        timeout=80
-    )
-    
-    assert result == {"status": "accepted"}
-    mock_make_request.assert_awaited_once()
-    call_args = mock_make_request.call_args
-    assert call_args.kwargs["method"] == "PUT"
-    assert call_args.kwargs["json"] == payload
-
-
 # --- Tests for pcf_check ---
 
 @pytest.mark.asyncio
@@ -278,7 +252,6 @@ async def test_pcf_check_without_request_id(mock_get_dtr, mock_fetch_offer, mock
     assert result["status"] == "ok"
     assert result["manufacturerPartId"] == "PART123"
     assert "requestId" in result
-    assert "offer" in result
     mock_cache.set.assert_awaited_once()
     mock_send_responses.assert_awaited_once()
 
