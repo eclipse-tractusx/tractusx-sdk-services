@@ -33,7 +33,7 @@ from typing import Dict, List, Literal, Optional
 from test_orchestrator import config
 from test_orchestrator.errors import HTTPError, Error
 from test_orchestrator.request_handler import make_request
-from test_orchestrator.utils import submodel_schema_finder, fetch_transfer_process
+from test_orchestrator.base_utils import submodel_schema_finder, fetch_transfer_process
 from test_orchestrator.validator import json_validator
 from test_orchestrator.auth import get_dt_pull_service_headers
 

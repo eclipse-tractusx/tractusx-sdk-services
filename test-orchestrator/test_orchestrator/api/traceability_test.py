@@ -38,7 +38,7 @@ from test_orchestrator.checks.catalog_version_validation import validate_catalog
 from test_orchestrator.checks.request_catalog import get_catalog
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.logging.log_manager import LoggingManager
-from test_orchestrator.utils import init_negotiation, obtain_negotiation_state, get_data_address
+from test_orchestrator.base_utils import init_negotiation, obtain_negotiation_state, get_data_address
 
 router = APIRouter()
 logger = LoggingManager.get_logger(__name__)

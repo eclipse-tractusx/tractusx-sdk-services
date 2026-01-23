@@ -29,7 +29,14 @@ from fastapi import FastAPI, Depends
 
 from fastapi.security import APIKeyHeader
 
-from test_orchestrator.api import base_test_cases, cert_validation, industry_test_cases, traceability_test
+from test_orchestrator.api import (
+    asset,
+    base_test_cases,
+    cert_validation,
+    industry_test_cases,
+    traceability_test,
+    special_characteristics
+)
 from test_orchestrator.errors import (
     HTTPError,
     http_error_handler,
@@ -85,6 +92,10 @@ def create_app():
     app.add_exception_handler(HTTPError, http_error_handler)
     app.add_exception_handler(ValidationException, validation_exception_handler)
 
+    app.include_router(asset.router,
+                       prefix='/test-cases/asset/v1',
+                       tags=['Asset Tests'])
+
     app.include_router(base_test_cases.router,
                        prefix='/test-cases/base/v1',
                        tags=['Base Tests'])
@@ -100,6 +111,10 @@ def create_app():
     app.include_router(traceability_test.router,
                        prefix='/test-cases/traceability/v1',
                        tags=['Traceability Tests'])
+
+    app.include_router(special_characteristics.router,
+                       prefix='/test-cases/special-characteristics/v1',
+                       tags=['Special Characteristics Tests'])
 
     app.get('/_/health', status_code=200)(health)
 

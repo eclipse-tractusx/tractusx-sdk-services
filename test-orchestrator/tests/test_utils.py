@@ -20,7 +20,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
 
-"""Tests utility methods
+
+"""Test for utility methods
 """
 
 from test_orchestrator.utils import validate_policy
