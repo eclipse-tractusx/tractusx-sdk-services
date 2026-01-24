@@ -25,7 +25,8 @@ from pathlib import Path
 
 import pytest
 
-from test_orchestrator.base_utils import validate_policy
+from test_orchestrator.checks.policy_validation import validate_policy
+
 
 
 def build_catalog(usage_purpose: str = None, include_data_exchange: bool = True, asset_type: str = 'https://w3id.org/catenax/taxonomy#DigitalTwinRegistry', and_structure='list'):

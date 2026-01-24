@@ -40,7 +40,7 @@ from test_orchestrator.auth import verify_auth
 from test_orchestrator.request_handler import make_request
 from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
-from test_orchestrator.base_utils import get_dataplane_access, fetch_submodel_info, submodel_schema_finder, submodel_validation
+from test_orchestrator.utils import get_dataplane_access, fetch_submodel_info, submodel_schema_finder, submodel_validation
 from test_orchestrator.validator import json_validator, schema_finder
 
 router = APIRouter()

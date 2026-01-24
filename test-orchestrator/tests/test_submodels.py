@@ -24,7 +24,7 @@
 """
 
 import json
-from test_orchestrator.base_utils import fetch_submodel_info, submodel_schema_finder
+from test_orchestrator.utils import fetch_submodel_info, submodel_schema_finder
 
 def test_fetch_submodel_info():
     """ Testing if this function can retrieve the correct submodel information given a
