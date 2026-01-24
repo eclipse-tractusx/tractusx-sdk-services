@@ -46,7 +46,7 @@ async def get_catalog(
     """
     Retrieve the catalog from the DT Pull Service.
 
-    Parameters mirror those previously used directly in utils.get_dtr_access.
+    Parameters mirror those previously used directly in utils.get_dataplane_access.
     """
     response = await make_request_verbose(
         "GET",
