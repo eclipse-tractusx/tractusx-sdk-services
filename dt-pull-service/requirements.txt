@@ -45,7 +45,7 @@ pytest-asyncio==0.15.1
 pytest-cov==6.1.1
 python-dotenv==1.0.1
 python-keycloak==4.0.1
-python-multipart==0.0.20
+python-multipart==0.0.22
 PyYAML==6.0.2
 requests==2.32.3
 requests-mock==1.12.1
