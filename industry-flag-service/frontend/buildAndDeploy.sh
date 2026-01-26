@@ -1,0 +1,24 @@
+#!/bin/bash
+
+CONTAINER_NAME=$1
+IMAGE_NAME="ifs-frontend"
+IMAGE_TAG="latest"
+BACKEND_URL="https://TODO__XXX__YOUR_VALUE___XXX"
+ENDPOINT_GET_MY_FLAGS="/flags"
+ENDPOINT_SEARCH_FLAGS_BY_BPN="/flags/search"
+ENDPOINT_GET_MY_FLAG_PROOF="/flags"
+ENDPOINT_GET_FLAG_PROOF_BY_BPN="/flags/proof"
+API_KEY="ifs-api-key"
+
+
+docker rm -f ${CONTAINER_NAME}
+
+echo "Build docker image..."
+docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+
+echo "Run docker container..."
+docker run --name ${CONTAINER_NAME} -p 8080:8080 -d -e BACKEND_URL=${BACKEND_URL} -e ENDPOINT_GET_MY_FLAGS=${ENDPOINT_GET_MY_FLAGS} -e ENDPOINT_SEARCH_FLAGS_BY_BPN=${ENDPOINT_SEARCH_FLAGS_BY_BPN} \
+            -e ENDPOINT_GET_MY_FLAG_PROOF=${ENDPOINT_GET_MY_FLAG_PROOF} -e ENDPOINT_GET_FLAG_PROOF_BY_BPN=${ENDPOINT_GET_FLAG_PROOF_BY_BPN} \
+            -e API_KEY=${API_KEY}  ${IMAGE_NAME}:${IMAGE_TAG}
+
+echo "Done"
