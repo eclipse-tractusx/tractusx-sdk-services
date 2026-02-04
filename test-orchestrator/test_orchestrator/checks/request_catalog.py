@@ -28,7 +28,7 @@ from test_orchestrator import config
 from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import HTTPError, Error
 from test_orchestrator.logging.log_manager import LoggingManager
-from test_orchestrator.request_handler import make_request, make_request_verbose
+from test_orchestrator.request_handler import make_request_verbose
 
 logger = LoggingManager.get_logger(__name__)
 

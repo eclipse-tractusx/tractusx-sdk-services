@@ -38,7 +38,6 @@ import json
 import jsonschema
 
 from test_orchestrator import config
-from test_orchestrator.errors import Error, HTTPError
 
 
 # Schema map

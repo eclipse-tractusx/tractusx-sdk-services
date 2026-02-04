@@ -29,7 +29,6 @@ This module includes:
 """
 
 
-import logging
 from typing import Dict
 
 from fastapi import APIRouter, Depends

@@ -25,7 +25,7 @@
 
 from typing import Dict, Optional, List
 
-from fastapi import APIRouter, Body, Header, Request, Depends, HTTPException
+from fastapi import APIRouter, Header, Depends, HTTPException
 from dt_pull_service.auth import verify_auth
 
 from dt_pull_service.dtr_helper import get_dtr_handler

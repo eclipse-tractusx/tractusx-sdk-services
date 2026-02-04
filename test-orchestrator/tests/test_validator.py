@@ -23,7 +23,6 @@
 """Tests for the validator
 """
 
-import json
 import pytest
 
 from test_orchestrator.errors import HTTPError
