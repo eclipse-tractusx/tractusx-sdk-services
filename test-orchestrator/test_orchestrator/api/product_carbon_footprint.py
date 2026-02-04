@@ -112,6 +112,8 @@ async def get_product_pcf(manufacturer_part_id: str = Path(..., description='Man
 async def update_product_pcf(payload: Dict,
                              manufacturer_part_id: str = Path(..., description='Manufacturer Part ID'),
                              request_id: str = Query(..., description='Request ID from previous GET call'),
+                            pcf_version: Literal['7.0.0', '8.0.0', '9.0.0']  =
+                            Query('9.0.0', description='Schema version - 7.0.0 or 8.0.0 supported'),
                              cache: CacheProvider = Depends(get_cache_provider)):   
     """Validate incoming PCF data update from supplier.
 
@@ -130,4 +132,5 @@ async def update_product_pcf(payload: Dict,
     return await validate_pcf_update(payload=payload,
                                      manufacturer_part_id=manufacturer_part_id,
                                      request_id=request_id,
+                                     pcf_version=pcf_version,
                                      cache=cache)
