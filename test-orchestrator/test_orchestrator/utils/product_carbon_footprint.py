@@ -32,36 +32,21 @@ from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.cache import CacheProvider
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.request_handler import make_request
-from test_orchestrator.utils import get_dataplane_access
+from test_orchestrator.utils import get_dataplane_access, submodel_schema_finder
+from test_orchestrator.validator import json_validator
 
 logger = logging.getLogger(__name__)
 
 
-def validate_inputs(edc_bpn: str, manufacturer_part_id: str):
-    """Validate BPN and manufacturer part ID format.
+def validate_inputs(manufacturer_part_id: str):
+    """Validate manufacturer part ID format.
 
     Args:
-        edc_bpn: Business Partner Number in BPN format
         manufacturer_part_id: Manufacturer part identifier containing only alphanumeric, dash, and underscore
 
     Raises:
-        HTTPError: If edc_bpn is missing, has invalid format, or manufacturer_part_id contains invalid characters
+        HTTPError: If manufacturer_part_id contains invalid characters
     """
-    if not edc_bpn:
-        raise HTTPError(
-            Error.MISSING_REQUIRED_FIELD,
-            message="Missing required header: Edc-Bpn",
-            details="Missing header",
-        )
-
-    bpn_pattern = re.compile(r"^BPN[LSA][A-Z0-9]{10}[A-Z0-9]{2}$")
-
-    if not bpn_pattern.match(edc_bpn):
-        raise HTTPError(
-            Error.REGEX_VALIDATION_FAILED,
-            message=f"Invalid BPN: {edc_bpn}",
-            details="Invalid format",
-        )
 
     part_id_pattern = re.compile(r"^[A-Za-z0-9\-_]+$")
 
@@ -216,7 +201,7 @@ async def send_pcf_responses(
             url=url,
             timeout=timeout,
             params={"requestId": request_id},
-            headers={"Edc-Bpn": bpn, "Authorization": key},
+            headers={"Authorization": key},
         )
 
         responses["without_requestId"] = await make_request(
@@ -242,7 +227,6 @@ async def pcf_check(
     counter_party_id: str,
     counter_party_address: str,
     pcf_version: str,
-    edc_bpn_l: str,
     timeout: int,
     request_id: Optional[str] = None,
     cache: Optional[CacheProvider] = None,
@@ -274,7 +258,7 @@ async def pcf_check(
     Raises:
         HTTPError: If validation fails, DTR access fails, or PCF submodel is not found
     """
-    validate_inputs(edc_bpn_l, manufacturer_part_id)
+    validate_inputs(manufacturer_part_id)
 
     requestId = request_id if request_id else str(uuid.uuid4())
 
@@ -290,11 +274,12 @@ async def pcf_check(
     if not dataplane_url or not pcf_key:
         raise HTTPError(
             Error.CATALOG_FETCH_FAILED,
-            message="DTR access negotiation failed",
-            details="No dataplane URL or DTR key received",
+            message="PCF Exchange API access negotiation failed",
+            details="No dataplane URL or key received",
         )
 
     if not request_id:
+        print("No request_id provided, caching offer and sending GET requests.")
         await cache.set(
             requestId,
             {
@@ -310,9 +295,10 @@ async def pcf_check(
             product_id=manufacturer_part_id,
             request_id=requestId,
             timeout=timeout,
-            bpn=edc_bpn_l,
+            bpn=counter_party_id,
         )
     else:
+        print("request_id provided, sending PUT request with dummy PCF data.")
         semanticid = f"urn:bamm:io.catenax.pcf:{pcf_version}#Pcf"
         dummy_pcf = await pcf_dummy_dataloader(semanticid)
 
@@ -328,8 +314,7 @@ async def pcf_check(
             url=url,
             timeout=timeout,
             params={"requestId": requestId},
-            headers={"Edc-Bpn": config.CONNECTOR_BPNL,
-                     "Authorization": pcf_key},
+            headers={"Authorization": pcf_key},
             json=dummy_pcf,
         )
 
@@ -341,7 +326,11 @@ async def pcf_check(
 
 
 async def validate_pcf_update(
-    manufacturer_part_id: str, request_id: str, edc_bpn: str, cache: CacheProvider
+    payload: dict, 
+    manufacturer_part_id: str, 
+    request_id: str, 
+    cache: CacheProvider, 
+    pcf_version: str = "9.0.0"
 ):
     """Validate incoming PCF update request against cached data.
 
@@ -352,9 +341,8 @@ async def validate_pcf_update(
     Args:
         manufacturer_part_id: Manufacturer part identifier from request path
         requestId: Request identifier from query parameter
-        edc_bpn: Business Partner Number from request header
         cache: Cache provider instance for retrieving cached data
-
+        pcf_version: PCF schema version 
     Returns:
         Dict containing status, message, requestId, and manufacturerPartId
 
@@ -362,15 +350,8 @@ async def validate_pcf_update(
         HTTPError: If BPN format is invalid, manufacturer part ID contains invalid characters,
                   requestId not found in cache, or manufacturerPartId mismatch
     """
-    bpn_pattern = re.compile(r"^BPN[LSA][A-Z0-9]{10}[A-Z0-9]{2}$")
 
-    if not bpn_pattern.match(edc_bpn):
-        raise HTTPError(
-            Error.REGEX_VALIDATION_FAILED,
-            message=f"Invalid BPN format: {edc_bpn}",
-            details="Expected format like BPNL000000000000",
-        )
-
+    # Validate manufacturer part ID format
     manufacturerPartId_pattern = re.compile(r"^[A-Za-z0-9\-_]+$")
 
     if manufacturer_part_id and not manufacturerPartId_pattern.match(
@@ -381,7 +362,30 @@ async def validate_pcf_update(
             message="manufacturerPartId contains invalid characters",
             details="manufacturerPartId contains invalid characters",
         )
+    
+    # Validate payload against PCF schema (9.0.0 per default)
+     # Find the right schema and validate the submodels against it
+    try:
+        subm_schema_dict = submodel_schema_finder(semantic_id = f"urn:bamm:io.catenax.pcf:{pcf_version}#Pcf")
+        subm_schema = subm_schema_dict['schema']
+    except Exception:
+        raise HTTPError(
+            Error.SUBMODEL_VALIDATION_FAILED,
+            message=f'The validation of the requested submodel for semanticID {semantic_id} failed: ' + \
+                    'Could not find the submodel schema based on the semantic_id provided.',
+            details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' + \
+                    'software-development-view/aspect-models for troubleshooting and samples.')
 
+
+    schema_validation_result = json_validator(subm_schema, payload)
+    
+    
+    if not cached_data:
+        raise HTTPError(
+            Error.NOT_FOUND,
+            message=f"No cached request found for requestId: {request_id}",
+            details="The requestId may have expired or is invalid",
+        )
     cached_data = await cache.get(request_id)
 
     if not cached_data:
@@ -400,12 +404,23 @@ async def validate_pcf_update(
 
     await delete_cache_entry(request_id, cache)
 
-    return {
-        "status": "ok",
-        "message": "PCF data validated successfully",
-        "requestId": request_id,
-        "manufacturerPartId": manufacturer_part_id,
-    }
+    #Note the PCF schema is inconsistent, so we just return a warning if the schema validation fails
+    if schema_validation_result.get("status") != "ok":
+        return {
+            "status": "warning",
+            "message": "PCF request including requestID and manufacturerPartId validated successfully. "
+            "Payload schema validation failed.",
+            "requestId": request_id,
+            "manufacturerPartId": manufacturer_part_id,
+        }
+    else:
+        return {
+            "status": "ok",
+            "message": "PCF request including requestID and manufacturerPartId validated successfully. "
+            "Payload schema validation passed.",
+            "requestId": request_id,
+            "manufacturerPartId": manufacturer_part_id,
+        }
 
 
 async def delete_cache_entry(request_id: str, cache: CacheProvider):

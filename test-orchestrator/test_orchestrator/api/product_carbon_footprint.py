@@ -35,8 +35,40 @@ from test_orchestrator.utils.product_carbon_footprint import (
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+@router.get('/create-pcf-request/{manufacturer_part_id}',
+            response_model=Dict,
+            dependencies=[Depends(verify_auth)])
+async def create_pcf_request(manufacturer_part_id: str = Path(..., description='Manufacturer Part ID'),
+                          counter_party_id: str = Query(..., description="Counter party ID"),
+                          counter_party_address: str =
+                            Query(..., description="The DSP endpoint address of the supplier's connector"),
+                          pcf_version: Literal['7.0.0', '8.0.0', '9.0.0']  =
+                            Query('8.0.0', description='Schema version - 7.0.0 or 8.0.0 supported'),
+                          timeout: int = 80,
+                          cache: CacheProvider = Depends(get_cache_provider)):
+    """This test-case initiates the PCF exchange by negotiating access to the partners PCF asset,
+    create a pcf request and send it to the test subjects PCF endpoint via its EDC connector.
+    
+    Args:
+        manufacturer_part_id: Manufacturer part identifier
+        counter_party_id: Supplier's Business Partner Number
+        counter_party_address: Supplier's EDC DSP endpoint
+        pcf_version: PCF schema version (7.0.0 or 8.0.0)
+        timeout: Request timeout in seconds
+        cache: Cache provider dependency
+    
+    Returns:
+        Dict with status, manufacturerPartId, requestId, and offer information
+    """
+    return await pcf_check(manufacturer_part_id=manufacturer_part_id,
+                           counter_party_id=counter_party_id,
+                           counter_party_address=counter_party_address,
+                           pcf_version=pcf_version,
+                           request_id=None,
+                           timeout=timeout,
+                           cache=cache)
 
-@router.get('/productIds/{manufacturer_part_id}',
+@router.get('/request-pcf-response/{manufacturer_part_id}',
             response_model=Dict,
             dependencies=[Depends(verify_auth)])
 async def get_product_pcf(manufacturer_part_id: str = Path(..., description='Manufacturer Part ID'),
@@ -44,9 +76,8 @@ async def get_product_pcf(manufacturer_part_id: str = Path(..., description='Man
                           counter_party_address: str =
                             Query(..., description="The DSP endpoint address of the supplier's connector"),
                           pcf_version: Literal['7.0.0', '8.0.0', '9.0.0']  =
-                            Query('8.0.0', description='Schema version - 7.0.0 or 8.0.0 supported'),
-                          edc_bpn_l: str = Header(..., alias='Edc-Bpn-L'),
-                          request_id: Optional[str] = Query(None, description='Optional Request ID'),
+                            Query('9.0.0', description='Schema version - 7.0.0 or 8.0.0 supported'),
+                          request_id: str = Query(..., description='Request ID'),
                           timeout: int = 80,
                           cache: CacheProvider = Depends(get_cache_provider)):
     """Retrieve Product Carbon Footprint offer from supplier's Digital Twin Registry.
@@ -59,7 +90,6 @@ async def get_product_pcf(manufacturer_part_id: str = Path(..., description='Man
         counter_party_id: Supplier's Business Partner Number
         counter_party_address: Supplier's EDC DSP endpoint
         pcf_version: PCF schema version (7.0.0 or 8.0.0)
-        edc_bpn_l: Requester's Business Partner Number (from header)
         request_id: Optional request ID for tracking
         timeout: Request timeout in seconds
         cache: Cache provider dependency
@@ -71,7 +101,6 @@ async def get_product_pcf(manufacturer_part_id: str = Path(..., description='Man
                            counter_party_id=counter_party_id,
                            counter_party_address=counter_party_address,
                            pcf_version=pcf_version,
-                           edc_bpn_l=edc_bpn_l,
                            request_id=request_id,
                            timeout=timeout,
                            cache=cache)
@@ -80,25 +109,25 @@ async def get_product_pcf(manufacturer_part_id: str = Path(..., description='Man
 @router.put('/productIds/{manufacturer_part_id}',
             response_model=Dict,
             dependencies=[Depends(verify_auth)])
-async def update_product_pcf(manufacturer_part_id: str = Path(..., description='Manufacturer Part ID'),
+async def update_product_pcf(payload: Dict,
+                             manufacturer_part_id: str = Path(..., description='Manufacturer Part ID'),
                              request_id: str = Query(..., description='Request ID from previous GET call'),
-                             edc_bpn: str = Header(..., alias='Edc-Bpn'),
-                             cache: CacheProvider = Depends(get_cache_provider)):
+                             cache: CacheProvider = Depends(get_cache_provider)):   
     """Validate incoming PCF data update from supplier.
 
     This endpoint receives PCF data from the supplier and validates it against
-    the previously cached request information from the GET call.
+    the previously cached request information from the GET call. The endpoint has to be
+    exposed via an EDC Asset.
 
     Args:
         manufacturer_part_id: Manufacturer part identifier
         requestId: Request ID from the initial GET request
-        edc_bpn: Supplier's Business Partner Number (from header)
         cache: Cache provider dependency
 
     Returns:
         Dict with validation status, message, requestId, and manufacturerPartId
     """
-    return await validate_pcf_update(manufacturer_part_id=manufacturer_part_id,
+    return await validate_pcf_update(payload=payload,
+                                     manufacturer_part_id=manufacturer_part_id,
                                      request_id=request_id,
-                                     edc_bpn=edc_bpn,
                                      cache=cache)

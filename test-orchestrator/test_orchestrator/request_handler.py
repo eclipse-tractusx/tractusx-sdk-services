@@ -48,13 +48,20 @@ async def make_request(method: str, url: str, timeout:int=80, **kwargs):
     async with httpx.AsyncClient() as client:
         try:
             response = await client.request(method, url, timeout=timeout, **kwargs)
+            
+
             try:
                 response_json = response.json()
             except ValueError as e:
-                logger.error(f'Invalid JSON response from {url}: {e} - {response.content}')
-                raise HTTPError(Error.BAD_GATEWAY,
-                                message='Received invalid JSON from server',
-                                details=str(e)) from e
+
+                # Some APIs may not return JSON on success (e.g., 204 No Content or 200 with bytestring or empty body)
+                if response.status_code == 200 or response.status_code == 204:
+                    return {"status": "success"}
+                else:
+                    logger.error(f'Invalid JSON response from {url}: {e} - {response.content}')
+                    raise HTTPError(Error.BAD_GATEWAY,
+                                    message='Received invalid JSON from server',
+                                    details=str(e)) from e
 
             if response.status_code != 200:
                 error_code = response_json.get('error', 'BAD_GATEWAY')
