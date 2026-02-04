@@ -20,9 +20,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
 
+from fastapi import HTTPException, Request
 from tractusx_sdk.dataspace.managers import AuthManager
+
 from test_orchestrator import config
-from fastapi import  HTTPException, Request
 
 auth_manager = AuthManager(
     configured_api_key=config.API_KEY_BACKEND,

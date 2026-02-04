@@ -34,15 +34,15 @@ Endpoints:
 
 import logging
 from typing import Dict
+
 from fastapi import APIRouter, Depends
 
 from test_orchestrator.auth import verify_auth
-from test_orchestrator.utils import submodel_validation
 from test_orchestrator.errors import Error, HTTPError
+from test_orchestrator.utils import submodel_validation
 from test_orchestrator.utils.special_characteristics import (
-    process_notification_and_retrieve_dtr
+    process_notification_and_retrieve_dtr,
 )
-
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

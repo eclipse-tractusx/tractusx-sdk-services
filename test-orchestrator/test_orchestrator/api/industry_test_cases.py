@@ -32,15 +32,19 @@ This module includes:
 import logging
 from typing import Dict, Optional
 
-from fastapi import APIRouter, Depends
 import httpx
+from fastapi import APIRouter, Depends
 
 from test_orchestrator import config
-from test_orchestrator.auth import verify_auth
-from test_orchestrator.request_handler import make_request
-from test_orchestrator.auth import get_dt_pull_service_headers
+from test_orchestrator.auth import get_dt_pull_service_headers, verify_auth
 from test_orchestrator.errors import Error, HTTPError
-from test_orchestrator.utils import get_dataplane_access, fetch_submodel_info, submodel_schema_finder, submodel_validation
+from test_orchestrator.request_handler import make_request
+from test_orchestrator.utils import (
+    fetch_submodel_info,
+    get_dataplane_access,
+    submodel_schema_finder,
+    submodel_validation,
+)
 from test_orchestrator.validator import json_validator, schema_finder
 
 router = APIRouter()

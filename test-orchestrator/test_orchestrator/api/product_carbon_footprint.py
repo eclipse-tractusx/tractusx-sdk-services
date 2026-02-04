@@ -22,13 +22,14 @@
 
 import logging
 from typing import Dict, Literal, Optional
-from fastapi import APIRouter, Depends, Query, Header, Path
+
+from fastapi import APIRouter, Depends, Header, Path, Query
 
 from test_orchestrator.auth import verify_auth
-from test_orchestrator.cache import get_cache_provider, CacheProvider
+from test_orchestrator.cache import CacheProvider, get_cache_provider
 from test_orchestrator.utils.product_carbon_footprint import (
     pcf_check,
-    validate_pcf_update
+    validate_pcf_update,
 )
 
 router = APIRouter()

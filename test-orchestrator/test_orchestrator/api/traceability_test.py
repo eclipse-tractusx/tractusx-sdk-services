@@ -29,16 +29,20 @@ from fastapi import APIRouter, Depends, Query
 
 from test_orchestrator import config
 from test_orchestrator.auth import verify_auth
+from test_orchestrator.checks.catalog_version_validation import validate_catalog_version
 from test_orchestrator.checks.create_notification import (
     qualitynotification_receive,
     qualitynotification_update,
 )
 from test_orchestrator.checks.policy_validation import validate_policy
-from test_orchestrator.checks.catalog_version_validation import validate_catalog_version
 from test_orchestrator.checks.request_catalog import get_catalog
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.logging.log_manager import LoggingManager
-from test_orchestrator.utils import init_negotiation, obtain_negotiation_state, get_data_address
+from test_orchestrator.utils import (
+    get_data_address,
+    init_negotiation,
+    obtain_negotiation_state,
+)
 
 router = APIRouter()
 logger = LoggingManager.get_logger(__name__)

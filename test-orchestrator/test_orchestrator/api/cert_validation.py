@@ -42,21 +42,22 @@ Endpoints:
 
 import logging
 from typing import Dict, Literal, Optional
+
 from fastapi import APIRouter, Depends
 
 from test_orchestrator.auth import verify_auth
 from test_orchestrator.certificate_utils import (
-    send_feedback,
+    SEMANTIC_ID_BUSINESS_PARTNER_CERTIFICATE,
+    SEMANTIC_ID_FEEDBACK_MESSAGE_CONTENT,
+    SEMANTIC_ID_FEEDBACK_MESSAGE_HEADER,
+    get_ccmapi_access,
     read_asset_policy,
-    validate_policy,
     run_certificate_checks,
     run_feedback_check,
-    get_ccmapi_access,
-    SEMANTIC_ID_FEEDBACK_MESSAGE_HEADER,
-    SEMANTIC_ID_FEEDBACK_MESSAGE_CONTENT,
-    SEMANTIC_ID_BUSINESS_PARTNER_CERTIFICATE
-    )
-from test_orchestrator.errors import HTTPError, Error
+    send_feedback,
+    validate_policy,
+)
+from test_orchestrator.errors import Error, HTTPError
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

@@ -24,8 +24,7 @@
 """
 
 
-from fastapi import FastAPI, Depends
-
+from fastapi import Depends, FastAPI
 from fastapi.security import APIKeyHeader
 
 from test_orchestrator.api import (
@@ -33,16 +32,16 @@ from test_orchestrator.api import (
     base_test_cases,
     cert_validation,
     industry_test_cases,
-    traceability_test,
+    product_carbon_footprint,
     special_characteristics,
-    product_carbon_footprint
+    traceability_test,
 )
 from test_orchestrator.cache import create_cache_provider
 from test_orchestrator.errors import (
     HTTPError,
-    http_error_handler,
     ValidationException,
-    validation_exception_handler
+    http_error_handler,
+    validation_exception_handler,
 )
 from test_orchestrator.logging.log_manager import LoggingManager
 

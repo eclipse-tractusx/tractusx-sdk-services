@@ -23,11 +23,11 @@
 """API endpoints for DTR
 """
 
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
 
-from fastapi import APIRouter, Header, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
+
 from dt_pull_service.auth import verify_auth
-
 from dt_pull_service.dtr_helper import get_dtr_handler
 
 router = APIRouter()

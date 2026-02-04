@@ -28,11 +28,11 @@ import logging
 import time
 from typing import Dict, Optional
 
-from tractusx_sdk.dataspace.services import BaseEdcService
-from tractusx_sdk.dataspace.models.connector.model_factory import ModelFactory
 import requests
+from tractusx_sdk.dataspace.models.connector.model_factory import ModelFactory
+from tractusx_sdk.dataspace.services import BaseEdcService
 
-from dt_pull_service.errors import HTTPError, Error
+from dt_pull_service.errors import Error, HTTPError
 from dt_pull_service.utils import policy_checker
 
 logger = logging.getLogger(__name__)

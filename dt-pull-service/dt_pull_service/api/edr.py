@@ -25,10 +25,9 @@
 
 from typing import Dict, List, Optional
 
-from fastapi import APIRouter
-from fastapi import Depends
-from dt_pull_service.auth import verify_auth
+from fastapi import APIRouter, Depends
 
+from dt_pull_service.auth import verify_auth
 from dt_pull_service.edr_helper import get_edr_handler
 from dt_pull_service.logging.log_manager import LoggingManager
 

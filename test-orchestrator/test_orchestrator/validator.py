@@ -39,7 +39,6 @@ import jsonschema
 
 from test_orchestrator import config
 
-
 # Schema map
 schema_map = {
     "shell_descriptors": "shell_descriptors_jsonschema.json",

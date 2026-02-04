@@ -24,7 +24,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from test_orchestrator.checks.catalog_version_validation import validate_catalog_version
 
 

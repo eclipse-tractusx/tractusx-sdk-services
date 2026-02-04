@@ -24,7 +24,6 @@
 """
 
 import pytest
-
 from test_orchestrator.errors import HTTPError
 from test_orchestrator.validator import json_validator
 

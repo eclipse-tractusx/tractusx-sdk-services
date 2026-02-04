@@ -21,22 +21,22 @@
 # *************************************************************
 """Tests for Product Carbon Footprint validation functions
 """
-import pytest
 from unittest.mock import AsyncMock, patch
-from test_orchestrator.utils.product_carbon_footprint import (
-    validate_inputs,
-    fetch_pcf_offer_via_dtr,
-    send_pcf_responses,
-    pcf_check,
-    validate_pcf_update,
-    delete_cache_entry
-)
-from test_orchestrator.errors import HTTPError, Error
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from fastapi.responses import JSONResponse
-from test_orchestrator.api.product_carbon_footprint import router as pcf_router
 
+import pytest
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from fastapi.testclient import TestClient
+from test_orchestrator.api.product_carbon_footprint import router as pcf_router
+from test_orchestrator.errors import Error, HTTPError
+from test_orchestrator.utils.product_carbon_footprint import (
+    delete_cache_entry,
+    fetch_pcf_offer_via_dtr,
+    pcf_check,
+    send_pcf_responses,
+    validate_inputs,
+    validate_pcf_update,
+)
 
 # --- Tests for validate_inputs ---
 

@@ -21,22 +21,21 @@
 # *************************************************************
 """Tests for Special Characteristics notification validation and Digital Twin validation
 """
-import pytest
 from unittest.mock import AsyncMock, patch
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from fastapi.responses import JSONResponse
 
+import pytest
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from fastapi.testclient import TestClient
 from test_orchestrator.api.special_characteristics import router as notification_router
+from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.utils.special_characteristics import (
+    get_partner_dtr,
+    process_notification_and_retrieve_dtr,
+    validate_events_in_dtr,
     validate_notification_payload,
     validate_payload,
-    get_partner_dtr,
-    validate_events_in_dtr,
-    process_notification_and_retrieve_dtr
 )
-from test_orchestrator.errors import HTTPError, Error
-
 
 # =============================================================================
 # TEST DATA
