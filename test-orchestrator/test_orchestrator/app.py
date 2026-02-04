@@ -115,7 +115,7 @@ def create_app():
     app.include_router(special_characteristics.router,
                        prefix='/test-cases/special-characteristics/v1',
                        tags=['Special Characteristics Tests'])
-    
+
     app.include_router(product_carbon_footprint.router,
                        prefix='/test-cases/product-carbon-footprint/v1',
                        tags=['Product Carbon Footprint Tests'])

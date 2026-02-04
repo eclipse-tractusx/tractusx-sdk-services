@@ -50,10 +50,10 @@ async def get_product_pcf(manufacturer_part_id: str = Path(..., description='Man
                           timeout: int = 80,
                           cache: CacheProvider = Depends(get_cache_provider)):
     """Retrieve Product Carbon Footprint offer from supplier's Digital Twin Registry.
-    
+
     This endpoint initiates the PCF exchange by negotiating access to the supplier's DTR,
     fetching the PCF submodel offer, and verifying data retrieval capabilities.
-    
+
     Args:
         manufacturer_part_id: Manufacturer part identifier
         counter_party_id: Supplier's Business Partner Number
@@ -63,7 +63,7 @@ async def get_product_pcf(manufacturer_part_id: str = Path(..., description='Man
         request_id: Optional request ID for tracking
         timeout: Request timeout in seconds
         cache: Cache provider dependency
-    
+
     Returns:
         Dict with status, manufacturerPartId, requestId, and offer information
     """
@@ -85,16 +85,16 @@ async def update_product_pcf(manufacturer_part_id: str = Path(..., description='
                              edc_bpn: str = Header(..., alias='Edc-Bpn'),
                              cache: CacheProvider = Depends(get_cache_provider)):
     """Validate incoming PCF data update from supplier.
-    
+
     This endpoint receives PCF data from the supplier and validates it against
     the previously cached request information from the GET call.
-    
+
     Args:
         manufacturer_part_id: Manufacturer part identifier
         requestId: Request ID from the initial GET request
         edc_bpn: Supplier's Business Partner Number (from header)
         cache: Cache provider dependency
-    
+
     Returns:
         Dict with validation status, message, requestId, and manufacturerPartId
     """

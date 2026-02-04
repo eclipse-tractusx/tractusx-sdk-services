@@ -138,7 +138,7 @@ async def feedback_message_validation(payload: Dict,
         header_validation_errors, content_validation_errors = run_feedback_check(semantic_id_header=semantic_id_header,
                            semantic_id_content=semantic_id_content,
                            validation_schema=payload)
-    
+
     except HTTPError as e:
         logger.error(f"Feedback validation failed with multiple errors: {e.json}")
 
@@ -286,7 +286,7 @@ async def validate_certificate(payload: Dict,
     await send_feedback(payload, 'RECEIVED', dataplane_url, dataplane_access_key, errors=[], timeout=timeout)
 
     result_asset_policy = {}
-    
+
     result_asset_policy = await validate_ccmapi_offer_setup(
         counter_party_address=payload.get('header').get('senderFeedbackUrl'),
         counter_party_id=payload.get('header').get('senderBpn'),
@@ -298,7 +298,7 @@ async def validate_certificate(payload: Dict,
                             validation_schema=payload
                             )
 
-    if cert_validation_errors.get('status') == 'nok' or header_validation_errors.get('status') == 'nok': 
+    if cert_validation_errors.get('status') == 'nok' or header_validation_errors.get('status') == 'nok':
         await send_feedback(payload, 'REJECTED', dataplane_url, dataplane_access_key, errors=[cert_validation_errors], timeout=timeout)
 
     await send_feedback(payload, 'ACCEPTED', dataplane_url, dataplane_access_key, errors=[], timeout=timeout)
@@ -322,4 +322,3 @@ async def validate_certificate(payload: Dict,
         'certificate_validation_message': cert_validation_errors,
         "policy_validation_message": result_asset_policy}
 
-            

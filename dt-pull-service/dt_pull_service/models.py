@@ -63,7 +63,7 @@ class EdrHandler:
         """Initialize the EdrHanler class"""
 
         headers = {'x-api-key': api_key, "Content-Type": "application/json"}
-        
+
         self.edc_client = BaseEdcService('v0_9_0', base_url, api_context, headers)
         self.partner_edc = partner_edc
         self.partner_id = partner_id
@@ -537,15 +537,15 @@ class DtrHandler:
         }
 
         base_url=f'{self.partner_dtr_addr}/shell-descriptors'
-        
+
         if(limit is not None):
             base_url += f'?limit={limit}'
-        
+
         result = requests.request(
             'GET',
             base_url,
             headers=headers, proxies=self.proxies, timeout=60).json()
-        
+
         return result
 
     def dtr_find_shell_descriptor(self, aas_id: str):

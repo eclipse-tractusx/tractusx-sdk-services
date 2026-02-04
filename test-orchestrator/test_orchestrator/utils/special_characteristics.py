@@ -37,9 +37,9 @@ logger = logging.getLogger(__name__)
 def normalize_catena_x_id(catena_x_id: str) -> str:
     """
     Normalize Catena-X ID to ensure it has the urn:uuid: prefix.
-    
+
     - :catena_x_id (str): The Catena-X ID which may or may not have the urn:uuid: prefix.
-    
+
     return: Normalized Catena-X ID with urn:uuid: prefix.
     """
     if not catena_x_id:
@@ -131,7 +131,7 @@ def validate_notification_payload(payload: Dict):
 
                 normalized_id = normalize_catena_x_id(event.get('catenaXId'))
                 event['catenaXId'] = normalized_id
-                
+
                 if normalized_id and not uuid_pattern.match(normalized_id):
                     errors.append(f'Invalid UUID format in listOfEvents[{i}].catenaXId: {normalized_id}')
 

@@ -39,7 +39,7 @@ def verify_auth(
         raise HTTPException(status_code=401, detail="Unauthorized")
     if not auth_manager.is_authenticated(request):
         raise HTTPException(status_code=401, detail="Unauthorized")
-    
+
 def get_dt_pull_service_headers(headers: dict = {}) -> dict:
     headers[config.DT_PULL_SERVICE_API_KEY_HEADER] = config.DT_PULL_SERVICE_API_KEY
     headers["Content-Type"] = "application/json"

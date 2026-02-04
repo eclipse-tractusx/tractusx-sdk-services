@@ -53,7 +53,7 @@ def test_fetch_submodel_info():
 
 
 def test_submodel_schema_finder():
-    """ Testing if this function files the correct schema in the schema repo 
+    """ Testing if this function files the correct schema in the schema repo
     based on a set of pre-specified inputs
     """
 
