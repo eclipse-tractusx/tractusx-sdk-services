@@ -130,8 +130,7 @@ async def schema_validation(payload: Dict,
                     message=f"The submodel descriptor for semanticID {semantic_id} could not be found in the DTR.",
                     details="Make sure the submodel is registered accordingly and visible for the testbed BPNL."
                 )
-            else:
-                raise
+            raise
 
     return {'message': 'Special Characteristics validation is completed.',
             'submodel_validation_message': submodel_validations,

@@ -233,7 +233,7 @@ async def obtain_negotiation_state(counter_party_address: str,
             details=f'Contract negotiation for asset of type/id {operand_right} failed.')
 
     # Any other case
-    elif response["state"] != "FINALIZED":
+    if response["state"] != "FINALIZED":
         raise HTTPError(
             Error.CONTRACT_NEGOTIATION_FAILED,
             message=f'Contract negotiation stuck in state {response["state"]}',
