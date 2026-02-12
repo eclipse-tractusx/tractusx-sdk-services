@@ -25,8 +25,8 @@
 
 from unittest.mock import AsyncMock, Mock, patch
 
-from httpx import ASGITransport, AsyncClient, Response, Request
 import pytest
+from httpx import ASGITransport, AsyncClient, Request, Response
 
 # pylint: disable=R0801
 

@@ -20,9 +20,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
 
+from fastapi import HTTPException, Request
 from tractusx_sdk.dataspace.managers import AuthManager
+
 from test_orchestrator import config
-from fastapi import  HTTPException, Request
 
 auth_manager = AuthManager(
     configured_api_key=config.API_KEY_BACKEND,
@@ -38,7 +39,7 @@ def verify_auth(
         raise HTTPException(status_code=401, detail="Unauthorized")
     if not auth_manager.is_authenticated(request):
         raise HTTPException(status_code=401, detail="Unauthorized")
-    
+
 def get_dt_pull_service_headers(headers: dict = {}) -> dict:
     headers[config.DT_PULL_SERVICE_API_KEY_HEADER] = config.DT_PULL_SERVICE_API_KEY
     headers["Content-Type"] = "application/json"

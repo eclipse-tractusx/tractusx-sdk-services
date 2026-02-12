@@ -67,6 +67,7 @@ class Error(Enum):
     SCHEMA_VALIDATION_ERROR = auto()
     MISSING_DATA = auto()
     FILE_NOT_FOUND = auto()
+    NOT_FOUND = auto()
     MISSING_REQUIRED_FIELD = auto()
     NULL_FOR_REQUIRED_FIELD = auto()
     REGEX_VALIDATION_FAILED = auto()
@@ -77,6 +78,7 @@ class Error(Enum):
     FEEDBACK_COULD_NOT_BE_SENT = auto()
     TOO_MANY_ASSETS_FOUND = auto()
     CATALOG_VERSION_VALIDATION_FAILED = auto()
+    CATALOG_FETCH_FAILED = auto()
 
 
 #: A dictionary of non-default error codes.
@@ -104,6 +106,7 @@ non_default_http_codes = {
     Error.SCHEMA_VALIDATION_ERROR: 422,
     Error.MISSING_DATA: 400,
     Error.FILE_NOT_FOUND: 404,
+    Error.NOT_FOUND: 404,
     Error.MISSING_REQUIRED_FIELD: 422,
     Error.NULL_FOR_REQUIRED_FIELD: 422,
     Error.REGEX_VALIDATION_FAILED: 422,
@@ -113,6 +116,7 @@ non_default_http_codes = {
     Error.CONNECTOR_UNAVAILABLE: 502,
     Error.FEEDBACK_COULD_NOT_BE_SENT: 502,
     Error.TOO_MANY_ASSETS_FOUND: 409,
+    Error.CATALOG_FETCH_FAILED: 500
 }
 
 

@@ -203,7 +203,7 @@ Raises `HTTPError` in the following cases:
 
 ### Notes
 - This method is used by the `/schema-validation/` endpoint to validate each event's submodel.
-- It depends on the `get_dtr_access` utility to gain access to the partner’s DTR.
+- It depends on the `get_dataplane_access` utility to gain access to the partner’s DTR.
 - Uses `json_validator` to verify both shell descriptors and submodel data against their respective schemas.
 - Ensures compliance with Catena-X and industry core specifications.
 

@@ -38,8 +38,6 @@ import json
 import jsonschema
 
 from test_orchestrator import config
-from test_orchestrator.errors import Error, HTTPError
-
 
 # Schema map
 schema_map = {
@@ -113,8 +111,8 @@ def json_validator(schema, json_to_validate, validation_type = 'jsonschema'):
                 "path": ".".join(str(p) for p in error.path) if error.path else "root",
                 "message": error.message,
                 "validator": error.validator,
-                "expected": error.schema.get("type", "N/A"),  
-                "invalid_value": error.instance  
+                "expected": error.schema.get("type", "N/A"),
+                "invalid_value": error.instance
             })
 
         if error_records:

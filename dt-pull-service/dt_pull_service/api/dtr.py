@@ -23,11 +23,11 @@
 """API endpoints for DTR
 """
 
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
 
-from fastapi import APIRouter, Header, Request, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
+
 from dt_pull_service.auth import verify_auth
-
 from dt_pull_service.dtr_helper import get_dtr_handler
 
 router = APIRouter()
@@ -80,3 +80,28 @@ async def send_feedback(data: Dict,
     dtr_handler = get_dtr_handler(dataplane_url, authorization)
 
     return dtr_handler.send_feedback(data)
+
+
+@router.post('/lookup/',
+             response_model=Dict,
+             dependencies=[Depends(verify_auth)])
+async def lookup(dataplane_url: str,
+                 data: list[dict],
+                 authorization: str = Header(None)):
+    """
+    Performs a lookup request against the partner's Digital Twin Registry (DTR) via the dataplane.
+
+    This endpoint receives a list of asset link dictionaries and forwards them to the DTR handler,
+    which executes a POST request to the partner's `lookup/shellsByAssetLink` endpoint. The result
+    is returned as a JSON object containing the matching shell descriptors.
+
+    :param dataplane_url: The dataplane URL used to initialize the DTR handler for the partner.
+    :param data: A list of dictionaries representing asset link information for the lookup.
+    :param authorization: The Authorization header containing the partner DTR access token.
+    :return: A JSON object containing the lookup results from the partner's DTR.
+    :raises HTTPError: Raised if the lookup fails or the partner DTR returns a non‑200 response.
+    """
+
+    dtr_handler = get_dtr_handler(dataplane_url, authorization)
+
+    return dtr_handler.lookup(data)

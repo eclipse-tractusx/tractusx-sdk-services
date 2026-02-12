@@ -26,11 +26,10 @@
 import json
 from unittest.mock import MagicMock
 
-from fastapi.testclient import TestClient
 import pytest
-from starlette.responses import JSONResponse
-
 from dt_pull_service.app import create_app
+from fastapi.testclient import TestClient
+from starlette.responses import JSONResponse
 
 
 @pytest.fixture(scope='session')

@@ -29,17 +29,16 @@ This module includes:
 """
 
 
-import logging
 from typing import Dict
 
 from fastapi import APIRouter, Depends
 
 from test_orchestrator import config
+from test_orchestrator.auth import get_dt_pull_service_headers, verify_auth
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.logging.log_manager import LoggingManager
 from test_orchestrator.request_handler import make_request
-from test_orchestrator.base_utils import get_dtr_access
-from test_orchestrator.auth import get_dt_pull_service_headers, verify_auth
+from test_orchestrator.utils import get_dataplane_access
 
 router = APIRouter()
 logger = LoggingManager.get_logger(__name__)
@@ -111,7 +110,7 @@ async def dtr_ping_test(counter_party_address: str,
      - :return: A dictionary containing a success or an error message.
     """
 
-    dataplane_url, dtr_key, policy_validation_outcome, warnings = await get_dtr_access(
+    dataplane_url, dtr_key, policy_validation_outcome, warnings = await get_dataplane_access(
                 counter_party_address,
                 counter_party_id,
                 operand_left='http://purl.org/dc/terms/type',
