@@ -279,7 +279,7 @@ async def pcf_check(
         )
 
     if not request_id:
-        print("No request_id provided, caching offer and sending GET requests.")
+        logger.info("No request_id provided, caching offer and sending GET requests.")
         await cache.set(
             requestId,
             {
@@ -298,7 +298,7 @@ async def pcf_check(
             bpn=counter_party_id,
         )
     else:
-        print("request_id provided, sending PUT request with dummy PCF data.")
+        logger.info("request_id provided, sending PUT request with dummy PCF data.")
         semanticid = f"urn:bamm:io.catenax.pcf:{pcf_version}#Pcf"
         dummy_pcf = await pcf_dummy_dataloader(semanticid)
 

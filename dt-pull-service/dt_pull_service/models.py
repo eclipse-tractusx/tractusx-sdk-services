@@ -640,7 +640,6 @@ class DtrHandler:
         :raises HTTPError: Raised if the request encounters errors such as authentication issues,
                            server unavailability, or unknown errors.
         """
-        print("HERE")
         headers = {
             'Authorization': self.partner_dtr_secret
         }
