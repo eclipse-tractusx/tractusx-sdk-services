@@ -24,16 +24,15 @@
 """
 
 import base64
-import json
 import logging
 import time
 from typing import Dict, Optional
 
-from tractusx_sdk.dataspace.services import BaseEdcService
-from tractusx_sdk.dataspace.models.connector.model_factory import ModelFactory
 import requests
+from tractusx_sdk.dataspace.models.connector.model_factory import ModelFactory
+from tractusx_sdk.dataspace.services import BaseEdcService
 
-from dt_pull_service.errors import HTTPError, Error
+from dt_pull_service.errors import Error, HTTPError
 from dt_pull_service.utils import policy_checker
 
 logger = logging.getLogger(__name__)
@@ -64,7 +63,7 @@ class EdrHandler:
         """Initialize the EdrHanler class"""
 
         headers = {'x-api-key': api_key, "Content-Type": "application/json"}
-        
+
         self.edc_client = BaseEdcService('v0_9_0', base_url, api_context, headers)
         self.partner_edc = partner_edc
         self.partner_id = partner_id
@@ -538,15 +537,15 @@ class DtrHandler:
         }
 
         base_url=f'{self.partner_dtr_addr}/shell-descriptors'
-        
+
         if(limit is not None):
             base_url += f'?limit={limit}'
-        
+
         result = requests.request(
             'GET',
             base_url,
             headers=headers, proxies=self.proxies, timeout=60).json()
-        
+
         return result
 
     def dtr_find_shell_descriptor(self, aas_id: str):
@@ -626,5 +625,39 @@ class DtrHandler:
                             details='The data provider was not able to accept the status' + \
                                     'message about the certification validation. ' + \
                                     f'Original error: {result.status_code}, {result.text}')
+
+        return result.json()
+
+
+    def lookup(self, payload: Dict):
+        """
+        Performs a shell lookup in the partner's Digital Twin Registry (DTR) using asset link information.
+        This method sends a POST request to the `lookup/shellsByAssetLink` endpoint of the partner DTR,
+        using the provided payload to identify the relevant shell descriptor.
+
+        :param payload: A dictionary containing asset link information used for the lookup.
+        :return: A JSON object representing the shell descriptor retrieved from the partner DTR.
+        :raises HTTPError: Raised if the request encounters errors such as authentication issues,
+                           server unavailability, or unknown errors.
+        """
+
+        headers = {
+            'Authorization': self.partner_dtr_secret
+        }
+
+        result = requests.request(
+            method="POST",
+            url=f"{self.partner_dtr_addr}/lookup/shellsByAssetLink",
+            json=payload,
+            headers=headers,
+            timeout=15
+        )
+
+        if result.status_code != 200:
+            logger.error(f'Lookup based on the given payload failed: {result.status_code}, {result.text}')
+
+            raise HTTPError(Error.INTERNAL_SERVER_ERROR,
+                            message='Lookup based on the given payload failed',
+                            details=f'Original error: {result.status_code}, {result.text}')
 
         return result.json()

@@ -24,7 +24,7 @@
 """
 
 from dt_pull_service.models import EdrHandler
-from dt_pull_service.utils import policy_checker, policy_check_item, get_recursively
+from dt_pull_service.utils import get_recursively, policy_check_item, policy_checker
 
 
 def test_policy_check():

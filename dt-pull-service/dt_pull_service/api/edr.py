@@ -23,13 +23,11 @@
 """API endpoints for EDR
 """
 
-import logging
 from typing import Dict, List, Optional
 
-from fastapi import APIRouter
-from fastapi import Request, Depends, HTTPException
-from dt_pull_service.auth import verify_auth
+from fastapi import APIRouter, Depends
 
+from dt_pull_service.auth import verify_auth
 from dt_pull_service.edr_helper import get_edr_handler
 from dt_pull_service.logging.log_manager import LoggingManager
 

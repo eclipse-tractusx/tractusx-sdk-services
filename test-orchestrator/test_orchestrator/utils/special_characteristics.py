@@ -21,25 +21,25 @@
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
 
-from datetime import datetime
 import logging
 import re
+from datetime import datetime
 from typing import Dict, List
 
 from test_orchestrator import config
-from test_orchestrator.request_handler import make_request
 from test_orchestrator.auth import get_dt_pull_service_headers
 from test_orchestrator.errors import Error, HTTPError
-from test_orchestrator.base_utils import get_dtr_access
+from test_orchestrator.request_handler import make_request
+from test_orchestrator.utils import get_dataplane_access
 
 logger = logging.getLogger(__name__)
 
 def normalize_catena_x_id(catena_x_id: str) -> str:
     """
     Normalize Catena-X ID to ensure it has the urn:uuid: prefix.
-    
+
     - :catena_x_id (str): The Catena-X ID which may or may not have the urn:uuid: prefix.
-    
+
     return: Normalized Catena-X ID with urn:uuid: prefix.
     """
     if not catena_x_id:
@@ -131,7 +131,7 @@ def validate_notification_payload(payload: Dict):
 
                 normalized_id = normalize_catena_x_id(event.get('catenaXId'))
                 event['catenaXId'] = normalized_id
-                
+
                 if normalized_id and not uuid_pattern.match(normalized_id):
                     errors.append(f'Invalid UUID format in listOfEvents[{i}].catenaXId: {normalized_id}')
 
@@ -195,7 +195,7 @@ async def get_partner_dtr(counter_party_address: str, counter_party_id: str, tim
     return: a tuple containing (dtr_url_shell, dtr_token).
     """
 
-    dtr_url_shell, dtr_token, policy_validation = await get_dtr_access(
+    dtr_url_shell, dtr_token, policy_validation = await get_dataplane_access(
         counter_party_address=counter_party_address,
         counter_party_id=counter_party_id,
         operand_left='http://purl.org/dc/terms/type',

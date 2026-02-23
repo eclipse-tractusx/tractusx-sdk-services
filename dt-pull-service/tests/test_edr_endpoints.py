@@ -23,9 +23,10 @@
 """Tests for the DT Pull Service's EDR endpoints
 """
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+
 
 @pytest.mark.parametrize(
     'params,expected',

@@ -20,11 +20,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # *************************************************************
 
+import logging
 import os
 import sys
-import yaml
-import logging
 from logging import config
+
+import yaml
 from tractusx_sdk.dataspace.tools import op
 
 

@@ -43,14 +43,15 @@ Endpoints:
 
 import logging
 from typing import Dict
+
 from fastapi import APIRouter, Depends
 
-from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.auth import verify_auth
-from test_orchestrator.base_utils import submodel_validation
+from test_orchestrator.errors import Error, HTTPError
+from test_orchestrator.utils import submodel_validation
 from test_orchestrator.utils.special_characteristics import (
     process_notification_and_retrieve_dtr,
-    validate_notification_payload
+    validate_notification_payload,
 )
 
 router = APIRouter()
@@ -129,8 +130,7 @@ async def schema_validation(payload: Dict,
                     message=f"The submodel descriptor for semanticID {semantic_id} could not be found in the DTR.",
                     details="Make sure the submodel is registered accordingly and visible for the testbed BPNL."
                 )
-            else:
-                raise
+            raise
 
     return {'message': 'Special Characteristics validation is completed.',
             'submodel_validation_message': submodel_validations,

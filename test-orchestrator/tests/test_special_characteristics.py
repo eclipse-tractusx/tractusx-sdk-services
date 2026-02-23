@@ -21,22 +21,21 @@
 # *************************************************************
 """Tests for Special Characteristics notification validation and Digital Twin validation
 """
-import pytest
 from unittest.mock import AsyncMock, patch
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from fastapi.responses import JSONResponse
 
+import pytest
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from fastapi.testclient import TestClient
 from test_orchestrator.api.special_characteristics import router as notification_router
+from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.utils.special_characteristics import (
+    get_partner_dtr,
+    process_notification_and_retrieve_dtr,
+    validate_events_in_dtr,
     validate_notification_payload,
     validate_payload,
-    get_partner_dtr,
-    validate_events_in_dtr,
-    process_notification_and_retrieve_dtr
 )
-from test_orchestrator.errors import HTTPError, Error
-
 
 # =============================================================================
 # TEST DATA
@@ -121,21 +120,21 @@ DUMMY_SHELL_DESCRIPTOR = {
 def app():
     """Create FastAPI app with notification router and overridden dependencies."""
     from test_orchestrator.auth import verify_auth
-    
+
     app = FastAPI()
-    
+
     # Override auth dependency
     async def mock_verify_auth():
         return True
-    
+
     app.dependency_overrides[verify_auth] = mock_verify_auth
     app.include_router(notification_router)
-    
+
     # Add HTTPError handler
     @app.exception_handler(HTTPError)
     async def http_error_handler(request, exc: HTTPError):
         return JSONResponse(status_code=exc.status_code, content=exc.json)
-    
+
     return app
 
 
@@ -202,7 +201,7 @@ def test_validate_notification_payload_missing_content_fields():
     """Should raise error when information or listOfEvents is missing."""
     payload = VALID_NOTIFICATION.copy()
     payload["content"] = {}
-    
+
     with pytest.raises(HTTPError) as exc:
         validate_notification_payload(payload)
     assert exc.value.error_code == Error.NOTIFICATION_VALIDATION_FAILED
@@ -213,7 +212,7 @@ def test_validate_notification_payload_empty_list_of_events():
     """Should raise error when listOfEvents is empty."""
     payload = VALID_NOTIFICATION.copy()
     payload["content"]["listOfEvents"] = []
-    
+
     with pytest.raises(HTTPError) as exc:
         validate_notification_payload(payload)
     assert exc.value.error_code == Error.NOTIFICATION_VALIDATION_FAILED
@@ -224,7 +223,7 @@ def test_validate_notification_payload_missing_event_fields():
     """Should raise error when event fields are missing."""
     payload = VALID_NOTIFICATION.copy()
     payload["content"]["listOfEvents"] = [{"eventType": "CreateSubmodel"}]
-    
+
     with pytest.raises(HTTPError) as exc:
         validate_notification_payload(payload)
     assert exc.value.error_code == Error.NOTIFICATION_VALIDATION_FAILED
@@ -239,7 +238,7 @@ def test_validate_notification_payload_missing_event_fields():
 async def test_validate_payload_success():
     """Should extract receiver BPN and events successfully."""
     receiver_bpn, events = await validate_payload(VALID_NOTIFICATION, max_events=2)
-    
+
     assert receiver_bpn == "BPNL222222222222"
     assert len(events) == 1
 
@@ -258,7 +257,7 @@ async def test_validate_payload_too_many_events():
         }
         for i in range(5)
     ]
-    
+
     with pytest.raises(HTTPError) as exc:
         await validate_payload(payload, max_events=2)
     assert exc.value.error_code == Error.NOTIFICATION_VALIDATION_FAILED
@@ -270,34 +269,34 @@ async def test_validate_payload_too_many_events():
 # =============================================================================
 
 @pytest.mark.asyncio
-@patch('test_orchestrator.utils.special_characteristics.get_dtr_access')
-async def test_get_partner_dtr_success(mock_get_dtr_access):
+@patch('test_orchestrator.utils.special_characteristics.get_dataplane_access')
+async def test_get_partner_dtr_success(mock_get_dataplane_access):
     """Should successfully retrieve partner DTR endpoint."""
-    mock_get_dtr_access.return_value = (
+    mock_get_dataplane_access.return_value = (
         "https://dtr.partner.example.com/shell-descriptors",
         "Bearer token-123",
         "Policy validation passed"
     )
-    
+
     dtr_url, dtr_token, policy = await get_partner_dtr(
         DUMMY_COUNTER_PARTY_ADDRESS,
         DUMMY_COUNTER_PARTY_ID,
         timeout=80
     )
-    
+
     assert dtr_url == "https://dtr.partner.example.com/shell-descriptors"
     assert dtr_token == "Bearer token-123"
     assert policy == "Policy validation passed"
-    
-    mock_get_dtr_access.assert_awaited_once()
+
+    mock_get_dataplane_access.assert_awaited_once()
 
 
 @pytest.mark.asyncio
-@patch('test_orchestrator.utils.special_characteristics.get_dtr_access')
-async def test_get_partner_dtr_not_found(mock_get_dtr_access):
+@patch('test_orchestrator.utils.special_characteristics.get_dataplane_access')
+async def test_get_partner_dtr_not_found(mock_get_dataplane_access):
     """Should raise error when DTR endpoint is not found."""
-    mock_get_dtr_access.return_value = (None, None, None)
-    
+    mock_get_dataplane_access.return_value = (None, None, None)
+
     with pytest.raises(HTTPError) as exc:
         await get_partner_dtr(
             DUMMY_COUNTER_PARTY_ADDRESS,
@@ -317,7 +316,7 @@ async def test_get_partner_dtr_not_found(mock_get_dtr_access):
 async def test_validate_events_in_dtr_success(mock_make_request):
     """Should successfully validate all events in DTR."""
     mock_make_request.return_value = DUMMY_SHELL_DESCRIPTOR
-    
+
     events = VALID_NOTIFICATION["content"]["listOfEvents"]
     shell_descriptors = await validate_events_in_dtr(
         events,
@@ -325,7 +324,7 @@ async def test_validate_events_in_dtr_success(mock_make_request):
         "Bearer token-123",
         timeout=80
     )
-    
+
     assert len(shell_descriptors) == len(events)
     assert shell_descriptors[0] == DUMMY_SHELL_DESCRIPTOR
     assert mock_make_request.await_count == len(events)
@@ -336,9 +335,9 @@ async def test_validate_events_in_dtr_success(mock_make_request):
 async def test_validate_events_in_dtr_not_found(mock_make_request):
     """Should raise error when Digital Twin not found in DTR."""
     mock_make_request.return_value = {"errors": ["Not found"]}
-    
+
     events = VALID_NOTIFICATION["content"]["listOfEvents"]
-    
+
     with pytest.raises(HTTPError) as exc:
         await validate_events_in_dtr(
             events,
@@ -359,9 +358,9 @@ async def test_validate_events_in_dtr_request_failure(mock_make_request):
         "DTR request failed",
         "Connection timeout"
     )
-    
+
     events = [VALID_NOTIFICATION["content"]["listOfEvents"][0]]
-    
+
     with pytest.raises(HTTPError) as exc:
         await validate_events_in_dtr(
             events,
@@ -393,7 +392,7 @@ async def test_process_notification_success(mock_validate_payload, mock_get_dtr,
         "Policy OK"
     )
     mock_validate_events.return_value = [DUMMY_SHELL_DESCRIPTOR]
-    
+
     shell_descriptors, policy = await process_notification_and_retrieve_dtr(
         VALID_NOTIFICATION,
         DUMMY_COUNTER_PARTY_ADDRESS,
@@ -401,7 +400,7 @@ async def test_process_notification_success(mock_validate_payload, mock_get_dtr,
         timeout=80,
         max_events=2
     )
-    
+
     assert len(shell_descriptors) == 1
     assert shell_descriptors[0] == DUMMY_SHELL_DESCRIPTOR
     assert policy == "Policy OK"
@@ -419,7 +418,7 @@ async def test_process_notification_too_many_events():
         }
         for i in range(5)
     ]
-    
+
     with pytest.raises(HTTPError) as exc:
         await process_notification_and_retrieve_dtr(
             payload,
@@ -441,7 +440,7 @@ def test_api_notification_validation_success(client):
         "/notification-validation/",
         json=VALID_NOTIFICATION
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "ok"
@@ -453,7 +452,7 @@ def test_api_notification_validation_missing_fields(client):
         "/notification-validation/",
         json=INVALID_MISSING_FIELDS
     )
-    
+
 
     assert response.status_code == 422
     data = response.json()
@@ -466,7 +465,7 @@ def test_api_notification_validation_invalid_formats(client):
         "/notification-validation/",
         json=INVALID_FORMATS
     )
-    
+
     assert response.status_code == 422
     data = response.json()
     assert data["error"] == "NOTIFICATION_VALIDATION_FAILED"
@@ -503,7 +502,7 @@ def test_api_schema_validation_success(client, mock_process_notification, mock_s
         "Policy validation passed"
     )
     mock_submodel_validation.return_value = "Submodel validation successful"
-    
+
     response = client.post(
         "/schema-validation/",
         json=VALID_NOTIFICATION,
@@ -512,7 +511,7 @@ def test_api_schema_validation_success(client, mock_process_notification, mock_s
             "counter_party_id": DUMMY_COUNTER_PARTY_ID
         }
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert "Special Characteristics validation is completed" in data["message"]
@@ -530,7 +529,7 @@ def test_api_schema_validation_invalid_payload(client):
             "counter_party_id": DUMMY_COUNTER_PARTY_ID
         }
     )
-    
+
     assert response.status_code == 422
     data = response.json()
     assert data["error"] == "NOTIFICATION_VALIDATION_FAILED"

@@ -25,13 +25,12 @@
 
 from unittest.mock import AsyncMock, patch
 
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from fastapi.responses import JSONResponse
 import pytest
-
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from fastapi.testclient import TestClient
 from test_orchestrator.api.cert_validation import router as cert_validation_router
-from test_orchestrator.errors import HTTPError, Error
+from test_orchestrator.errors import Error, HTTPError
 
 # Create a FastAPI app instance and include the router for testing
 app = FastAPI()
