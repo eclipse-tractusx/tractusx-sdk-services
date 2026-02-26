@@ -518,7 +518,7 @@ class DtrHandler:
 
         self.partner_dtr_addr = partner_dtr_address
         self.partner_dtr_secret = partner_dtr_secret
-        self.proxies = {'http': proxy, 'https': proxy} if proxy != '' else {}
+        self.proxies = {'http': proxy, 'https': proxy} if proxy else None
 
     def get_all_shells(self, limit:int=None) -> list | None:
         """
@@ -640,7 +640,6 @@ class DtrHandler:
         :raises HTTPError: Raised if the request encounters errors such as authentication issues,
                            server unavailability, or unknown errors.
         """
-
         headers = {
             'Authorization': self.partner_dtr_secret
         }

@@ -77,7 +77,7 @@ async def get_catalog(
                         message=message,
                         details=details)
 
-    logger.info("Catalog JSON received: %s", catalog_json)
+    logger.info("Catalog JSON received: %s", str(catalog_json)[:200])
 
     # Validate if there is an offer for the desired asset/type available.
     if len(catalog_json["dcat:dataset"]) == 0:
