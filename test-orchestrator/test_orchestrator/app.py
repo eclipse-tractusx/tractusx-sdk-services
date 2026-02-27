@@ -44,6 +44,7 @@ from test_orchestrator.errors import (
     validation_exception_handler,
 )
 from test_orchestrator.logging.log_manager import LoggingManager
+from standard_revision import StandardRevision
 
 logger = LoggingManager.get_logger(__name__)
 
@@ -109,6 +110,10 @@ def create_app():
                        tags=['Industry Core Tests'])
 
     app.include_router(traceability_test.router,
+                       prefix='/test-cases/traceability/v1',
+                       tags=['Traceability Tests'])
+
+    app.include_router(traceability_test.create_router(StandardRevision.JUPITER),
                        prefix='/test-cases/traceability/v1',
                        tags=['Traceability Tests'])
 

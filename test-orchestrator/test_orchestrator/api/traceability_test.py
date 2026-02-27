@@ -25,6 +25,9 @@ Provide FastAPI endpoints for data asset checks.
 
 """
 
+from __future__ import annotations
+from typing import Any
+
 from fastapi import APIRouter, Depends, Query
 
 from test_orchestrator import config
@@ -39,23 +42,21 @@ from test_orchestrator.checks.request_catalog import get_catalog
 from test_orchestrator.errors import Error, HTTPError
 from test_orchestrator.logging.log_manager import LoggingManager
 from test_orchestrator.utils import (
-    get_data_address,
-    init_negotiation,
-    obtain_negotiation_state,
+	init_negotiation,
+	obtain_negotiation_state,
+	get_data_address
 )
+from test_orchestrator.standard_revision import StandardRevision, UnsupportedRevision
 
 router = APIRouter()
 logger = LoggingManager.get_logger(__name__)
 
-
-@router.post('/check',
-             dependencies=[Depends(verify_auth)])
-async def traceability_test(
-        counter_party_address: str,
-        counter_party_id: str,
-        job_id: str,
-        asset_id: str,
-        optional_features: list[str] = Query(default=[]),
+async def _run_traceability_check_jupiter(
+    counter_party_address: str,
+    counter_party_id: str,
+    job_id: str,
+    asset_id: str,
+    optional_features: list[str],
 ):
     """
     Execute data asset checks for all Quality Notification API data assets.
@@ -64,7 +65,7 @@ async def traceability_test(
 
     """
     # Define data assets with their DCT type IDs and asset IDs
-    data_assets = [
+    data_assets: list[dict[str, str]] = [
         {
             'dct_type_id': 'ReceiveQualityInvestigationNotification',
             'asset_id': 'qualityinvestigationnotification-receive',
@@ -90,7 +91,7 @@ async def traceability_test(
     results = []
 
     for asset in data_assets:
-        asset_result = {
+        asset_result: dict[str, Any] = {
             'asset_id': asset['asset_id'],
             'dct_type_id': asset['dct_type_id'],
             'status': 'success',
@@ -98,8 +99,8 @@ async def traceability_test(
             'steps': []
         }
 
-        def add_step(name: str, status: str, message: str | None = None, details: str | None = None):
-            step = {'step': name, 'status': status}
+        def add_step(name: str, status: str, message: str | None = None, details: str | dict[str, Any] | None = None):
+            step: dict[str, Any] = {'step': name, 'status': status}
             if message is not None:
                 step['message'] = message
             if details is not None:
@@ -146,7 +147,11 @@ async def traceability_test(
         else:
             try:
                 logger.info(f"Validating policy for {asset['asset_id']}")
-                policy_validation_outcome = validate_policy(catalog_response['response_json'], asset['dct_type_id'], "traceability:1.0")
+                policy_validation_outcome = validate_policy(
+                    catalog_response['response_json'],
+                    asset['dct_type_id'],
+                    "traceability:1.0"
+                )
                 if policy_validation_outcome.get('status') != 'ok':
                     raise HTTPError(
                         Error.POLICY_VALIDATION_FAILED,
@@ -175,7 +180,7 @@ async def traceability_test(
                     raise HTTPError(
                         Error.CATALOG_VERSION_VALIDATION_FAILED,
                         message=version_check.get('message', 'Invalid API version in catalog dataset.'),
-                        details=version_check.get('details')
+                        details=version_check.get('details', ''),
                     )
                 add_step('validate_catalog_version', 'success')
             except HTTPError as e:
@@ -338,3 +343,52 @@ async def traceability_test(
         'message': 'CX-0125 Traceability checks completed',
         'results': results
     }
+
+async def _run_traceability_check_saturn(
+    counter_party_address: str,
+    counter_party_id: str,
+    job_id: str,
+    asset_id: str,
+    optional_features: list[str],
+):
+    pass
+
+
+def create_router(revision: StandardRevision) -> APIRouter:
+    """Create a traceability test router bound to the given CX profile."""
+    _router = APIRouter()
+
+    if revision == StandardRevision.JUPITER:
+        @_router.post('/check', dependencies=[Depends(verify_auth)])
+        async def traceability_test(
+                counter_party_address: str,
+                counter_party_id: str,
+                job_id: str,
+                asset_id: str,
+                optional_features: list[str] = Query(default=[]),
+        ):
+            """Execute data asset checks for all Quality Notification API data assets."""
+            return await _run_traceability_check_jupiter(
+                counter_party_address, counter_party_id,
+                job_id, asset_id, optional_features,
+            )
+    elif revision == StandardRevision.SATURN:
+        @_router.post('/check', dependencies=[Depends(verify_auth)])
+        async def traceability_test(
+                counter_party_address: str,
+                counter_party_id: str,
+                job_id: str,
+                asset_id: str,
+                optional_features: list[str] = Query(default=[]),
+        ):
+            """Execute data asset checks for all Quality Notification API data assets."""
+            return await _run_traceability_check_saturn(
+                counter_party_address, counter_party_id,
+                job_id, asset_id, optional_features,
+            )
+    else:
+        raise UnsupportedRevision()
+
+    return _router
+
+router = create_router(StandardRevision.JUPITER)
