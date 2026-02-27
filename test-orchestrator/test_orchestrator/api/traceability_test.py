@@ -48,7 +48,6 @@ from test_orchestrator.utils import (
 )
 from test_orchestrator.standard_revision import StandardRevision, UnsupportedRevision
 
-router = APIRouter()
 logger = LoggingManager.get_logger(__name__)
 
 async def _run_traceability_check_jupiter(

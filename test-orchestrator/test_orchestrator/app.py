@@ -113,7 +113,7 @@ def create_app():
                        prefix='/test-cases/traceability/v1',
                        tags=['Traceability Tests'])
 
-    app.include_router(traceability_test.create_router(StandardRevision.JUPITER),
+    app.include_router(traceability_test.create_router(StandardRevision.SATURN),
                        prefix='/test-cases/traceability/v2',
                        tags=['Traceability Tests'])
 
