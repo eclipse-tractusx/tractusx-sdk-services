@@ -147,15 +147,12 @@ async def traceability_invalid(
     payload = {
         "header": {
             "messageId": "41d743c3-6e8a-4393-88af-10494e50bea9",
-            "context": "Traceability-QualityNotification-Investigation:2.0.0",
             "sentDateTime": "2025-03-04T10:00:00+00:00",
-            "senderBpn": "BPNL0000000000AA",
-            "receiverBpn": "BPNL1111111111BB",
+            "senderBpn": "12i31jl3j21ihjkul",
+            "receiverBpn": "ahsdjfhjskdhfjklsd",
         },
         "content": {
             "notificationId": "41d743c3-6e8a-4393-88af-10494e50bea9",
-            "status": "SENT",
-            "severity": "CRITICAL",
             "listOfAffectedItems": [
             "urn:uuid:57e4e3c1-a6f0-46a0-90df-1fb17cbc157d"
             ]
