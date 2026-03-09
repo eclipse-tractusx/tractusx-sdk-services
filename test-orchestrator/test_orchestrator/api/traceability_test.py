@@ -25,6 +25,9 @@ Provide FastAPI endpoints for data asset checks.
 
 """
 
+from __future__ import annotations
+from typing import Any
+
 from fastapi import APIRouter, Depends, Query
 
 from test_orchestrator import config
@@ -33,6 +36,7 @@ from test_orchestrator.checks.catalog_version_validation import validate_catalog
 from test_orchestrator.checks.create_notification import (
     qualitynotification_receive,
     qualitynotification_update,
+    traceability_invalid,
 )
 from test_orchestrator.checks.policy_validation import validate_policy
 from test_orchestrator.checks.request_catalog import get_catalog
@@ -325,6 +329,16 @@ async def traceability_test(
             except Exception as inner_e:
                 asset_result['status'] = 'failed'
                 add_step(step_name or 'invoke_operation', 'failed', 'Notification call failed', str(inner_e))
+                
+        # Step 8: Negative test – invalid payload (e.g. wrong header.version) must be rejected with 4xx
+        if proceed and step_name in ('invoke_receive', 'invoke_update') and asset_result['status'] == 'success':
+            await _run_negative_test(endpoint, authorization, "invoke_update_with_wrong_payload", asset_result)
+        else:
+            asset_result['steps'].append({
+                "step": "invoke_update_with_wrong_payload",
+                "status": "skipped",
+                "message": "Previous step failed or no receive/update operation"
+            })
 
         results.append(asset_result)
 
@@ -338,3 +352,45 @@ async def traceability_test(
         'message': 'CX-0125 Traceability checks completed',
         'results': results
     }
+   
+async def _run_negative_test(
+    endpoint: str,
+    authorization: str,
+    name: str,
+    asset_result: dict[str, Any]
+):
+    """Perform negative test by sending invalid payload and expecting 4xx."""
+    try:
+        result = await traceability_invalid(endpoint, authorization)
+        status_code = result.get("status_code", 0)
+        if 400 <= status_code < 500:
+            asset_result['steps'].append({
+                "step": name,
+                "status": "success",
+                "message": "Invalid payload rejected as expected",
+                "details": {"request": result.get("request"), "response": result.get("response")},
+            })
+        else:
+            asset_result["status"] = "failed"
+            asset_result['steps'].append({
+                "step": name,
+                "status": "failed",
+                "message": f"Expected 4xx for invalid payload, got {status_code}",
+                "details": result.get("response"),
+            })
+    except HTTPError as e:
+        asset_result["status"] = "failed"
+        asset_result['steps'].append({
+            "step": name,
+            "status": "failed",
+            "message": str(e),
+            "details": getattr(e, "details", None),
+        })
+    except Exception as e:
+        asset_result["status"] = "failed"
+        asset_result['steps'].append({
+            "step": name,
+            "status": "failed",
+            "message": "Negative test request failed",
+            "details": str(e),
+        })

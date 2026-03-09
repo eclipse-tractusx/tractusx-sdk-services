@@ -310,3 +310,54 @@ async def make_request_status_only(method: str, url: str, timeout: int = 80, **k
                 message='An unknown error occurred while performing the request',
                 details=str(e),
             ) from e
+
+
+async def make_request_return_response(method: str, url: str, timeout: int = 80, **kwargs) -> dict:
+    """
+    Makes an HTTP request and returns status code and IO metadata without raising on non-2xx.
+    Use for negative tests where 4xx is expected. Network/connection errors still raise HTTPError.
+
+    :param method: HTTP method (e.g., 'POST')
+    :param url: The request URL
+    :param timeout: Timeout in seconds. Default is 80.
+    :param kwargs: Additional arguments forwarded to httpx.request
+    :return: Dict with status_code, request, response, response_json
+    """
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.request(method, url, timeout=timeout, **kwargs)
+            sent_request = response.request if hasattr(response, 'request') else None
+            request_info = {
+                'method': getattr(sent_request, 'method', method) if sent_request else method,
+                'url': str(getattr(sent_request, 'url', url)) if sent_request else url,
+                'headers': dict(getattr(sent_request, 'headers', {})) if sent_request else {},
+                'content': None
+            }
+            try:
+                if sent_request and getattr(sent_request, 'content', None) is not None:
+                    request_info['content'] = sent_request.content.decode('utf-8', errors='ignore')
+            except Exception:
+                pass
+            response_info = {
+                'status_code': response.status_code,
+                'headers': dict(response.headers),
+                'text': response.text,
+            }
+            parsed_json = None
+            try:
+                parsed_json = response.json()
+            except ValueError:
+                parsed_json = None
+            return {
+                'status_code': response.status_code,
+                'request': request_info,
+                'response': response_info,
+                'response_json': parsed_json,
+            }
+        except (httpx.TimeoutException, httpx.ConnectError, httpx.RequestError) as e:
+            logger.error(f'Request to {url} failed: {e}')
+            raise HTTPError(
+                Error.BAD_GATEWAY,
+                message=f'Request failed: {e}',
+                details=str(e),
+            ) from e
