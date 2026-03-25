@@ -339,6 +339,16 @@ async def traceability_test(
                 "status": "skipped",
                 "message": "Previous step failed or no receive/update operation"
             })
+            
+        # Step 9: Negative test – invalid payload (e.g. wrong header.version) must be rejected with 4xx
+        if proceed and step_name in ('invoke_receive', 'invoke_update') and asset_result['status'] == 'success':
+            await _run_negative_test(endpoint, authorization, "invoke_update_with_wrong_payload", asset_result, payload_content_name="body")
+        else:
+            asset_result['steps'].append({
+                "step": "invoke_update_with_wrong_payload",
+                "status": "skipped",
+                "message": "Previous step failed or no receive/update operation"
+            })
 
         results.append(asset_result)
 
@@ -357,11 +367,12 @@ async def _run_negative_test(
     endpoint: str,
     authorization: str,
     name: str,
-    asset_result: dict[str, Any]
+    asset_result: dict[str, Any],
+    payload_content_name: str = "content",
 ):
     """Perform negative test by sending invalid payload and expecting 4xx."""
     try:
-        result = await traceability_invalid(endpoint, authorization)
+        result = await traceability_invalid(endpoint, authorization, content_name=payload_content_name)
         status_code = result.get("status_code", 0)
         if 400 <= status_code < 500:
             asset_result['steps'].append({

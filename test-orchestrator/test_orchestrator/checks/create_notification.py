@@ -137,7 +137,8 @@ async def qualitynotification_update(
 
 async def traceability_invalid(
     endpoint: str,
-    authorization: str
+    authorization: str,
+    content_name: str = "content"
 ) -> dict:
     headers = {
         "Authorization": authorization,
@@ -151,7 +152,7 @@ async def traceability_invalid(
             "senderBpn": "12i31jl3j21ihjkul",
             "receiverBpn": "ahsdjfhjskdhfjklsd",
         },
-        "content": {
+        content_name: {
             "notificationId": "41d743c3-6e8a-4393-88af-10494e50bea9",
             "listOfAffectedItems": [
             "urn:uuid:57e4e3c1-a6f0-46a0-90df-1fb17cbc157d"
