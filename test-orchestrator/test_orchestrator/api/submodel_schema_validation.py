@@ -44,7 +44,7 @@ from typing import Dict, Any
 from fastapi import APIRouter, Depends
 
 from test_orchestrator.auth import verify_auth
-from test_orchestrator.base_utils import submodel_validation
+from test_orchestrator.utils import submodel_validation
 from test_orchestrator.utils.submodel_schema_validation import (
     process_and_retrieve_dtr,
 )
