@@ -165,7 +165,7 @@ async def traceability_test(
 
         # Step 3: Validate catalog version (https://w3id.org/catenax/ontology/common#version == 2.0)
         if not proceed:
-            add_step('validate_catalog_version', 'skipped', 'Previous step failed')
+            add_step('validate_catalog_version (CAC-016, CAC-053)', 'skipped', 'Previous step failed')
         else:
             try:
                 logger.info(f"Validating catalog version for {asset['asset_id']}")
