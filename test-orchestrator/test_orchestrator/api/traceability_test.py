@@ -142,7 +142,7 @@ async def traceability_test(
 
         # Step 2: Validate policy
         if not proceed:
-            add_step('validate_policy', 'skipped', 'Previous step failed')
+            add_step('validate_policy (CAC-013)', 'skipped', 'Previous step failed')
         else:
             try:
                 logger.info(f"Validating policy for {asset['asset_id']}")
@@ -157,15 +157,15 @@ async def traceability_test(
                 add_step('validate_policy (CAC-013)', 'success')
             except HTTPError as e:
                 asset_result['status'] = 'failed'
-                add_step('validate_policy', 'failed', str(e), getattr(e, 'details', None))
+                add_step('validate_policy (CAC-013)', 'failed', str(e), getattr(e, 'details', None))
             except Exception as e:
                 asset_result['status'] = 'failed'
-                add_step('validate_policy', 'failed', f'Unexpected error: {e}')
+                add_step('validate_policy (CAC-013)', 'failed', f'Unexpected error: {e}')
                 proceed = False
 
         # Step 3: Validate catalog version (https://w3id.org/catenax/ontology/common#version == 2.0)
         if not proceed:
-            add_step('validate_catalog_version', 'skipped', 'Previous step failed')
+            add_step('validate_catalog_version (CAC-016, CAC-053)', 'skipped', 'Previous step failed')
         else:
             try:
                 logger.info(f"Validating catalog version for {asset['asset_id']}")
@@ -180,16 +180,16 @@ async def traceability_test(
                 add_step('validate_catalog_version (CAC-016, CAC-053)', 'success')
             except HTTPError as e:
                 asset_result['status'] = 'failed'
-                add_step('validate_catalog_version', 'failed', str(e), getattr(e, 'details', None))
+                add_step('validate_catalog_version (CAC-016, CAC-053)', 'failed', str(e), getattr(e, 'details', None))
                 proceed = False
             except Exception as e:
                 asset_result['status'] = 'failed'
-                add_step('validate_catalog_version', 'failed', f'Unexpected error: {e}')
+                add_step('validate_catalog_version (CAC-016, CAC-053)', 'failed', f'Unexpected error: {e}')
                 proceed = False
 
         # Step 4: Initiate negotiation
         if not proceed:
-            add_step('init_negotiation', 'skipped', 'Previous step failed')
+            add_step('init_negotiation (CAC-005)', 'skipped', 'Previous step failed')
         else:
             try:
                 logger.info(f"Initiate negotiation for {asset['asset_id']}")
@@ -203,19 +203,19 @@ async def traceability_test(
                 n_body = negotiation.get('response_json', {}) if isinstance(negotiation, dict) else {}
                 n_req = (n_body or {}).get('request') or (negotiation.get('request') if isinstance(negotiation, dict) else None)
                 n_res = (n_body or {}).get('response') or (negotiation.get('response') if isinstance(negotiation, dict) else None)
-                add_step('init_negotiation', 'success', details={'request': n_req, 'response': n_res})
+                add_step('init_negotiation (CAC-005)', 'success', details={'request': n_req, 'response': n_res})
             except HTTPError as e:
                 asset_result['status'] = 'failed'
-                add_step('init_negotiation', 'failed', str(e), getattr(e, 'details', None))
+                add_step('init_negotiation (CAC-005)', 'failed', str(e), getattr(e, 'details', None))
                 proceed = False
             except Exception as e:
                 asset_result['status'] = 'failed'
-                add_step('init_negotiation', 'failed', f'Unexpected error: {e}')
+                add_step('init_negotiation (CAC-005)', 'failed', f'Unexpected error: {e}')
                 proceed = False
 
         # Step 5: Obtain negotiation state
         if not proceed:
-            add_step('obtain_negotiation_state', 'skipped', 'Previous step failed')
+            add_step('obtain_negotiation_state (CAC-005)', 'skipped', 'Previous step failed')
         else:
             try:
                 logger.info(f"Obtain negotiation state for {asset['asset_id']}")
@@ -231,19 +231,19 @@ async def traceability_test(
                 # dt-pull-service negotiation-state injects request/response into its JSON body; prefer those
                 s_req = state.get('request') if isinstance(state, dict) else None
                 s_res = state.get('response') if isinstance(state, dict) else None
-                add_step('obtain_negotiation_state', 'success', details={'request': s_req, 'response': s_res})
+                add_step('obtain_negotiation_state (CAC-005)', 'success', details={'request': s_req, 'response': s_res})
             except HTTPError as e:
                 asset_result['status'] = 'failed'
-                add_step('obtain_negotiation_state', 'failed', str(e), getattr(e, 'details', None))
+                add_step('obtain_negotiation_state (CAC-005)', 'failed', str(e), getattr(e, 'details', None))
                 proceed = False
             except Exception as e:
                 asset_result['status'] = 'failed'
-                add_step('obtain_negotiation_state', 'failed', f'Unexpected error: {e}')
+                add_step('obtain_negotiation_state (CAC-005)', 'failed', f'Unexpected error: {e}')
                 proceed = False
 
         # Step 6: Get EDR data address
         if not proceed:
-            add_step('get_data_address', 'skipped', 'Previous step failed')
+            add_step('get_data_address (CAC-007, CAC-008, CAC-029, CAC-032)', 'skipped', 'Previous step failed')
         else:
             try:
                 logger.info(f"Get EDR data address for {asset['asset_id']}")
@@ -269,11 +269,11 @@ async def traceability_test(
                 add_step('get_data_address (CAC-007, CAC-008, CAC-029, CAC-032)', 'success', details={'request': da_req, 'response': da_res})
             except HTTPError as e:
                 asset_result['status'] = 'failed'
-                add_step('get_data_address', 'failed', str(e), getattr(e, 'details', None))
+                add_step('get_data_address (CAC-007, CAC-008, CAC-029, CAC-032)', 'failed', str(e), getattr(e, 'details', None))
                 proceed = False
             except Exception as e:
                 asset_result['status'] = 'failed'
-                add_step('get_data_address', 'failed', f'Unexpected error: {e}')
+                add_step('get_data_address (CAC-007, CAC-008, CAC-029, CAC-032)', 'failed', f'Unexpected error: {e}')
                 proceed = False
 
         # Step 7: Invoke notification operation based on the asset type
