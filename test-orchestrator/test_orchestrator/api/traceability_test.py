@@ -130,7 +130,7 @@ async def traceability_test(
             dtps_body = catalog_response.get('response_json', {}) if isinstance(catalog_response, dict) else {}
             details_req = (dtps_body or {}).get('request') or catalog_response.get('request')
             details_res = (dtps_body or {}).get('response') or catalog_response.get('response')
-            add_step('get_catalog', 'success', details={'request': details_req, 'response': details_res})
+            add_step('get_catalog (CAC-041)', 'success', details={'request': details_req, 'response': details_res})
         except HTTPError as e:
             asset_result['status'] = 'failed'
             add_step('get_catalog', 'failed', str(e), getattr(e, 'details', None))
@@ -154,7 +154,7 @@ async def traceability_test(
                         details='Please check https://eclipse-tractusx.github.io/docs-kits/kits/industry-core-kit/' +
                                 'software-development-view/policies for troubleshooting.'
                     )
-                add_step('validate_policy', 'success')
+                add_step('validate_policy (CAC-013)', 'success')
             except HTTPError as e:
                 asset_result['status'] = 'failed'
                 add_step('validate_policy', 'failed', str(e), getattr(e, 'details', None))
@@ -266,7 +266,7 @@ async def traceability_test(
                     da_req = edr_data_address.get('request')
                 if not da_res and isinstance(edr_data_address, dict):
                     da_res = edr_data_address.get('response')
-                add_step('get_data_address', 'success', details={'request': da_req, 'response': da_res})
+                add_step('get_data_address (CAC-007, CAC-008, CAC-029, CAC-032)', 'success', details={'request': da_req, 'response': da_res})
             except HTTPError as e:
                 asset_result['status'] = 'failed'
                 add_step('get_data_address', 'failed', str(e), getattr(e, 'details', None))
@@ -302,7 +302,7 @@ async def traceability_test(
                     asset_result['message'] = "Receive invoked successfully"
                     r_req = response.get('request') if isinstance(response, dict) else None
                     r_res = response.get('response') if isinstance(response, dict) else None
-                    add_step('invoke_receive', 'success', details={'request': r_req, 'response': r_res})
+                    add_step('invoke_receive (CAC-006, CAC-032, CAC-035, CAC-038, CAC-040, CAC-042, CAC-054)', 'success', details={'request': r_req, 'response': r_res})
                 elif step_name == 'invoke_update':
                     response = await qualitynotification_update(
                         endpoint=endpoint,
@@ -315,7 +315,7 @@ async def traceability_test(
                     asset_result['message'] = "Update invoked successfully"
                     u_req = response.get('request') if isinstance(response, dict) else None
                     u_res = response.get('response') if isinstance(response, dict) else None
-                    add_step('invoke_update', 'success', details={'request': u_req, 'response': u_res})
+                    add_step('invoke_update (CAC-006, CAC-032, CAC-035, CAC-038, CAC-047, CAC-048, CAC-050, CAC-051, CAC-055)', 'success', details={'request': u_req, 'response': u_res})
                 else:
                     asset_result['message'] = 'No matching operation for asset type'
                     add_step('invoke_operation', 'skipped', 'No matching operation for asset type')
