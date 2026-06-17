@@ -23,6 +23,9 @@
 """Application factory
 """
 
+import logging
+
+from fastapi import FastAPI, Depends, HTTPException
 
 from fastapi import Depends, FastAPI
 from fastapi.security import APIKeyHeader
@@ -35,6 +38,8 @@ from test_orchestrator.api import (
     product_carbon_footprint,
     special_characteristics,
     traceability_test,
+    special_characteristics,
+    submodel_schema_validation,
 )
 from test_orchestrator.cache import create_cache_provider
 from test_orchestrator.errors import (
@@ -115,6 +120,10 @@ def create_app():
     app.include_router(special_characteristics.router,
                        prefix='/test-cases/special-characteristics/v1',
                        tags=['Special Characteristics Tests'])
+    
+    app.include_router(submodel_schema_validation.router,
+                       prefix='/test-cases/submodel-schema-validation/v1',
+                       tags=['Submodel Schema Validation Tests'])
 
     app.include_router(product_carbon_footprint.router,
                        prefix='/test-cases/product-carbon-footprint/v1',
