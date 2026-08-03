@@ -55,7 +55,7 @@ class SchemaNotFoundError(Exception):
     """
 
 
-def schema_finder(request_name):
+def schema_finder(request_name, use_case):
     """
     Finds and loads the schema file based on the request name.
 
@@ -63,6 +63,7 @@ def schema_finder(request_name):
     If the schema file is found, it is loaded and returned as a JSON object.
     If the schema cannot be located or the file is missing, an appropriate exception is raised.
 
+    :param use_case:
     :param request_name: The name of the request for which the schema is needed.
     :raises SchemaNotFoundError: If no schema is mapped to the given request name.
     :raises FileNotFoundError: If the mapped schema file is not found in the specified path.
@@ -74,7 +75,12 @@ def schema_finder(request_name):
     if correct_schema is None:
         raise SchemaNotFoundError(f'Schema not found for request: {request_name}')
 
-    schema_file = f'{config.SCHEMA_PATH}/{correct_schema}'
+    if use_case == "puris":
+        schema_path = config.PURIS_SCHEMA_PATH
+    elif use_case == "industry-core":
+        schema_path = config.SCHEMA_PATH
+
+    schema_file = f'{schema_path}/{correct_schema}'
 
     try:
         with open(schema_file, 'r', encoding='utf-8') as file:

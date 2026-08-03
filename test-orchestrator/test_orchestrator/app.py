@@ -35,8 +35,8 @@ from test_orchestrator.api import (
     product_carbon_footprint,
     special_characteristics,
     traceability_test,
+    puris_test_cases
 )
-from test_orchestrator.cache import create_cache_provider
 from test_orchestrator.errors import (
     HTTPError,
     ValidationException,
@@ -119,6 +119,9 @@ def create_app():
     app.include_router(product_carbon_footprint.router,
                        prefix='/test-cases/product-carbon-footprint/v1',
                        tags=['Product Carbon Footprint Tests'])
+    app.include_router(puris_test_cases.router,
+                       prefix='/test-cases/puris/v1',
+                       tags=['Puris Tests'])
 
     app.get('/_/health', status_code=200)(health)
 

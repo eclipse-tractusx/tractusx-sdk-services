@@ -119,7 +119,7 @@ async def shell_descriptors_test(
                 " software-development-view/#registering-a-new-twin for troubleshooting")
 
     try:
-        shelldesc_schema = schema_finder('shell_descriptors')
+        shelldesc_schema = schema_finder('shell_descriptors', 'industry-core')
         shelldesc_validation_error = json_validator(shelldesc_schema, shell_descriptors)
 
     except Exception:
@@ -226,7 +226,7 @@ async def submodel_test(counter_party_address: str,
     # Validating the smaller shell_descriptors output against a specific schema
     # to ensure the data we are using is accurate
     try:
-        shelldesc_schema = schema_finder('shell_descriptors_spec')
+        shelldesc_schema = schema_finder('shell_descriptors_spec', 'industry-core')
         shelldesc_validation_error = json_validator(shelldesc_schema, shell_descriptors_spec)
     except Exception:
         raise HTTPError(
